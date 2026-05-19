@@ -1,0 +1,497 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StoryStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum CharacterRole {
+  PROTAGONIST
+  ANTAGONIST
+  SUPPORTING
+  BACKGROUND
+}
+
+enum CharacterStatus {
+  ACTIVE
+  ABSENT
+  INJURED
+  UNCONSCIOUS
+  DEAD
+  UNKNOWN
+}
+
+enum RelationshipStatus {
+  NEUTRAL
+  ALLIED
+  ROMANTIC
+  CONFLICTED
+  ESTRANGED
+  HOSTILE
+  UNKNOWN
+}
+
+enum ChapterStatus {
+  OUTLINE
+  DRAFT
+  REVISING
+  CANON
+  ARCHIVED
+}
+
+enum GenerationStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELED
+}
+
+enum ContinuitySeverity {
+  P0
+  P1
+  P2
+  P3
+}
+
+enum ContinuityStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  DISMISSED
+}
+
+model Story {
+  id          String      @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  ownerId     String?     @map("owner_id") @db.Uuid
+  title       String
+  description String?
+  status      StoryStatus @default(ACTIVE)
+  metadata    Json        @default("{}")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  settings         StorySettings?
+  characters       Character[]
+  relationships    Relationship[]
+  chapters         Chapter[]
+  scenes           Scene[]
+  events           Event[]
+  loreEntries      LoreEntry[]
+  secrets          Secret[]
+  memories         Memory[]
+  embeddings       Embedding[]
+  continuityIssues ContinuityIssue[]
+  generationRuns   GenerationRun[]
+  retrievalLogs    RetrievalLog[]
+
+  @@index([ownerId])
+  @@index([status, updatedAt])
+  @@map("stories")
+}
+
+model StorySettings {
+  id          String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId     String   @unique @map("story_id") @db.Uuid
+  genre       String[] @default([])
+  tone        String?
+  pov         String?
+  tense       String?
+  nsfwPolicy  Json     @default("{}") @map("nsfw_policy")
+  styleGuide  String?  @map("style_guide")
+  modelConfig Json     @default("{}") @map("model_config")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@map("story_settings")
+}
+
+model Character {
+  id           String          @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId      String          @map("story_id") @db.Uuid
+  name         String
+  role         CharacterRole   @default(SUPPORTING)
+  status       CharacterStatus @default(ACTIVE)
+  ageConfirmed Boolean         @default(false) @map("age_confirmed")
+  visibility   String          @default("canon")
+  metadata     Json            @default("{}")
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  story                 Story               @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  profile               CharacterProfile?
+  states                CharacterState[]
+  povScenes             Scene[]             @relation("ScenePovCharacter")
+  secretsHeld           Secret[]            @relation("SecretHolder")
+  knowledgeTracking     KnowledgeTracking[]
+  relationshipsAsA      Relationship[]      @relation("RelationshipCharacterA")
+  relationshipsAsB      Relationship[]      @relation("RelationshipCharacterB")
+
+  @@unique([storyId, name])
+  @@index([storyId, status])
+  @@map("characters")
+}
+
+model CharacterProfile {
+  id          String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  characterId String   @unique @map("character_id") @db.Uuid
+  personality Json     @default("{}")
+  voiceRules  String?  @map("voice_rules")
+  backstory   String?
+  appearance  Json     @default("{}")
+  boundaries  Json     @default("{}")
+  motivations Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@map("character_profiles")
+}
+
+model CharacterState {
+  id             String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  characterId    String   @map("character_id") @db.Uuid
+  chapterId      String?  @map("chapter_id") @db.Uuid
+  sceneId        String?  @map("scene_id") @db.Uuid
+  location       String?
+  emotionalState Json     @default("{}") @map("emotional_state")
+  physicalState  Json     @default("{}") @map("physical_state")
+  goals          Json     @default("{}")
+  validFrom      DateTime @default(now()) @map("valid_from") @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  chapter   Chapter?  @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  scene     Scene?    @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+
+  @@index([characterId, validFrom])
+  @@index([chapterId])
+  @@index([sceneId])
+  @@map("character_states")
+}
+
+model Relationship {
+  id           String             @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId      String             @map("story_id") @db.Uuid
+  characterAId String             @map("character_a_id") @db.Uuid
+  characterBId String             @map("character_b_id") @db.Uuid
+  type         String
+  trust        Int                @default(0)
+  intimacy     Int                @default(0)
+  conflict     Int                @default(0)
+  status       RelationshipStatus @default(NEUTRAL)
+  boundaries   Json               @default("{}")
+  notes        String?
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  story      Story                 @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  characterA Character             @relation("RelationshipCharacterA", fields: [characterAId], references: [id], onDelete: Cascade)
+  characterB Character             @relation("RelationshipCharacterB", fields: [characterBId], references: [id], onDelete: Cascade)
+  history    RelationshipHistory[]
+
+  @@unique([storyId, characterAId, characterBId])
+  @@index([storyId, status])
+  @@index([characterAId])
+  @@index([characterBId])
+  @@map("relationships")
+}
+
+model RelationshipHistory {
+  id              String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  relationshipId  String   @map("relationship_id") @db.Uuid
+  sceneId         String?  @map("scene_id") @db.Uuid
+  eventId         String?  @map("event_id") @db.Uuid
+  changeSummary   String   @map("change_summary")
+  delta           Json     @default("{}")
+  emotionalWeight Float    @default(0) @map("emotional_weight")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  relationship Relationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
+  scene        Scene?       @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+  event        Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([relationshipId, createdAt])
+  @@index([sceneId])
+  @@index([eventId])
+  @@map("relationship_history")
+}
+
+model Chapter {
+  id         String        @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId    String        @map("story_id") @db.Uuid
+  number     Int
+  title      String
+  summary    String?
+  content    String?
+  status     ChapterStatus @default(OUTLINE)
+  tokenCount Int           @default(0) @map("token_count")
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  story           Story            @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  scenes          Scene[]
+  events          Event[]
+  characterStates CharacterState[]
+  continuityIssues ContinuityIssue[]
+
+  @@unique([storyId, number])
+  @@index([storyId, status])
+  @@map("chapters")
+}
+
+model Scene {
+  id                 String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId            String   @map("story_id") @db.Uuid
+  chapterId          String   @map("chapter_id") @db.Uuid
+  number             Int
+  title              String?
+  summary            String?
+  content            String?
+  povCharacterId     String?  @map("pov_character_id") @db.Uuid
+  location           String?
+  startedAtStoryTime DateTime? @map("started_at_story_time") @db.Timestamptz(6)
+  isFlashback        Boolean  @default(false) @map("is_flashback")
+  tokenCount         Int      @default(0) @map("token_count")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  story                Story                 @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  chapter              Chapter               @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  povCharacter         Character?            @relation("ScenePovCharacter", fields: [povCharacterId], references: [id], onDelete: SetNull)
+  events               Event[]
+  characterStates      CharacterState[]
+  relationshipHistory  RelationshipHistory[]
+  revealedSecrets      Secret[]              @relation("SecretRevealScene")
+  knowledgeRecords     KnowledgeTracking[]   @relation("KnowledgeLearnedScene")
+  continuityIssues     ContinuityIssue[]
+
+  @@unique([chapterId, number])
+  @@index([storyId, startedAtStoryTime])
+  @@index([povCharacterId])
+  @@map("scenes")
+}
+
+model Event {
+  id           String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId      String   @map("story_id") @db.Uuid
+  sceneId      String?  @map("scene_id") @db.Uuid
+  chapterId    String?  @map("chapter_id") @db.Uuid
+  eventTime    DateTime? @map("event_time") @db.Timestamptz(6)
+  summary      String
+  eventType    String   @map("event_type")
+  participants Json     @default("[]")
+  salience     Float    @default(0.5)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  story               Story                 @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  scene               Scene?                @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+  chapter             Chapter?              @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  impacts             EventImpact[]
+  relationshipHistory RelationshipHistory[]
+
+  @@index([storyId, eventTime])
+  @@index([sceneId])
+  @@index([chapterId])
+  @@map("events")
+}
+
+model EventImpact {
+  id         String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  eventId    String   @map("event_id") @db.Uuid
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id") @db.Uuid
+  impactType String   @map("impact_type")
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([targetType, targetId])
+  @@map("event_impacts")
+}
+
+model LoreEntry {
+  id         String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId    String   @map("story_id") @db.Uuid
+  category   String
+  name       String
+  content    String
+  canonLevel Int      @default(1) @map("canon_level")
+  tags       String[] @default([])
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, category, name])
+  @@index([storyId, category])
+  @@map("lore_entries")
+}
+
+model Secret {
+  id                String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId            String   @map("story_id") @db.Uuid
+  name              String
+  content           String
+  truthStatus       String   @default("hidden") @map("truth_status")
+  holderCharacterId String?  @map("holder_character_id") @db.Uuid
+  revealedAtSceneId String?  @map("revealed_at_scene_id") @db.Uuid
+  salience          Float    @default(0.7)
+  metadata          Json     @default("{}")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  story             Story               @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  holderCharacter   Character?          @relation("SecretHolder", fields: [holderCharacterId], references: [id], onDelete: SetNull)
+  revealedAtScene   Scene?              @relation("SecretRevealScene", fields: [revealedAtSceneId], references: [id], onDelete: SetNull)
+  knowledgeTracking KnowledgeTracking[]
+
+  @@index([storyId, truthStatus])
+  @@index([holderCharacterId])
+  @@index([revealedAtSceneId])
+  @@map("secrets")
+}
+
+model KnowledgeTracking {
+  id               String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  secretId          String   @map("secret_id") @db.Uuid
+  characterId       String   @map("character_id") @db.Uuid
+  knowledgeState    String   @map("knowledge_state")
+  learnedAtSceneId  String?  @map("learned_at_scene_id") @db.Uuid
+  evidence          String?
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  secret         Secret    @relation(fields: [secretId], references: [id], onDelete: Cascade)
+  character      Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  learnedAtScene Scene?    @relation("KnowledgeLearnedScene", fields: [learnedAtSceneId], references: [id], onDelete: SetNull)
+
+  @@unique([secretId, characterId])
+  @@index([characterId])
+  @@index([learnedAtSceneId])
+  @@map("knowledge_tracking")
+}
+
+model Memory {
+  id              String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId         String   @map("story_id") @db.Uuid
+  sourceType      String   @map("source_type")
+  sourceId        String?  @map("source_id") @db.Uuid
+  memoryType      String   @map("memory_type")
+  content         String
+  summary         String?
+  salience        Float    @default(0.5)
+  emotionalWeight Float    @default(0) @map("emotional_weight")
+  entities        Json     @default("{}")
+  embedding       Unsupported("vector")?
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([storyId, memoryType, salience])
+  @@index([sourceType, sourceId])
+  @@map("memories")
+}
+
+model Embedding {
+  id         String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId    String   @map("story_id") @db.Uuid
+  ownerType  String   @map("owner_type")
+  ownerId    String   @map("owner_id") @db.Uuid
+  model      String
+  dimensions Int
+  chunkText  String   @map("chunk_text")
+  embedding  Unsupported("vector")?
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([storyId, ownerType])
+  @@index([ownerType, ownerId])
+  @@map("embeddings")
+}
+
+model ContinuityIssue {
+  id              String             @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId          String             @map("story_id") @db.Uuid
+  sceneId          String?            @map("scene_id") @db.Uuid
+  chapterId        String?            @map("chapter_id") @db.Uuid
+  generationRunId  String?            @map("generation_run_id") @db.Uuid
+  severity         ContinuitySeverity
+  category         String
+  description      String
+  evidence         Json               @default("{}")
+  confidence       Float              @default(0.5)
+  status           ContinuityStatus   @default(OPEN)
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  story         Story          @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  scene         Scene?         @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+  chapter       Chapter?       @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  generationRun GenerationRun? @relation(fields: [generationRunId], references: [id], onDelete: SetNull)
+
+  @@index([storyId, status, severity])
+  @@index([sceneId])
+  @@index([chapterId])
+  @@index([generationRunId])
+  @@map("continuity_issues")
+}
+
+model RetrievalLog {
+  id              String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId          String   @map("story_id") @db.Uuid
+  generationRunId  String?  @map("generation_run_id") @db.Uuid
+  query            String
+  filters          Json     @default("{}")
+  results          Json     @default("[]")
+  tokenBudget      Int      @default(0) @map("token_budget")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  story         Story          @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  generationRun GenerationRun? @relation(fields: [generationRunId], references: [id], onDelete: SetNull)
+
+  @@index([storyId, createdAt])
+  @@index([generationRunId])
+  @@map("retrieval_logs")
+}
+
+model GenerationRun {
+  id          String           @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
+  storyId     String           @map("story_id") @db.Uuid
+  type        String
+  status      GenerationStatus @default(QUEUED)
+  input       Json             @default("{}")
+  prompt      String?
+  output      String?
+  model       String
+  error       String?
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  story            Story             @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  retrievalLogs    RetrievalLog[]
+  continuityIssues ContinuityIssue[]
+
+  @@index([storyId, createdAt])
+  @@index([status])
+  @@map("generation_runs")
+}
+
