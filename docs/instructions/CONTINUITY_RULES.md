@@ -34,3 +34,4 @@ Continuity checks combine deterministic rules with LLM review through OpenRouter
 
 The LLM checker receives compact canon context and draft text. It must return structured issue JSON only.
 
+<!--  -->
