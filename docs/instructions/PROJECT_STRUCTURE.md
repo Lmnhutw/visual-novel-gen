@@ -17,6 +17,7 @@
 /lib/utils
 /prisma
 /docs
+/docs/instructions
 /types
 ```
 
@@ -39,4 +40,3 @@
 - database queries in components
 - prompt strings in route handlers
 - speculative abstractions
-

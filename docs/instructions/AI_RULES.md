@@ -4,7 +4,7 @@ These rules are mandatory for coding agents working on this local-first AI story
 
 ## Before Modifying Any Code
 
-1. Read `AI_RULES.md`.
+1. Read `docs/instructions/AI_RULES.md`.
 2. Inspect the current implementation and folder structure.
 3. Follow existing service, route, Prisma, and component patterns.
 4. Prefer the smallest safe change over broad rewrites.
@@ -12,15 +12,15 @@ These rules are mandatory for coding agents working on this local-first AI story
 
 ## Required Reads
 
-- Architecture changes: read `ARCHITECTURE.md` and `PROJECT_STRUCTURE.md`.
-- Database or Prisma changes: read `DB_SCHEMA.md` and `MEMORY_SYSTEM.md`.
-- Retrieval changes: read `RETRIEVAL_SYSTEM.md` and `MEMORY_SYSTEM.md`.
-- Prompt changes: read `PROMPT_SYSTEM.md`.
-- Continuity changes: read `CONTINUITY_RULES.md`.
-- API changes: read `API_CONTRACTS.md`.
-- Frontend state changes: read `STATE_MANAGEMENT.md`.
-- Styling or component changes: read `STYLE_GUIDE.md`.
-- Security-sensitive changes: read `SECURITY_RULES.md`.
+- Architecture changes: read `docs/instructions/ARCHITECTURE.md` and `docs/instructions/PROJECT_STRUCTURE.md`.
+- Database or Prisma changes: read `docs/instructions/DB_SCHEMA.md` and `docs/instructions/MEMORY_SYSTEM.md`.
+- Retrieval changes: read `docs/instructions/RETRIEVAL_SYSTEM.md` and `docs/instructions/MEMORY_SYSTEM.md`.
+- Prompt changes: read `docs/instructions/PROMPT_SYSTEM.md`.
+- Continuity changes: read `docs/instructions/CONTINUITY_RULES.md`.
+- API changes: read `docs/instructions/API_CONTRACTS.md`.
+- Frontend state changes: read `docs/instructions/STATE_MANAGEMENT.md`.
+- Styling or component changes: read `docs/instructions/STYLE_GUIDE.md`.
+- Security-sensitive changes: read `docs/instructions/SECURITY_RULES.md`.
 
 ## Never Do
 
@@ -42,4 +42,3 @@ These rules are mandatory for coding agents working on this local-first AI story
 - Use TypeScript strict mode.
 - Use Zod at API boundaries.
 - Preserve local-first SQLite workflows.
-
