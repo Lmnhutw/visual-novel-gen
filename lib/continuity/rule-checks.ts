@@ -1,6 +1,6 @@
-import type { ContinuitySeverity } from "@prisma/client";
-
 import type { GenerationContext } from "@/lib/retrieval/types";
+
+export type ContinuitySeverity = "P0" | "P1" | "P2" | "P3";
 
 export type ContinuityWarning = {
   severity: ContinuitySeverity;
@@ -64,4 +64,3 @@ export function runRuleBasedContinuityChecks(input: {
 
   return warnings;
 }
-

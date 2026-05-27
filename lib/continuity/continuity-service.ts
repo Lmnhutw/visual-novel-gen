@@ -1,7 +1,7 @@
-import { ContinuitySeverity, type Prisma } from "@prisma/client";
 import { z } from "zod";
 
-import { generateText } from "@/lib/ai/ollama-client";
+import { generateText } from "@/lib/ai/openrouter-client";
+import { toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
 import { buildContinuityReviewPrompt } from "@/lib/prompts/prompt-builder";
 import type { GenerationContext } from "@/lib/retrieval/types";
@@ -55,12 +55,16 @@ export async function checkContinuity(input: {
           context: input.context,
           draft: input.draft,
         }),
-        { temperature: 0.1, topP: 0.8 },
+        {
+          temperature: 0.1,
+          topP: 0.8,
+          responseFormat: { type: "json_object" },
+        },
       );
-      const parsed = LlmContinuityResultSchema.parse(extractJson(output));
+      const parsed = LlmContinuityResultSchema.parse(extractJson(output.text));
       warnings.push(
         ...parsed.issues.map((issue) => ({
-          severity: issue.severity as ContinuitySeverity,
+          severity: issue.severity,
           category: issue.category,
           description: issue.description,
           evidence: issue.evidence,
@@ -89,7 +93,7 @@ export async function checkContinuity(input: {
         severity: warning.severity,
         category: warning.category,
         description: warning.description,
-        evidence: warning.evidence as Prisma.InputJsonValue,
+        evidence: toJsonString(warning.evidence),
         confidence: warning.confidence,
       })),
     });

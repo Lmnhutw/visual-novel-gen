@@ -204,11 +204,11 @@ export function WorkspaceShell() {
             <div className="mt-2 space-y-2 px-2 text-sm">
               <div className="flex items-center justify-between">
                 <span>Generation</span>
-                <StatusPill tone="ok">Qwen 2.5 7B</StatusPill>
+                <StatusPill tone="ok">Qwen 2.5 72B</StatusPill>
               </div>
               <div className="flex items-center justify-between">
                 <span>Embeddings</span>
-                <StatusPill>768 dim</StatusPill>
+                <StatusPill>OpenRouter</StatusPill>
               </div>
             </div>
           </div>
@@ -226,9 +226,9 @@ export function WorkspaceShell() {
                 </h2>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <StatusPill tone="ok">Postgres canon</StatusPill>
+                <StatusPill tone="ok">SQLite canon</StatusPill>
                 <StatusPill tone="warn">Hybrid retrieval</StatusPill>
-                <StatusPill>Local Ollama</StatusPill>
+                <StatusPill>OpenRouter API</StatusPill>
               </div>
             </div>
           </Panel>
@@ -240,7 +240,7 @@ export function WorkspaceShell() {
                   <span className="text-sm font-medium">Story ID</span>
                   <input
                     className="mt-2 h-10 w-full rounded-md border border-line bg-white px-3 text-sm outline-none transition focus:border-forest"
-                    placeholder="Paste a story UUID from /api/stories"
+                    placeholder="Paste a story ID from /api/stories"
                     value={storyId}
                     onChange={(event) => setStoryId(event.target.value)}
                   />

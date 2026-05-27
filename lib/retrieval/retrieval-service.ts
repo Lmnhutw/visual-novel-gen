@@ -1,6 +1,6 @@
-import { embedText } from "@/lib/ai/ollama-client";
 import { prisma } from "@/lib/db/prisma";
-import { searchMemoryVectors } from "@/lib/db/vector-sql";
+import { parseJsonString, parseStringArray } from "@/lib/db/json";
+import { searchMemories } from "@/lib/memory/memory-service";
 import type { GenerationContext, RetrievedMemory } from "@/lib/retrieval/types";
 
 export type RetrieveContextInput = {
@@ -11,19 +11,6 @@ export type RetrieveContextInput = {
   maxMemories?: number;
   includeSecrets?: boolean;
 };
-
-function mapVectorMemory(row: Awaited<ReturnType<typeof searchMemoryVectors>>[number]): RetrievedMemory {
-  return {
-    id: row.id,
-    memoryType: row.memory_type,
-    content: row.content,
-    summary: row.summary,
-    salience: row.salience,
-    emotionalWeight: row.emotional_weight,
-    similarity: row.similarity,
-    finalScore: row.final_score,
-  };
-}
 
 export async function retrieveContext(
   input: RetrieveContextInput,
@@ -99,14 +86,28 @@ export async function retrieveContext(
   let memories: RetrievedMemory[] = [];
   if (input.query?.trim()) {
     try {
-      const embedding = await embedText(input.query);
-      const rows = await searchMemoryVectors({
+      const rows = await searchMemories({
         storyId: input.storyId,
-        embedding,
+        query: input.query,
         memoryTypes: input.memoryTypes,
         limit: input.maxMemories ?? 12,
       });
-      memories = rows.map(mapVectorMemory);
+      memories = rows.map((memory) => ({
+        id: memory.id,
+        memoryType: memory.memoryType,
+        content: memory.content,
+        summary: memory.summary,
+        salience: memory.salience,
+        emotionalWeight: memory.emotionalWeight,
+        similarity:
+          "similarity" in memory && typeof memory.similarity === "number"
+            ? memory.similarity
+            : undefined,
+        finalScore:
+          "finalScore" in memory && typeof memory.finalScore === "number"
+            ? memory.finalScore
+            : undefined,
+      }));
     } catch {
       const fallback = await prisma.memory.findMany({
         where: { storyId: input.storyId },
@@ -132,13 +133,13 @@ export async function retrieveContext(
     },
     settings: story.settings
       ? {
-          genre: story.settings.genre,
+          genre: parseStringArray(story.settings.genre),
           tone: story.settings.tone,
           pov: story.settings.pov,
           tense: story.settings.tense,
           styleGuide: story.settings.styleGuide,
-          nsfwPolicy: story.settings.nsfwPolicy,
-          modelConfig: story.settings.modelConfig,
+          nsfwPolicy: parseJsonString(story.settings.nsfwPolicy, {}),
+          modelConfig: parseJsonString(story.settings.modelConfig, {}),
         }
       : null,
     characters: characters.map((character) => ({
@@ -147,13 +148,28 @@ export async function retrieveContext(
       role: character.role,
       status: character.status,
       ageConfirmed: character.ageConfirmed,
-      profile: character.profile,
+      profile: character.profile
+        ? {
+            personality: parseJsonString(character.profile.personality, {}),
+            voiceRules: character.profile.voiceRules,
+            backstory: character.profile.backstory,
+            appearance: parseJsonString(character.profile.appearance, {}),
+            boundaries: parseJsonString(character.profile.boundaries, {}),
+            motivations: parseJsonString(character.profile.motivations, {}),
+          }
+        : null,
       latestState: character.states[0]
         ? {
             location: character.states[0].location,
-            emotionalState: character.states[0].emotionalState,
-            physicalState: character.states[0].physicalState,
-            goals: character.states[0].goals,
+            emotionalState: parseJsonString(
+              character.states[0].emotionalState,
+              {},
+            ),
+            physicalState: parseJsonString(
+              character.states[0].physicalState,
+              {},
+            ),
+            goals: parseJsonString(character.states[0].goals, {}),
           }
         : undefined,
     })),
@@ -192,4 +208,3 @@ export async function retrieveContext(
     memories,
   };
 }
-

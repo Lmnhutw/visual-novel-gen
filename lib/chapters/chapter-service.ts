@@ -1,4 +1,4 @@
-import { generateText } from "@/lib/ai/ollama-client";
+import { generateText } from "@/lib/ai/openrouter-client";
 import { prisma } from "@/lib/db/prisma";
 
 export async function summarizeChapter(chapterId: string) {
@@ -29,7 +29,6 @@ export async function summarizeChapter(chapterId: string) {
 
   return prisma.chapter.update({
     where: { id: chapterId },
-    data: { summary },
+    data: { summary: summary.text },
   });
 }
-

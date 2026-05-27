@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { optionalPrismaJson, toPrismaJson } from "@/lib/db/json";
+import { optionalJsonString, toJsonString } from "@/lib/db/json";
 
 export type CreateStoryInput = {
   title: string;
@@ -19,12 +19,12 @@ export async function createStory(input: CreateStoryInput) {
       description: input.description,
       settings: {
         create: {
-          genre: input.genre ?? [],
+          genre: toJsonString(input.genre ?? []),
           tone: input.tone,
           pov: input.pov,
           tense: input.tense,
           styleGuide: input.styleGuide,
-          nsfwPolicy: toPrismaJson(input.nsfwPolicy, {
+          nsfwPolicy: toJsonString(input.nsfwPolicy, {
             matureModeAllowed: true,
             requireAdultCharacters: true,
             requireConsentContinuity: true,
@@ -93,20 +93,20 @@ export async function updateStory(
       settings: {
         upsert: {
           create: {
-            genre: input.genre ?? [],
+            genre: toJsonString(input.genre ?? []),
             tone: input.tone,
             pov: input.pov,
             tense: input.tense,
             styleGuide: input.styleGuide,
-            nsfwPolicy: toPrismaJson(input.nsfwPolicy),
+            nsfwPolicy: toJsonString(input.nsfwPolicy),
           },
           update: {
-            genre: input.genre,
+            genre: optionalJsonString(input.genre),
             tone: input.tone,
             pov: input.pov,
             tense: input.tense,
             styleGuide: input.styleGuide,
-            nsfwPolicy: optionalPrismaJson(input.nsfwPolicy),
+            nsfwPolicy: optionalJsonString(input.nsfwPolicy),
           },
         },
       },

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const uuidSchema = z.string().uuid();
+export const uuidSchema = z.string().min(1);
 
 export const storyStatusSchema = z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]);
 export const characterRoleSchema = z.enum([
@@ -166,4 +166,3 @@ export const generateEmbeddingSchema = z.object({
   text: z.string().min(1),
   metadata: z.record(z.unknown()).optional(),
 });
-

@@ -1,7 +1,14 @@
-import type { RelationshipStatus } from "@prisma/client";
-
-import { optionalPrismaJson, toPrismaJson } from "@/lib/db/json";
+import { optionalJsonString, toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
+
+type RelationshipStatus =
+  | "NEUTRAL"
+  | "ALLIED"
+  | "ROMANTIC"
+  | "CONFLICTED"
+  | "ESTRANGED"
+  | "HOSTILE"
+  | "UNKNOWN";
 
 export type CreateRelationshipInput = {
   storyId: string;
@@ -27,7 +34,7 @@ export async function createRelationship(input: CreateRelationshipInput) {
       intimacy: input.intimacy ?? 0,
       conflict: input.conflict ?? 0,
       status: input.status,
-      boundaries: toPrismaJson(input.boundaries),
+      boundaries: toJsonString(input.boundaries),
       notes: input.notes,
     },
     include: {
@@ -55,7 +62,7 @@ export async function updateRelationship(
         intimacy: input.intimacy,
         conflict: input.conflict,
         status: input.status,
-        boundaries: optionalPrismaJson(input.boundaries),
+        boundaries: optionalJsonString(input.boundaries),
         notes: input.notes,
       },
       include: {
@@ -81,7 +88,7 @@ export async function updateRelationship(
           eventId: input.eventId,
           changeSummary: input.changeSummary,
           emotionalWeight: input.emotionalWeight ?? 0,
-          delta: toPrismaJson(delta),
+          delta: toJsonString(delta),
         },
       });
     }

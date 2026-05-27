@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { generateText } from "@/lib/ai/ollama-client";
+import { generateText } from "@/lib/ai/openrouter-client";
 import { buildMemoryExtractionPrompt } from "@/lib/prompts/prompt-builder";
 
 export const ExtractedMemorySchema = z.object({
@@ -53,7 +53,10 @@ export async function extractMemoriesFromDraft(input: {
   contextSummary?: string;
 }): Promise<MemoryExtractionResult> {
   const prompt = buildMemoryExtractionPrompt(input);
-  const output = await generateText(prompt, { temperature: 0.1, topP: 0.8 });
-  return MemoryExtractionResultSchema.parse(extractJson(output));
+  const output = await generateText(prompt, {
+    temperature: 0.1,
+    topP: 0.8,
+    responseFormat: { type: "json_object" },
+  });
+  return MemoryExtractionResultSchema.parse(extractJson(output.text));
 }
-

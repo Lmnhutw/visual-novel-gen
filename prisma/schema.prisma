@@ -3,81 +3,19 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
-enum StoryStatus {
-  DRAFT
-  ACTIVE
-  ARCHIVED
-}
-
-enum CharacterRole {
-  PROTAGONIST
-  ANTAGONIST
-  SUPPORTING
-  BACKGROUND
-}
-
-enum CharacterStatus {
-  ACTIVE
-  ABSENT
-  INJURED
-  UNCONSCIOUS
-  DEAD
-  UNKNOWN
-}
-
-enum RelationshipStatus {
-  NEUTRAL
-  ALLIED
-  ROMANTIC
-  CONFLICTED
-  ESTRANGED
-  HOSTILE
-  UNKNOWN
-}
-
-enum ChapterStatus {
-  OUTLINE
-  DRAFT
-  REVISING
-  CANON
-  ARCHIVED
-}
-
-enum GenerationStatus {
-  QUEUED
-  RUNNING
-  SUCCEEDED
-  FAILED
-  CANCELED
-}
-
-enum ContinuitySeverity {
-  P0
-  P1
-  P2
-  P3
-}
-
-enum ContinuityStatus {
-  OPEN
-  ACKNOWLEDGED
-  RESOLVED
-  DISMISSED
-}
-
 model Story {
-  id          String      @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  ownerId     String?     @map("owner_id") @db.Uuid
+  id          String   @id @default(cuid())
+  ownerId     String?  @map("owner_id")
   title       String
   description String?
-  status      StoryStatus @default(ACTIVE)
-  metadata    Json        @default("{}")
-  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  status      String   @default("ACTIVE")
+  metadata    String   @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   settings         StorySettings?
   characters       Character[]
@@ -99,17 +37,17 @@ model Story {
 }
 
 model StorySettings {
-  id          String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId     String   @unique @map("story_id") @db.Uuid
-  genre       String[] @default([])
+  id          String   @id @default(cuid())
+  storyId     String   @unique @map("story_id")
+  genre       String   @default("[]")
   tone        String?
   pov         String?
   tense       String?
-  nsfwPolicy  Json     @default("{}") @map("nsfw_policy")
+  nsfwPolicy  String   @default("{}") @map("nsfw_policy")
   styleGuide  String?  @map("style_guide")
-  modelConfig Json     @default("{}") @map("model_config")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  modelConfig String   @default("{}") @map("model_config")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
 
@@ -117,25 +55,25 @@ model StorySettings {
 }
 
 model Character {
-  id           String          @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId      String          @map("story_id") @db.Uuid
+  id           String   @id @default(cuid())
+  storyId      String   @map("story_id")
   name         String
-  role         CharacterRole   @default(SUPPORTING)
-  status       CharacterStatus @default(ACTIVE)
-  ageConfirmed Boolean         @default(false) @map("age_confirmed")
-  visibility   String          @default("canon")
-  metadata     Json            @default("{}")
-  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  role         String   @default("SUPPORTING")
+  status       String   @default("ACTIVE")
+  ageConfirmed Boolean  @default(false) @map("age_confirmed")
+  visibility   String   @default("canon")
+  metadata     String   @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  story                 Story               @relation(fields: [storyId], references: [id], onDelete: Cascade)
-  profile               CharacterProfile?
-  states                CharacterState[]
-  povScenes             Scene[]             @relation("ScenePovCharacter")
-  secretsHeld           Secret[]            @relation("SecretHolder")
-  knowledgeTracking     KnowledgeTracking[]
-  relationshipsAsA      Relationship[]      @relation("RelationshipCharacterA")
-  relationshipsAsB      Relationship[]      @relation("RelationshipCharacterB")
+  story             Story               @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  profile           CharacterProfile?
+  states            CharacterState[]
+  povScenes         Scene[]             @relation("ScenePovCharacter")
+  secretsHeld       Secret[]            @relation("SecretHolder")
+  knowledgeTracking KnowledgeTracking[]
+  relationshipsAsA  Relationship[]      @relation("RelationshipCharacterA")
+  relationshipsAsB  Relationship[]      @relation("RelationshipCharacterB")
 
   @@unique([storyId, name])
   @@index([storyId, status])
@@ -143,16 +81,16 @@ model Character {
 }
 
 model CharacterProfile {
-  id          String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  characterId String   @unique @map("character_id") @db.Uuid
-  personality Json     @default("{}")
+  id          String   @id @default(cuid())
+  characterId String   @unique @map("character_id")
+  personality String   @default("{}")
   voiceRules  String?  @map("voice_rules")
   backstory   String?
-  appearance  Json     @default("{}")
-  boundaries  Json     @default("{}")
-  motivations Json     @default("{}")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  appearance  String   @default("{}")
+  boundaries  String   @default("{}")
+  motivations String   @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 
@@ -160,16 +98,16 @@ model CharacterProfile {
 }
 
 model CharacterState {
-  id             String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  characterId    String   @map("character_id") @db.Uuid
-  chapterId      String?  @map("chapter_id") @db.Uuid
-  sceneId        String?  @map("scene_id") @db.Uuid
+  id             String   @id @default(cuid())
+  characterId    String   @map("character_id")
+  chapterId      String?  @map("chapter_id")
+  sceneId        String?  @map("scene_id")
   location       String?
-  emotionalState Json     @default("{}") @map("emotional_state")
-  physicalState  Json     @default("{}") @map("physical_state")
-  goals          Json     @default("{}")
-  validFrom      DateTime @default(now()) @map("valid_from") @db.Timestamptz(6)
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  emotionalState String   @default("{}") @map("emotional_state")
+  physicalState  String   @default("{}") @map("physical_state")
+  goals          String   @default("{}")
+  validFrom      DateTime @default(now()) @map("valid_from")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
   chapter   Chapter?  @relation(fields: [chapterId], references: [id], onDelete: SetNull)
@@ -182,19 +120,19 @@ model CharacterState {
 }
 
 model Relationship {
-  id           String             @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId      String             @map("story_id") @db.Uuid
-  characterAId String             @map("character_a_id") @db.Uuid
-  characterBId String             @map("character_b_id") @db.Uuid
+  id           String   @id @default(cuid())
+  storyId      String   @map("story_id")
+  characterAId String   @map("character_a_id")
+  characterBId String   @map("character_b_id")
   type         String
-  trust        Int                @default(0)
-  intimacy     Int                @default(0)
-  conflict     Int                @default(0)
-  status       RelationshipStatus @default(NEUTRAL)
-  boundaries   Json               @default("{}")
+  trust        Int      @default(0)
+  intimacy     Int      @default(0)
+  conflict     Int      @default(0)
+  status       String   @default("NEUTRAL")
+  boundaries   String   @default("{}")
   notes        String?
-  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   story      Story                 @relation(fields: [storyId], references: [id], onDelete: Cascade)
   characterA Character             @relation("RelationshipCharacterA", fields: [characterAId], references: [id], onDelete: Cascade)
@@ -209,14 +147,14 @@ model Relationship {
 }
 
 model RelationshipHistory {
-  id              String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  relationshipId  String   @map("relationship_id") @db.Uuid
-  sceneId         String?  @map("scene_id") @db.Uuid
-  eventId         String?  @map("event_id") @db.Uuid
+  id              String   @id @default(cuid())
+  relationshipId  String   @map("relationship_id")
+  sceneId         String?  @map("scene_id")
+  eventId         String?  @map("event_id")
   changeSummary   String   @map("change_summary")
-  delta           Json     @default("{}")
+  delta           String   @default("{}")
   emotionalWeight Float    @default(0) @map("emotional_weight")
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @map("created_at")
 
   relationship Relationship @relation(fields: [relationshipId], references: [id], onDelete: Cascade)
   scene        Scene?       @relation(fields: [sceneId], references: [id], onDelete: SetNull)
@@ -229,21 +167,21 @@ model RelationshipHistory {
 }
 
 model Chapter {
-  id         String        @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId    String        @map("story_id") @db.Uuid
+  id         String   @id @default(cuid())
+  storyId    String   @map("story_id")
   number     Int
   title      String
   summary    String?
   content    String?
-  status     ChapterStatus @default(OUTLINE)
-  tokenCount Int           @default(0) @map("token_count")
-  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  status     String   @default("OUTLINE")
+  tokenCount Int      @default(0) @map("token_count")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
-  story           Story            @relation(fields: [storyId], references: [id], onDelete: Cascade)
-  scenes          Scene[]
-  events          Event[]
-  characterStates CharacterState[]
+  story            Story             @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  scenes           Scene[]
+  events           Event[]
+  characterStates  CharacterState[]
   continuityIssues ContinuityIssue[]
 
   @@unique([storyId, number])
@@ -252,30 +190,30 @@ model Chapter {
 }
 
 model Scene {
-  id                 String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId            String   @map("story_id") @db.Uuid
-  chapterId          String   @map("chapter_id") @db.Uuid
+  id                 String    @id @default(cuid())
+  storyId            String    @map("story_id")
+  chapterId          String    @map("chapter_id")
   number             Int
   title              String?
   summary            String?
   content            String?
-  povCharacterId     String?  @map("pov_character_id") @db.Uuid
+  povCharacterId     String?   @map("pov_character_id")
   location           String?
-  startedAtStoryTime DateTime? @map("started_at_story_time") @db.Timestamptz(6)
-  isFlashback        Boolean  @default(false) @map("is_flashback")
-  tokenCount         Int      @default(0) @map("token_count")
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  startedAtStoryTime DateTime? @map("started_at_story_time")
+  isFlashback        Boolean   @default(false) @map("is_flashback")
+  tokenCount         Int       @default(0) @map("token_count")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  story                Story                 @relation(fields: [storyId], references: [id], onDelete: Cascade)
-  chapter              Chapter               @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  povCharacter         Character?            @relation("ScenePovCharacter", fields: [povCharacterId], references: [id], onDelete: SetNull)
-  events               Event[]
-  characterStates      CharacterState[]
-  relationshipHistory  RelationshipHistory[]
-  revealedSecrets      Secret[]              @relation("SecretRevealScene")
-  knowledgeRecords     KnowledgeTracking[]   @relation("KnowledgeLearnedScene")
-  continuityIssues     ContinuityIssue[]
+  story               Story                 @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  chapter             Chapter               @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  povCharacter        Character?            @relation("ScenePovCharacter", fields: [povCharacterId], references: [id], onDelete: SetNull)
+  events              Event[]
+  characterStates     CharacterState[]
+  relationshipHistory RelationshipHistory[]
+  revealedSecrets     Secret[]              @relation("SecretRevealScene")
+  knowledgeRecords    KnowledgeTracking[]   @relation("KnowledgeLearnedScene")
+  continuityIssues    ContinuityIssue[]
 
   @@unique([chapterId, number])
   @@index([storyId, startedAtStoryTime])
@@ -284,16 +222,16 @@ model Scene {
 }
 
 model Event {
-  id           String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId      String   @map("story_id") @db.Uuid
-  sceneId      String?  @map("scene_id") @db.Uuid
-  chapterId    String?  @map("chapter_id") @db.Uuid
-  eventTime    DateTime? @map("event_time") @db.Timestamptz(6)
+  id           String    @id @default(cuid())
+  storyId      String    @map("story_id")
+  sceneId      String?   @map("scene_id")
+  chapterId    String?   @map("chapter_id")
+  eventTime    DateTime? @map("event_time")
   summary      String
-  eventType    String   @map("event_type")
-  participants Json     @default("[]")
-  salience     Float    @default(0.5)
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  eventType    String    @map("event_type")
+  participants String    @default("[]")
+  salience     Float     @default(0.5)
+  createdAt    DateTime  @default(now()) @map("created_at")
 
   story               Story                 @relation(fields: [storyId], references: [id], onDelete: Cascade)
   scene               Scene?                @relation(fields: [sceneId], references: [id], onDelete: SetNull)
@@ -308,14 +246,14 @@ model Event {
 }
 
 model EventImpact {
-  id         String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  eventId    String   @map("event_id") @db.Uuid
+  id         String   @id @default(cuid())
+  eventId    String   @map("event_id")
   targetType String   @map("target_type")
-  targetId   String   @map("target_id") @db.Uuid
+  targetId   String   @map("target_id")
   impactType String   @map("impact_type")
-  before     Json?
-  after      Json?
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  before     String?
+  after      String?
+  createdAt  DateTime @default(now()) @map("created_at")
 
   event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
@@ -325,16 +263,16 @@ model EventImpact {
 }
 
 model LoreEntry {
-  id         String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId    String   @map("story_id") @db.Uuid
+  id         String   @id @default(cuid())
+  storyId    String   @map("story_id")
   category   String
   name       String
   content    String
   canonLevel Int      @default(1) @map("canon_level")
-  tags       String[] @default([])
-  metadata   Json     @default("{}")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  tags       String   @default("[]")
+  metadata   String   @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
 
@@ -344,17 +282,17 @@ model LoreEntry {
 }
 
 model Secret {
-  id                String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId            String   @map("story_id") @db.Uuid
+  id                String   @id @default(cuid())
+  storyId           String   @map("story_id")
   name              String
   content           String
   truthStatus       String   @default("hidden") @map("truth_status")
-  holderCharacterId String?  @map("holder_character_id") @db.Uuid
-  revealedAtSceneId String?  @map("revealed_at_scene_id") @db.Uuid
+  holderCharacterId String?  @map("holder_character_id")
+  revealedAtSceneId String?  @map("revealed_at_scene_id")
   salience          Float    @default(0.7)
-  metadata          Json     @default("{}")
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  metadata          String   @default("{}")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   story             Story               @relation(fields: [storyId], references: [id], onDelete: Cascade)
   holderCharacter   Character?          @relation("SecretHolder", fields: [holderCharacterId], references: [id], onDelete: SetNull)
@@ -368,14 +306,14 @@ model Secret {
 }
 
 model KnowledgeTracking {
-  id               String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  secretId          String   @map("secret_id") @db.Uuid
-  characterId       String   @map("character_id") @db.Uuid
-  knowledgeState    String   @map("knowledge_state")
-  learnedAtSceneId  String?  @map("learned_at_scene_id") @db.Uuid
-  evidence          String?
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id              String   @id @default(cuid())
+  secretId        String   @map("secret_id")
+  characterId     String   @map("character_id")
+  knowledgeState  String   @map("knowledge_state")
+  learnedAtSceneId String? @map("learned_at_scene_id")
+  evidence        String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   secret         Secret    @relation(fields: [secretId], references: [id], onDelete: Cascade)
   character      Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
@@ -388,19 +326,21 @@ model KnowledgeTracking {
 }
 
 model Memory {
-  id              String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId         String   @map("story_id") @db.Uuid
-  sourceType      String   @map("source_type")
-  sourceId        String?  @map("source_id") @db.Uuid
-  memoryType      String   @map("memory_type")
-  content         String
-  summary         String?
-  salience        Float    @default(0.5)
-  emotionalWeight Float    @default(0) @map("emotional_weight")
-  entities        Json     @default("{}")
-  embedding       Unsupported("vector")?
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                  String   @id @default(cuid())
+  storyId             String   @map("story_id")
+  sourceType          String   @map("source_type")
+  sourceId            String?  @map("source_id")
+  memoryType          String   @map("memory_type")
+  content             String
+  summary             String?
+  salience            Float    @default(0.5)
+  emotionalWeight     Float    @default(0) @map("emotional_weight")
+  entities            String   @default("{}")
+  embedding           String?
+  embeddingModel      String?  @map("embedding_model")
+  embeddingDimensions Int?     @map("embedding_dimensions")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
 
@@ -410,16 +350,16 @@ model Memory {
 }
 
 model Embedding {
-  id         String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId    String   @map("story_id") @db.Uuid
+  id         String   @id @default(cuid())
+  storyId    String   @map("story_id")
   ownerType  String   @map("owner_type")
-  ownerId    String   @map("owner_id") @db.Uuid
+  ownerId    String   @map("owner_id")
   model      String
   dimensions Int
   chunkText  String   @map("chunk_text")
-  embedding  Unsupported("vector")?
-  metadata   Json     @default("{}")
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  embedding  String
+  metadata   String   @default("{}")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
 
@@ -429,19 +369,19 @@ model Embedding {
 }
 
 model ContinuityIssue {
-  id              String             @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId          String             @map("story_id") @db.Uuid
-  sceneId          String?            @map("scene_id") @db.Uuid
-  chapterId        String?            @map("chapter_id") @db.Uuid
-  generationRunId  String?            @map("generation_run_id") @db.Uuid
-  severity         ContinuitySeverity
-  category         String
-  description      String
-  evidence         Json               @default("{}")
-  confidence       Float              @default(0.5)
-  status           ContinuityStatus   @default(OPEN)
-  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id             String   @id @default(cuid())
+  storyId         String   @map("story_id")
+  sceneId         String?  @map("scene_id")
+  chapterId       String?  @map("chapter_id")
+  generationRunId String?  @map("generation_run_id")
+  severity        String
+  category        String
+  description     String
+  evidence        String   @default("{}")
+  confidence      Float    @default(0.5)
+  status          String   @default("OPEN")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   story         Story          @relation(fields: [storyId], references: [id], onDelete: Cascade)
   scene         Scene?         @relation(fields: [sceneId], references: [id], onDelete: SetNull)
@@ -456,14 +396,14 @@ model ContinuityIssue {
 }
 
 model RetrievalLog {
-  id              String   @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId          String   @map("story_id") @db.Uuid
-  generationRunId  String?  @map("generation_run_id") @db.Uuid
-  query            String
-  filters          Json     @default("{}")
-  results          Json     @default("[]")
-  tokenBudget      Int      @default(0) @map("token_budget")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id             String   @id @default(cuid())
+  storyId         String   @map("story_id")
+  generationRunId String?  @map("generation_run_id")
+  query           String
+  filters         String   @default("{}")
+  results         String   @default("[]")
+  tokenBudget     Int      @default(0) @map("token_budget")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   story         Story          @relation(fields: [storyId], references: [id], onDelete: Cascade)
   generationRun GenerationRun? @relation(fields: [generationRunId], references: [id], onDelete: SetNull)
@@ -474,17 +414,20 @@ model RetrievalLog {
 }
 
 model GenerationRun {
-  id          String           @id @default(dbgenerated("extensions.gen_random_uuid()")) @db.Uuid
-  storyId     String           @map("story_id") @db.Uuid
-  type        String
-  status      GenerationStatus @default(QUEUED)
-  input       Json             @default("{}")
-  prompt      String?
-  output      String?
-  model       String
-  error       String?
-  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id               String   @id @default(cuid())
+  storyId          String   @map("story_id")
+  type             String
+  status           String   @default("QUEUED")
+  input            String   @default("{}")
+  prompt           String?
+  output           String?
+  model            String
+  promptTokens     Int?     @map("prompt_tokens")
+  completionTokens Int?     @map("completion_tokens")
+  totalTokens      Int?     @map("total_tokens")
+  error            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   story            Story             @relation(fields: [storyId], references: [id], onDelete: Cascade)
   retrievalLogs    RetrievalLog[]
@@ -494,4 +437,3 @@ model GenerationRun {
   @@index([status])
   @@map("generation_runs")
 }
-

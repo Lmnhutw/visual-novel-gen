@@ -2,27 +2,25 @@ export type ModelConfig = {
   baseUrl: string;
   generationModel: string;
   embeddingModel: string;
-  embeddingDimensions: number;
   generationDefaults: {
     temperature: number;
     topP: number;
-    repeatPenalty: number;
-    contextTokens: number;
+    maxTokens: number;
   };
 };
 
 export function getModelConfig(): ModelConfig {
   return {
-    baseUrl: process.env.OLLAMA_BASE_URL ?? "http://localhost:11434",
+    baseUrl: process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1",
     generationModel:
-      process.env.OLLAMA_GENERATION_MODEL ?? "qwen2.5:7b-instruct",
-    embeddingModel: process.env.OLLAMA_EMBEDDING_MODEL ?? "embeddinggemma",
-    embeddingDimensions: Number(process.env.EMBEDDING_DIMENSIONS ?? 768),
+      process.env.OPENROUTER_GENERATION_MODEL ??
+      "qwen/qwen-2.5-72b-instruct",
+    embeddingModel:
+      process.env.OPENROUTER_EMBEDDING_MODEL ?? "openai/text-embedding-3-small",
     generationDefaults: {
       temperature: 0.75,
       topP: 0.9,
-      repeatPenalty: 1.08,
-      contextTokens: 32768,
+      maxTokens: 4000,
     },
   };
 }

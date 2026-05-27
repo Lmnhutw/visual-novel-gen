@@ -1,7 +1,19 @@
-import type { CharacterRole, CharacterStatus } from "@prisma/client";
-
-import { optionalPrismaJson, toPrismaJson } from "@/lib/db/json";
+import { optionalJsonString, toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
+
+type CharacterRole =
+  | "PROTAGONIST"
+  | "ANTAGONIST"
+  | "SUPPORTING"
+  | "BACKGROUND";
+
+type CharacterStatus =
+  | "ACTIVE"
+  | "ABSENT"
+  | "INJURED"
+  | "UNCONSCIOUS"
+  | "DEAD"
+  | "UNKNOWN";
 
 export type CreateCharacterInput = {
   storyId: string;
@@ -27,12 +39,12 @@ export async function createCharacter(input: CreateCharacterInput) {
       ageConfirmed: input.ageConfirmed ?? false,
       profile: {
         create: {
-          personality: toPrismaJson(input.personality),
+          personality: toJsonString(input.personality),
           voiceRules: input.voiceRules,
           backstory: input.backstory,
-          appearance: toPrismaJson(input.appearance),
-          boundaries: toPrismaJson(input.boundaries),
-          motivations: toPrismaJson(input.motivations),
+          appearance: toJsonString(input.appearance),
+          boundaries: toJsonString(input.boundaries),
+          motivations: toJsonString(input.motivations),
         },
       },
     },
@@ -54,20 +66,20 @@ export async function updateCharacter(
       profile: {
         upsert: {
           create: {
-            personality: toPrismaJson(input.personality),
+            personality: toJsonString(input.personality),
             voiceRules: input.voiceRules,
             backstory: input.backstory,
-            appearance: toPrismaJson(input.appearance),
-            boundaries: toPrismaJson(input.boundaries),
-            motivations: toPrismaJson(input.motivations),
+            appearance: toJsonString(input.appearance),
+            boundaries: toJsonString(input.boundaries),
+            motivations: toJsonString(input.motivations),
           },
           update: {
-            personality: optionalPrismaJson(input.personality),
+            personality: optionalJsonString(input.personality),
             voiceRules: input.voiceRules,
             backstory: input.backstory,
-            appearance: optionalPrismaJson(input.appearance),
-            boundaries: optionalPrismaJson(input.boundaries),
-            motivations: optionalPrismaJson(input.motivations),
+            appearance: optionalJsonString(input.appearance),
+            boundaries: optionalJsonString(input.boundaries),
+            motivations: optionalJsonString(input.motivations),
           },
         },
       },
@@ -91,9 +103,9 @@ export async function updateCharacterState(input: {
       chapterId: input.chapterId,
       sceneId: input.sceneId,
       location: input.location,
-      emotionalState: toPrismaJson(input.emotionalState),
-      physicalState: toPrismaJson(input.physicalState),
-      goals: toPrismaJson(input.goals),
+      emotionalState: toJsonString(input.emotionalState),
+      physicalState: toJsonString(input.physicalState),
+      goals: toJsonString(input.goals),
     },
   });
 }

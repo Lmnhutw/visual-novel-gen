@@ -1,15 +1,27 @@
-import type { Prisma } from "@prisma/client";
-
-export function toPrismaJson(
-  value: unknown,
-  fallback: unknown = {},
-): Prisma.InputJsonValue {
-  return JSON.parse(JSON.stringify(value ?? fallback)) as Prisma.InputJsonValue;
+export function toJsonString(value: unknown, fallback: unknown = {}): string {
+  return JSON.stringify(value ?? fallback);
 }
 
-export function optionalPrismaJson(
-  value: unknown,
-): Prisma.InputJsonValue | undefined {
-  return value === undefined ? undefined : toPrismaJson(value);
+export function optionalJsonString(value: unknown): string | undefined {
+  return value === undefined ? undefined : toJsonString(value);
+}
+
+export function parseJsonString<T>(value: unknown, fallback: T): T {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+export function parseStringArray(value: unknown): string[] {
+  const parsed = parseJsonString<unknown>(value, []);
+  return Array.isArray(parsed)
+    ? parsed.filter((entry): entry is string => typeof entry === "string")
+    : [];
 }
 

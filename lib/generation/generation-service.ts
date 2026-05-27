@@ -1,8 +1,7 @@
-import { GenerationStatus } from "@prisma/client";
-
-import { generateText } from "@/lib/ai/ollama-client";
+import { generateText } from "@/lib/ai/openrouter-client";
 import { getModelConfig } from "@/lib/ai/model-config";
 import { checkContinuity } from "@/lib/continuity/continuity-service";
+import { toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
 import { createMemory } from "@/lib/memory/memory-service";
 import { extractMemoriesFromDraft } from "@/lib/memory/memory-extractor";
@@ -54,24 +53,29 @@ export async function generateScene(input: GenerateSceneInput) {
     data: {
       storyId: input.storyId,
       type: input.mode ?? "scene",
-      status: GenerationStatus.RUNNING,
-      input: JSON.parse(JSON.stringify(input)),
+      status: "RUNNING",
+      input: toJsonString(input),
       prompt,
       model: modelConfig.generationModel,
     },
   });
 
   try {
-    const draft = await generateText(prompt, {
+    const generation = await generateText(prompt, {
       model: modelConfig.generationModel,
-      contextTokens: modelConfig.generationDefaults.contextTokens,
+      maxTokens: input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
     });
+    const draft = generation.text;
 
     await prisma.generationRun.update({
       where: { id: run.id },
       data: {
         output: draft,
-        status: GenerationStatus.SUCCEEDED,
+        status: "SUCCEEDED",
+        model: generation.model,
+        promptTokens: generation.usage?.promptTokens,
+        completionTokens: generation.usage?.completionTokens,
+        totalTokens: generation.usage?.totalTokens,
       },
     });
 
@@ -121,7 +125,7 @@ export async function generateScene(input: GenerateSceneInput) {
     await prisma.generationRun.update({
       where: { id: run.id },
       data: {
-        status: GenerationStatus.FAILED,
+        status: "FAILED",
         error: error instanceof Error ? error.message : "Unknown generation error",
       },
     });
@@ -154,7 +158,8 @@ export async function reviseDraft(input: GenerateSceneInput & { previousDraft: s
     maturityMode: input.maturityMode,
   });
 
-  const draft = await generateText(prompt);
+  const generation = await generateText(prompt);
+  const draft = generation.text;
   const continuityWarnings = await checkContinuity({
     storyId: input.storyId,
     context,
