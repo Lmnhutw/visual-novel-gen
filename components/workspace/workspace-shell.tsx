@@ -22,8 +22,16 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import {
+  CharacterForm,
+  type CharacterFormRecord,
+} from "@/components/characters/character-form";
 import { StatusPill, type StatusTone } from "@/components/ui/status-pill";
 import { cn } from "@/lib/utils";
+import type {
+  CreateCharacterInput,
+  UpdateCharacterInput,
+} from "@/lib/validators/character.schema";
 
 type StorySettings = {
   genre: string;
@@ -55,10 +63,25 @@ type StorySummary = {
 type CharacterRecord = {
   id: string;
   name: string;
+  aliases: string[];
   role: string;
   status: string;
   ageConfirmed: boolean;
+  gender: string;
+  age: number;
+  race?: string | null;
+  species?: string | null;
+  occupation?: string | null;
+  archetypes: string[];
   profile?: {
+    personality?: unknown;
+    talents?: unknown;
+    appearance?: unknown;
+    speech?: unknown;
+    relationshipPreference?: unknown;
+    background?: unknown;
+    currentState?: unknown;
+    characterArc?: unknown;
     voiceRules: string | null;
     backstory: string | null;
   } | null;
@@ -138,13 +161,6 @@ const navItems = [
 ] as const;
 
 type WorkspaceSection = (typeof navItems)[number]["id"];
-
-const characterRoles = [
-  "PROTAGONIST",
-  "ANTAGONIST",
-  "SUPPORTING",
-  "BACKGROUND",
-] as const;
 
 const fallbackWarnings: DisplayWarning[] = [
   {
@@ -261,16 +277,12 @@ export function WorkspaceShell() {
   const [, setIsBooting] = useState(true);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
+  const [editingCharacter, setEditingCharacter] = useState<CharacterRecord | null>(
+    null,
+  );
   const [isStoryComposerOpen, setIsStoryComposerOpen] = useState(false);
   const [newStoryTitle, setNewStoryTitle] = useState("");
   const [newStoryDescription, setNewStoryDescription] = useState("");
-  const [newCharacter, setNewCharacter] = useState({
-    name: "",
-    role: "SUPPORTING",
-    ageConfirmed: true,
-    voiceRules: "",
-    backstory: "",
-  });
 
   const loadStories = useCallback(async (preferredStoryId?: string) => {
     const payload = await requestJson<{ stories: StorySummary[] }>("/api/stories");
@@ -435,46 +447,58 @@ export function WorkspaceShell() {
     }
   }
 
-  async function createCharacter() {
+  function openNewCharacterForm() {
+    setEditingCharacter(null);
+    setIsCharacterModalOpen(true);
+  }
+
+  function openEditCharacterForm(character: CharacterRecord) {
+    setEditingCharacter(character);
+    setIsCharacterModalOpen(true);
+  }
+
+  async function saveCharacter(
+    payload: CreateCharacterInput | UpdateCharacterInput,
+    mode: "create" | "edit",
+  ) {
     if (!selectedStoryId) {
       return;
     }
 
     setError("");
-    setStatus("Creating character profile...");
+    setStatus(
+      mode === "edit" ? "Updating character profile..." : "Creating character profile...",
+    );
     setIsLoading(true);
 
     try {
-      await requestJson<{ character: CharacterRecord }>("/api/characters", {
-        method: "POST",
+      const url =
+        mode === "edit" && editingCharacter?.id
+          ? `/api/characters/${editingCharacter.id}`
+          : "/api/characters";
+      const method = mode === "edit" ? "PATCH" : "POST";
+
+      await requestJson<{ character: CharacterRecord }>(url, {
+        method,
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          storyId: selectedStoryId,
-          name: newCharacter.name.trim(),
-          role: newCharacter.role,
-          status: "ACTIVE",
-          ageConfirmed: newCharacter.ageConfirmed,
-          voiceRules: newCharacter.voiceRules.trim() || undefined,
-          backstory: newCharacter.backstory.trim() || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      setNewCharacter({
-        name: "",
-        role: "SUPPORTING",
-        ageConfirmed: true,
-        voiceRules: "",
-        backstory: "",
-      });
+      setEditingCharacter(null);
       setIsCharacterModalOpen(false);
-      setStatus("Character canon updated.");
+      setStatus(
+        mode === "edit" ? "Character canon updated." : "Character canon created.",
+      );
       await refreshSelectedStory();
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
-          : "Character creation failed.",
+          : mode === "edit"
+            ? "Character update failed."
+            : "Character creation failed.",
       );
+      throw requestError;
     } finally {
       setIsLoading(false);
     }
@@ -614,7 +638,7 @@ export function WorkspaceShell() {
             className="inline-flex items-center gap-1 rounded border border-outline-variant px-2 py-1 text-xs text-primary transition hover:bg-surface-container-high disabled:opacity-50"
             disabled={!selectedStoryId}
             type="button"
-            onClick={() => setIsCharacterModalOpen(true)}
+            onClick={openNewCharacterForm}
           >
             <UserPlus className="size-3.5" />
             Add
@@ -903,7 +927,7 @@ export function WorkspaceShell() {
               className="inline-flex h-9 items-center gap-2 rounded bg-primary px-3 text-sm font-semibold text-on-primary transition hover:opacity-90 disabled:opacity-50"
               disabled={!selectedStoryId}
               type="button"
-              onClick={() => setIsCharacterModalOpen(true)}
+              onClick={openNewCharacterForm}
             >
               <UserPlus className="size-4" />
               New Character
@@ -916,7 +940,7 @@ export function WorkspaceShell() {
                 const isActive = activeCharacterIds.includes(character.id);
 
                 return (
-                  <button
+                  <article
                     key={character.id}
                     className={cn(
                       "rounded border p-4 text-left transition",
@@ -924,29 +948,52 @@ export function WorkspaceShell() {
                         ? "border-primary bg-surface-container-high"
                         : "border-outline-variant bg-surface-container-lowest hover:border-primary",
                     )}
-                    type="button"
-                    onClick={() => toggleActiveCharacter(character.id)}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded bg-primary-container text-xs font-semibold text-on-primary-container">
+                      <button
+                        className="flex size-10 shrink-0 items-center justify-center rounded bg-primary-container text-xs font-semibold text-on-primary-container"
+                        type="button"
+                        onClick={() => toggleActiveCharacter(character.id)}
+                      >
                         {initials(character.name)}
-                      </div>
+                      </button>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-sm font-semibold text-primary">
                             {character.name}
                           </h3>
                           <StatusPill>{character.role}</StatusPill>
+                          <StatusPill>{character.gender}</StatusPill>
                           {isActive ? <StatusPill tone="ok">Active</StatusPill> : null}
                         </div>
                         <p className="mt-2 line-clamp-3 text-xs leading-5 text-on-surface-variant">
-                          {character.profile?.backstory ??
-                            character.profile?.voiceRules ??
-                            "No profile notes are stored yet."}
+                          {typeof character.profile?.personality === "object" &&
+                          character.profile?.personality &&
+                          "summary" in character.profile.personality
+                            ? String(character.profile.personality.summary)
+                            : character.profile?.backstory ??
+                              character.profile?.voiceRules ??
+                              "No profile notes are stored yet."}
                         </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            className="rounded border border-outline-variant px-2.5 py-1.5 text-xs font-semibold text-primary transition hover:bg-surface-container-high"
+                            type="button"
+                            onClick={() => openEditCharacterForm(character)}
+                          >
+                            Edit bible
+                          </button>
+                          <button
+                            className="rounded border border-dashed border-outline-variant px-2.5 py-1.5 text-xs text-on-surface-variant transition hover:border-primary hover:text-primary"
+                            type="button"
+                            onClick={() => toggleActiveCharacter(character.id)}
+                          >
+                            {isActive ? "Remove from focus" : "Add to focus"}
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </button>
+                  </article>
                 );
               })
             ) : (
@@ -1415,131 +1462,17 @@ export function WorkspaceShell() {
 
       {isCharacterModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
-          <section className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded border border-outline-variant bg-surface-container-lowest">
-            <div className="flex items-center justify-between gap-3 border-b border-outline-variant bg-surface-dim px-4 py-4">
-              <h2 className="text-lg font-semibold text-primary">
-                Create Character Profile
-              </h2>
-              <button
-                aria-label="Close character form"
-                className="inline-flex size-9 items-center justify-center rounded text-on-surface-variant transition hover:bg-surface-container-high hover:text-primary"
-                type="button"
-                onClick={() => setIsCharacterModalOpen(false)}
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-            <div className="grid gap-6 overflow-y-auto p-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <div className="flex flex-col gap-5">
-                <section className="flex flex-col gap-3">
-                  <h3 className="text-xs font-semibold uppercase text-on-surface-variant">
-                    Core Identity
-                  </h3>
-                  <input
-                    className="h-10 w-full rounded border border-outline-variant bg-surface-dim px-3 text-sm outline-none transition focus:border-primary"
-                    value={newCharacter.name}
-                    onChange={(event) =>
-                      setNewCharacter((current) => ({
-                        ...current,
-                        name: event.target.value,
-                      }))
-                    }
-                    placeholder="Elias Thorne"
-                  />
-                  <select
-                    className="h-10 w-full rounded border border-outline-variant bg-surface-dim px-3 text-sm outline-none transition focus:border-primary"
-                    value={newCharacter.role}
-                    onChange={(event) =>
-                      setNewCharacter((current) => ({
-                        ...current,
-                        role: event.target.value,
-                      }))
-                    }
-                  >
-                    {characterRoles.map((role) => (
-                      <option key={role} value={role}>
-                        {role}
-                      </option>
-                    ))}
-                  </select>
-                </section>
-
-                <section className="flex flex-col gap-3">
-                  <h3 className="text-xs font-semibold uppercase text-on-surface-variant">
-                    Voice & Backstory
-                  </h3>
-                  <textarea
-                    className="min-h-24 w-full rounded border border-outline-variant bg-surface-dim px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary"
-                    value={newCharacter.voiceRules}
-                    onChange={(event) =>
-                      setNewCharacter((current) => ({
-                        ...current,
-                        voiceRules: event.target.value,
-                      }))
-                    }
-                    placeholder="Dry humor, clipped answers, avoids direct vulnerability."
-                  />
-                  <textarea
-                    className="min-h-28 w-full rounded border border-outline-variant bg-surface-dim px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary"
-                    value={newCharacter.backstory}
-                    onChange={(event) =>
-                      setNewCharacter((current) => ({
-                        ...current,
-                        backstory: event.target.value,
-                      }))
-                    }
-                    placeholder="Physical details, secrets, relationships, or narrative role."
-                  />
-                </section>
-              </div>
-
-              <aside className="flex flex-col gap-4 rounded border border-outline-variant bg-surface p-4">
-                <div className="flex h-24 items-center justify-center rounded border border-outline-variant bg-primary text-3xl font-semibold text-on-primary">
-                  {newCharacter.name ? initials(newCharacter.name) : "IN"}
-                </div>
-                <label className="flex items-center gap-2 text-sm text-on-surface-variant">
-                  <input
-                    checked={newCharacter.ageConfirmed}
-                    className="size-4 accent-[#DFD0B8]"
-                    type="checkbox"
-                    onChange={(event) =>
-                      setNewCharacter((current) => ({
-                        ...current,
-                        ageConfirmed: event.target.checked,
-                      }))
-                    }
-                  />
-                  Adult confirmation recorded
-                </label>
-                <div className="rounded border border-outline-variant bg-surface-dim p-3">
-                  <p className="text-xs leading-5 text-on-surface-variant">
-                    Character records write to the canonical database and become
-                    available to active-scene retrieval.
-                  </p>
-                </div>
-              </aside>
-            </div>
-            <div className="flex justify-end gap-3 border-t border-outline-variant px-6 py-4">
-              <button
-                className="rounded border border-outline-variant px-4 py-2 text-sm font-semibold text-primary transition hover:bg-surface-container-high"
-                type="button"
-                onClick={() => setIsCharacterModalOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition hover:opacity-90 disabled:opacity-50"
-                disabled={!selectedStoryId || !newCharacter.name.trim() || isLoading}
-                type="button"
-                onClick={() => {
-                  void createCharacter();
-                }}
-              >
-                <UserPlus className="size-4" />
-                Save Character
-              </button>
-            </div>
-          </section>
+          <CharacterForm
+            key={editingCharacter?.id ?? "new-character"}
+            character={editingCharacter as CharacterFormRecord | null}
+            isSubmitting={isLoading}
+            storyId={selectedStoryId}
+            onCancel={() => {
+              setEditingCharacter(null);
+              setIsCharacterModalOpen(false);
+            }}
+            onSubmit={saveCharacter}
+          />
         </div>
       ) : null}
     </main>
