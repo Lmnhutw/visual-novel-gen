@@ -31,6 +31,92 @@ function block(title: string, value: unknown): string {
   return `\n## ${title}\n${text}\n`;
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === "string")
+    : [];
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function compactAppearance(value: unknown): string | undefined {
+  const appearance = asRecord(value);
+  const distinctiveFeatures = stringArray(appearance.distinctiveFeatures);
+  const parts = [
+    stringValue(appearance.faceDescription),
+    stringValue(appearance.bodyType),
+    stringValue(appearance.hairColor),
+    stringValue(appearance.hairStyle),
+    stringValue(appearance.eyeColor),
+    stringValue(appearance.clothingStyle),
+    distinctiveFeatures.length
+      ? `distinctive features: ${distinctiveFeatures.join(", ")}`
+      : undefined,
+  ].filter(Boolean);
+
+  return parts.length ? parts.join("; ") : undefined;
+}
+
+function compactRelationshipPreference(
+  value: unknown,
+): Record<string, unknown> | undefined {
+  const preference = asRecord(value);
+  const compact = {
+    self: preference.self,
+    partner: preference.partner,
+    attractedToGenders: preference.attractedToGenders,
+    loveLanguages: preference.loveLanguages,
+    jealousyTolerance: preference.jealousyTolerance,
+    possessiveness: preference.possessiveness,
+    notes: preference.notes,
+  };
+  const filled = Object.fromEntries(
+    Object.entries(compact).filter(([, entry]) => entry !== undefined),
+  );
+
+  return Object.keys(filled).length ? filled : undefined;
+}
+
+export function formatCharacterPromptContext(
+  characters: GenerationContext["characters"],
+) {
+  return characters.map((character) => {
+    const profile = character.profile;
+    const personality = asRecord(profile?.personality);
+    const currentState = asRecord(profile?.currentState);
+    const latestState = character.latestState ?? {};
+
+    return {
+      id: character.id,
+      name: character.name,
+      aliases: character.aliases,
+      gender: character.gender,
+      age: character.age,
+      role: character.role,
+      status: character.status,
+      archetypes: character.archetypes,
+      personalitySummary: personality.summary,
+      keyTraits: stringArray(personality.traits),
+      appearanceSummary: compactAppearance(profile?.appearance),
+      speech: profile?.speech,
+      currentEmotionalState:
+        currentState.emotionalState ?? latestState.emotionalState,
+      currentGoals: currentState.currentGoals ?? latestState.goals,
+      relationshipPreference: compactRelationshipPreference(
+        profile?.relationshipPreference,
+      ),
+    };
+  });
+}
+
 export function buildGenerationPrompt(input: BuildGenerationPromptInput): string {
   const { context } = input;
 
@@ -41,7 +127,7 @@ export function buildGenerationPrompt(input: BuildGenerationPromptInput): string
       : "",
     block("Story", context.story),
     block("Story Settings", context.settings),
-    block("Active Characters", context.characters),
+    block("Active Characters", formatCharacterPromptContext(context.characters)),
     block("Relationships", context.relationships),
     block("Recent Timeline Events", context.recentEvents),
     block("Lore", context.lore),
@@ -55,6 +141,9 @@ Goal: ${input.goal}
 ${input.chapterNumber ? `Chapter number: ${input.chapterNumber}` : ""}
 ${input.sceneGoal ? `Scene goal: ${input.sceneGoal}` : ""}
 ${input.povCharacterId ? `Preferred POV character id: ${input.povCharacterId}` : ""}
+
+# Romance Continuity
+Do not infer cheating solely from multiple_people, open_to_multiple, or okay_with_multiple preferences. Treat non-exclusive dynamics as valid when they are consensual, transparent, and emotionally respectful. Cheating, betrayal, secrecy, manipulation, coercion, and dishonesty require explicit support from profile, relationship, or story state.
 
 # Output
 Return polished prose only. Do not explain the context. Preserve canon and character voice.`,
@@ -112,13 +201,14 @@ export function buildContinuityReviewPrompt(input: {
   return `${JSON_ONLY_RULE}
 
 Compare the draft against canon context and identify continuity issues.
+Relationship preference self and partner fields are independent. Do not flag consensual non-exclusive dynamics as cheating unless secrecy, betrayal, coercion, manipulation, or dishonesty is explicitly represented in canon or the draft.
 
 Return:
 {
   "issues": [
     {
       "severity": "P0|P1|P2|P3",
-      "category": "timeline|personality|relationship|secret|lore|physical_state|emotional_state|plot_thread",
+      "category": "timeline|personality|relationship|relationship_preference|romantic_exclusivity|secret|lore|appearance|speech|physical_state|emotional_state|plot_thread",
       "description": "specific issue",
       "evidence": {},
       "confidence": 0.0

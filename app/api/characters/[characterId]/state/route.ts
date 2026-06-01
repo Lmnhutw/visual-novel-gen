@@ -1,5 +1,5 @@
 import { apiError, created, readJson } from "@/lib/http/api-response";
-import { updateCharacterState } from "@/lib/characters/character-service";
+import { updateCharacterState } from "@/lib/services/character-service";
 import { updateCharacterStateSchema } from "@/lib/validation/schemas";
 
 type Context = {
@@ -20,4 +20,3 @@ export async function POST(request: Request, context: Context) {
     return apiError(error);
   }
 }
-

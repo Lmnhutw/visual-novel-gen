@@ -153,9 +153,16 @@ export async function retrieveContext(
     characters: characters.map((character) => ({
       id: character.id,
       name: character.name,
+      aliases: character.aliases,
       role: character.role,
       status: character.status,
       ageConfirmed: character.ageConfirmed,
+      gender: character.gender,
+      age: character.age,
+      race: character.race,
+      species: character.species,
+      occupation: character.occupation,
+      archetypes: character.archetypes,
       profile: character.profile
         ? {
             personality: parseJsonString(character.profile.personality, {}),
@@ -164,6 +171,15 @@ export async function retrieveContext(
             appearance: parseJsonString(character.profile.appearance, {}),
             boundaries: parseJsonString(character.profile.boundaries, {}),
             motivations: parseJsonString(character.profile.motivations, {}),
+            talents: parseJsonString(character.profile.talents, {}),
+            speech: parseJsonString(character.profile.speech, {}),
+            relationshipPreference: parseJsonString(
+              character.profile.relationshipPreference,
+              {},
+            ),
+            background: parseJsonString(character.profile.background, {}),
+            currentState: parseJsonString(character.profile.currentState, {}),
+            characterArc: parseJsonString(character.profile.characterArc, {}),
           }
         : null,
       latestState: character.states[0]

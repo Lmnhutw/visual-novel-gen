@@ -8,7 +8,7 @@ export function optionalJsonString(value: unknown): string | undefined {
 
 export function parseJsonString<T>(value: unknown, fallback: T): T {
   if (typeof value !== "string") {
-    return fallback;
+    return value === undefined || value === null ? fallback : (value as T);
   }
 
   try {
@@ -24,4 +24,3 @@ export function parseStringArray(value: unknown): string[] {
     ? parsed.filter((entry): entry is string => typeof entry === "string")
     : [];
 }
-

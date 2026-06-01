@@ -62,9 +62,16 @@ model Character {
   id           String   @id @default(cuid())
   storyId      String   @map("story_id")
   name         String
+  aliases      String[] @default([])
   role         String   @default("SUPPORTING")
   status       String   @default("ACTIVE")
   ageConfirmed Boolean  @default(false) @map("age_confirmed")
+  gender       String   @default("other")
+  age          Int      @default(18)
+  race         String?
+  species      String?
+  occupation   String?
+  archetypes   String[] @default([])
   visibility   String   @default("canon")
   metadata     String   @default("{}")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -81,21 +88,30 @@ model Character {
   memories          Memory[]
 
   @@unique([storyId, name])
+  @@index([storyId])
   @@index([storyId, status])
+  @@index([gender])
+  @@index([age])
   @@map("characters")
 }
 
 model CharacterProfile {
-  id          String   @id @default(cuid())
-  characterId String   @unique @map("character_id")
-  personality String   @default("{}")
-  voiceRules  String?  @map("voice_rules")
-  backstory   String?
-  appearance  String   @default("{}")
-  boundaries  String   @default("{}")
-  motivations String   @default("{}")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id                     String   @id @default(cuid())
+  characterId            String   @unique @map("character_id")
+  personality            Json     @default("{}")
+  voiceRules             String?  @map("voice_rules")
+  backstory              String?
+  appearance             Json?
+  boundaries             Json?
+  motivations            Json?
+  talents                Json?
+  speech                 Json?
+  relationshipPreference Json?    @map("relationship_preference")
+  background             Json?
+  currentState           Json?    @map("current_state")
+  characterArc           Json?    @map("character_arc")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
 
   character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 

@@ -2,7 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { runRuleBasedContinuityChecks } from "@/lib/continuity/rule-checks";
-import { buildGenerationPrompt } from "@/lib/prompts/prompt-builder";
+import {
+  buildGenerationPrompt,
+  formatCharacterPromptContext,
+} from "@/lib/prompts/prompt-builder";
 import type { GenerationContext } from "@/lib/retrieval/types";
 
 const context: GenerationContext = {
@@ -12,9 +15,24 @@ const context: GenerationContext = {
     {
       id: "char_1",
       name: "Ari",
+      aliases: [],
       role: "PROTAGONIST",
       status: "DEAD",
       ageConfirmed: true,
+      gender: "female",
+      age: 25,
+      archetypes: ["guarded"],
+      profile: {
+        personality: {
+          summary: "Ari is careful and guarded.",
+          traits: ["careful", "guarded"],
+        },
+        relationshipPreference: {
+          self: "multiple_people",
+          partner: "okay_with_multiple",
+          jealousyTolerance: 20,
+        },
+      },
     },
   ],
   relationships: [],
@@ -44,6 +62,7 @@ test("prompt assembly includes retrieval context without querying the database",
   assert.match(prompt, /Test Story/);
   assert.match(prompt, /Unresolved Plot Threads/);
   assert.match(prompt, /Find the missing key/);
+  assert.match(prompt, /Romance Continuity/);
 });
 
 test("deterministic continuity checks are authoritative for impossible presence", () => {
@@ -54,4 +73,30 @@ test("deterministic continuity checks are authoritative for impossible presence"
 
   assert.equal(issues[0]?.severity, "P0");
   assert.equal(issues[0]?.category, "physical_state");
+});
+
+test("character prompt context keeps profiles compact", () => {
+  const compact = formatCharacterPromptContext(context.characters);
+
+  assert.equal(compact[0]?.name, "Ari");
+  assert.equal(compact[0]?.personalitySummary, "Ari is careful and guarded.");
+  assert.deepEqual(compact[0]?.keyTraits, ["careful", "guarded"]);
+  assert.deepEqual(compact[0]?.relationshipPreference, {
+    self: "multiple_people",
+    partner: "okay_with_multiple",
+    jealousyTolerance: 20,
+  });
+});
+
+test("continuity flags accepted non-exclusive dynamics framed as betrayal", () => {
+  const issues = runRuleBasedContinuityChecks({
+    context: {
+      ...context,
+      characters: [{ ...context.characters[0]!, status: "ACTIVE" }],
+    },
+    draft:
+      "Ari discussed their open relationship, but everyone called it cheating and betrayal.",
+  });
+
+  assert.equal(issues[0]?.category, "romantic_exclusivity");
 });

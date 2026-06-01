@@ -1,22 +1,14 @@
 import { z } from "zod";
+export {
+  characterRoleSchema,
+  characterStatusSchema,
+  createCharacterSchema,
+  updateCharacterSchema,
+} from "@/lib/validators/character.schema";
 
 export const uuidSchema = z.string().min(1);
 
 export const storyStatusSchema = z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]);
-export const characterRoleSchema = z.enum([
-  "PROTAGONIST",
-  "ANTAGONIST",
-  "SUPPORTING",
-  "BACKGROUND",
-]);
-export const characterStatusSchema = z.enum([
-  "ACTIVE",
-  "ABSENT",
-  "INJURED",
-  "UNCONSCIOUS",
-  "DEAD",
-  "UNKNOWN",
-]);
 export const relationshipStatusSchema = z.enum([
   "NEUTRAL",
   "ALLIED",
@@ -41,24 +33,6 @@ export const createStorySchema = z.object({
 export const updateStorySchema = createStorySchema
   .partial()
   .extend({ status: storyStatusSchema.optional() });
-
-export const createCharacterSchema = z.object({
-  storyId: uuidSchema,
-  name: z.string().min(1),
-  role: characterRoleSchema.optional(),
-  status: characterStatusSchema.optional(),
-  ageConfirmed: z.boolean().optional(),
-  personality: z.record(z.unknown()).optional(),
-  voiceRules: z.string().optional(),
-  backstory: z.string().optional(),
-  appearance: z.record(z.unknown()).optional(),
-  boundaries: z.record(z.unknown()).optional(),
-  motivations: z.record(z.unknown()).optional(),
-});
-
-export const updateCharacterSchema = createCharacterSchema
-  .omit({ storyId: true })
-  .partial();
 
 export const updateCharacterStateSchema = z.object({
   characterId: uuidSchema.optional(),

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { createCharacter } from "@/lib/characters/character-service";
+import { createCharacter } from "@/lib/services/character-service";
 import { createMemory } from "@/lib/memory/memory-service";
 import { createStory } from "@/lib/stories/story-service";
 
@@ -29,8 +29,16 @@ async function main() {
     role: "PROTAGONIST",
     status: "ACTIVE",
     ageConfirmed: true,
-    personality: { traits: ["observant", "guarded"] },
-    motivations: { current: "Learn who opened the garden gate." },
+    gender: "female",
+    age: 24,
+    archetypes: ["guarded", "intellectual"],
+    personality: {
+      summary: "Mira is observant, guarded, and driven by quiet suspicion.",
+      traits: ["observant", "guarded"],
+    },
+    currentState: {
+      currentGoals: ["Learn who opened the garden gate."],
+    },
   });
 
   await createMemory({

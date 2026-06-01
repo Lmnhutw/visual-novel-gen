@@ -1,5 +1,5 @@
 import { apiError, created, readJson } from "@/lib/http/api-response";
-import { createCharacter } from "@/lib/characters/character-service";
+import { createCharacter } from "@/lib/services/character-service";
 import { createCharacterSchema } from "@/lib/validation/schemas";
 
 export async function POST(request: Request) {
@@ -10,4 +10,3 @@ export async function POST(request: Request) {
     return apiError(error);
   }
 }
-

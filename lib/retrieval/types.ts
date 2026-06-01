@@ -27,9 +27,16 @@ export type GenerationContext = {
   characters: Array<{
     id: string;
     name: string;
+    aliases: string[];
     role: string;
     status: string;
     ageConfirmed: boolean;
+    gender: string;
+    age: number;
+    race?: string | null;
+    species?: string | null;
+    occupation?: string | null;
+    archetypes: string[];
     profile?: {
       personality?: unknown;
       voiceRules?: string | null;
@@ -37,6 +44,12 @@ export type GenerationContext = {
       appearance?: unknown;
       boundaries?: unknown;
       motivations?: unknown;
+      talents?: unknown;
+      speech?: unknown;
+      relationshipPreference?: unknown;
+      background?: unknown;
+      currentState?: unknown;
+      characterArc?: unknown;
     } | null;
     latestState?: {
       location?: string | null;

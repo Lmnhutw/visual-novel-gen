@@ -16,6 +16,7 @@
     "db:mark-initial": "tsx scripts/mark-initial-migration-applied.ts",
     "prisma:studio": "prisma studio",
     "supabase:check": "tsx scripts/check-supabase-connection.ts",
+    "db:migrate-characters": "tsx scripts/migrate-character-system.ts",
     "db:seed": "tsx scripts/seed-dev-data.ts",
     "test": "tsx --test tests/**/*.test.ts"
   },
