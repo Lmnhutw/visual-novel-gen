@@ -65,10 +65,27 @@ export async function getStory(storyId: string) {
       chapters: {
         orderBy: { number: "asc" },
       },
+      relationships: {
+        include: {
+          characterA: true,
+          characterB: true,
+        },
+        orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+      },
       continuityIssues: {
         where: { status: "OPEN" },
         orderBy: [{ severity: "asc" }, { createdAt: "desc" }],
         take: 20,
+      },
+      _count: {
+        select: {
+          chapters: true,
+          characters: true,
+          memories: true,
+          continuityIssues: true,
+          generationRuns: true,
+          retrievalLogs: true,
+        },
       },
     },
   });

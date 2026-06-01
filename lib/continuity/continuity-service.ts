@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { generateText } from "@/lib/ai/openrouter-client";
+import { generateText } from "@/lib/ai/provider";
 import { toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
 import { buildContinuityReviewPrompt } from "@/lib/prompts/prompt-builder";

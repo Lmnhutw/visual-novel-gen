@@ -41,4 +41,4 @@ These rules are mandatory for coding agents working on this local-first AI story
 - Keep OpenRouter access server-side only.
 - Use TypeScript strict mode.
 - Use Zod at API boundaries.
-- Preserve local-first SQLite workflows.
+- Preserve Supabase PostgreSQL workflows.

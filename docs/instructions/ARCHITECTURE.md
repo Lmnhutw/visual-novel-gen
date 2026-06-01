@@ -11,7 +11,7 @@ Browser
   -> Zod validation
   -> TypeScript service layer under /lib
   -> Prisma Client
-  -> SQLite file database
+  -> Supabase PostgreSQL database
   -> OpenRouter HTTPS API
 ```
 
@@ -21,11 +21,12 @@ There are no microservices, queues, containers, or local LLM inference in the MV
 
 - `lib/ai`: OpenRouter provider, model config, retries, token metadata.
 - `lib/db`: Prisma singleton and JSON helpers.
+- `lib/supabase`: Supabase browser, server, and admin clients.
 - `lib/stories`: story CRUD and workspace loading.
 - `lib/characters`: character profiles and state updates.
 - `lib/relationships`: relationship state and history.
-- `lib/memory`: memory persistence, extraction, embedding storage.
-- `lib/retrieval`: hybrid relational plus semantic retrieval.
+- `lib/memory`: memory persistence, extraction, and optional pgvector embedding storage.
+- `lib/retrieval`: relational-first retrieval with optional pgvector ranking.
 - `lib/prompts`: prompt templates and prompt assembly.
 - `lib/generation`: scene/chapter/revision workflows.
 - `lib/continuity`: rule-based and LLM-assisted continuity checks.
@@ -38,21 +39,21 @@ There are no microservices, queues, containers, or local LLM inference in the MV
 User submits scene goal
   -> /api/generation/scene
   -> validate request with Zod
-  -> retrieve structured canon from SQLite
-  -> retrieve semantic memories from stored embeddings
+  -> retrieve structured canon from Supabase PostgreSQL
+  -> retrieve ranked memories from relational, keyword, recency, salience, and optional pgvector signals
   -> build prompt
   -> call OpenRouter qwen/qwen-2.5-72b-instruct
   -> save generation run
   -> extract memories
-  -> update embeddings
+  -> optionally update embeddings only if explicitly enabled later
   -> run continuity checker
   -> return draft, context preview, warnings
 ```
 
 ## Design Decisions
 
-- SQLite is the source of truth for local use.
-- Embeddings are stored as JSON-array text in SQLite and ranked in TypeScript for the MVP.
+- Supabase PostgreSQL is the source of truth.
+- pgvector is installed for semantic memory retrieval. Embeddings remain disabled by default until explicitly configured.
 - Prisma handles relational persistence.
 - OpenRouter is abstracted so future model routing can be added without rewriting generation services.
 - Mature-story support is represented as stored consent, boundaries, adult confirmation, and relationship-state continuity.

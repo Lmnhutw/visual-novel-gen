@@ -1,4 +1,4 @@
-import { generateText } from "@/lib/ai/openrouter-client";
+import { generateText } from "@/lib/ai/provider";
 import { getModelConfig } from "@/lib/ai/model-config";
 import { checkContinuity } from "@/lib/continuity/continuity-service";
 import { toJsonString } from "@/lib/db/json";
@@ -67,6 +67,15 @@ export async function generateScene(input: GenerateSceneInput) {
     });
     const draft = generation.text;
 
+    const continuityWarnings = await checkContinuity({
+      storyId: input.storyId,
+      context,
+      draft,
+      chapterId: input.chapterId,
+      generationRunId: run.id,
+      maturityMode: input.maturityMode,
+    });
+
     await prisma.generationRun.update({
       where: { id: run.id },
       data: {
@@ -77,15 +86,6 @@ export async function generateScene(input: GenerateSceneInput) {
         completionTokens: generation.usage?.completionTokens,
         totalTokens: generation.usage?.totalTokens,
       },
-    });
-
-    const continuityWarnings = await checkContinuity({
-      storyId: input.storyId,
-      context,
-      draft,
-      chapterId: input.chapterId,
-      generationRunId: run.id,
-      maturityMode: input.maturityMode,
     });
 
     try {
@@ -107,7 +107,6 @@ export async function generateScene(input: GenerateSceneInput) {
           salience: memory.salience,
           emotionalWeight: memory.emotionalWeight,
           entities: memory.entities,
-          generateEmbedding: true,
         });
       }
     } catch {

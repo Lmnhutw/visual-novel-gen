@@ -1,5 +1,44 @@
-import { generateText } from "@/lib/ai/openrouter-client";
+import { generateText } from "@/lib/ai/provider";
 import { prisma } from "@/lib/db/prisma";
+
+export type CreateChapterInput = {
+  storyId: string;
+  number: number;
+  title: string;
+  summary?: string;
+  content?: string;
+  status?: "OUTLINE" | "DRAFT" | "COMPLETE" | "ARCHIVED";
+};
+
+export async function createChapter(input: CreateChapterInput) {
+  return prisma.chapter.create({
+    data: {
+      storyId: input.storyId,
+      number: input.number,
+      title: input.title,
+      summary: input.summary,
+      content: input.content,
+      status: input.status ?? "OUTLINE",
+      tokenCount: input.content ? Math.ceil(input.content.length / 4) : 0,
+    },
+  });
+}
+
+export async function listChapters(storyId: string) {
+  return prisma.chapter.findMany({
+    where: { storyId },
+    orderBy: { number: "asc" },
+    include: {
+      _count: {
+        select: {
+          scenes: true,
+          events: true,
+          continuityIssues: true,
+        },
+      },
+    },
+  });
+}
 
 export async function summarizeChapter(chapterId: string) {
   const chapter = await prisma.chapter.findUnique({

@@ -1,10 +1,13 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [pgvector(map: "vector")]
 }
 
 model Story {
@@ -25,6 +28,7 @@ model Story {
   events           Event[]
   loreEntries      LoreEntry[]
   secrets          Secret[]
+  plotThreads      PlotThread[]
   memories         Memory[]
   embeddings       Embedding[]
   continuityIssues ContinuityIssue[]
@@ -74,6 +78,7 @@ model Character {
   knowledgeTracking KnowledgeTracking[]
   relationshipsAsA  Relationship[]      @relation("RelationshipCharacterA")
   relationshipsAsB  Relationship[]      @relation("RelationshipCharacterB")
+  memories          Memory[]
 
   @@unique([storyId, name])
   @@index([storyId, status])
@@ -183,6 +188,7 @@ model Chapter {
   events           Event[]
   characterStates  CharacterState[]
   continuityIssues ContinuityIssue[]
+  memories         Memory[]
 
   @@unique([storyId, number])
   @@index([storyId, status])
@@ -214,6 +220,7 @@ model Scene {
   revealedSecrets     Secret[]              @relation("SecretRevealScene")
   knowledgeRecords    KnowledgeTracking[]   @relation("KnowledgeLearnedScene")
   continuityIssues    ContinuityIssue[]
+  memories            Memory[]
 
   @@unique([chapterId, number])
   @@index([storyId, startedAtStoryTime])
@@ -305,15 +312,36 @@ model Secret {
   @@map("secrets")
 }
 
+model PlotThread {
+  id             String    @id @default(cuid())
+  storyId        String    @map("story_id")
+  title          String
+  description    String?
+  status         String    @default("OPEN")
+  commitments    String    @default("[]")
+  foreshadowing  String    @default("[]")
+  resolutionNote String?   @map("resolution_note")
+  salience       Float     @default(0.6)
+  openedAt       DateTime  @default(now()) @map("opened_at")
+  resolvedAt     DateTime? @map("resolved_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([storyId, status, salience])
+  @@map("plot_threads")
+}
+
 model KnowledgeTracking {
-  id              String   @id @default(cuid())
-  secretId        String   @map("secret_id")
-  characterId     String   @map("character_id")
-  knowledgeState  String   @map("knowledge_state")
-  learnedAtSceneId String? @map("learned_at_scene_id")
-  evidence        String?
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(cuid())
+  secretId         String   @map("secret_id")
+  characterId      String   @map("character_id")
+  knowledgeState   String   @map("knowledge_state")
+  learnedAtSceneId String?  @map("learned_at_scene_id")
+  evidence         String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   secret         Secret    @relation(fields: [secretId], references: [id], onDelete: Cascade)
   character      Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
@@ -326,40 +354,49 @@ model KnowledgeTracking {
 }
 
 model Memory {
-  id                  String   @id @default(cuid())
-  storyId             String   @map("story_id")
-  sourceType          String   @map("source_type")
-  sourceId            String?  @map("source_id")
-  memoryType          String   @map("memory_type")
+  id                  String                 @id @default(cuid())
+  storyId             String                 @map("story_id")
+  characterId         String?                @map("character_id")
+  chapterId           String?                @map("chapter_id")
+  sceneId             String?                @map("scene_id")
+  sourceType          String                 @map("source_type")
+  sourceId            String?                @map("source_id")
+  memoryType          String                 @map("memory_type")
   content             String
   summary             String?
-  salience            Float    @default(0.5)
-  emotionalWeight     Float    @default(0) @map("emotional_weight")
-  entities            String   @default("{}")
-  embedding           String?
-  embeddingModel      String?  @map("embedding_model")
-  embeddingDimensions Int?     @map("embedding_dimensions")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  salience            Float                  @default(0.5)
+  emotionalWeight     Float                  @default(0) @map("emotional_weight")
+  entities            String                 @default("{}")
+  embedding           Unsupported("vector")?
+  embeddingModel      String?                @map("embedding_model")
+  embeddingDimensions Int?                   @map("embedding_dimensions")
+  createdAt           DateTime               @default(now()) @map("created_at")
+  updatedAt           DateTime               @updatedAt @map("updated_at")
 
-  story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  story     Story      @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  character Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  chapter   Chapter?   @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  scene     Scene?     @relation(fields: [sceneId], references: [id], onDelete: SetNull)
 
   @@index([storyId, memoryType, salience])
+  @@index([characterId])
+  @@index([chapterId])
+  @@index([sceneId])
   @@index([sourceType, sourceId])
   @@map("memories")
 }
 
 model Embedding {
-  id         String   @id @default(cuid())
-  storyId    String   @map("story_id")
-  ownerType  String   @map("owner_type")
-  ownerId    String   @map("owner_id")
+  id         String                @id @default(cuid())
+  storyId    String                @map("story_id")
+  ownerType  String                @map("owner_type")
+  ownerId    String                @map("owner_id")
   model      String
   dimensions Int
-  chunkText  String   @map("chunk_text")
-  embedding  String
-  metadata   String   @default("{}")
-  createdAt  DateTime @default(now()) @map("created_at")
+  chunkText  String                @map("chunk_text")
+  embedding  Unsupported("vector")
+  metadata   String                @default("{}")
+  createdAt  DateTime              @default(now()) @map("created_at")
 
   story Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
 
@@ -369,7 +406,7 @@ model Embedding {
 }
 
 model ContinuityIssue {
-  id             String   @id @default(cuid())
+  id              String   @id @default(cuid())
   storyId         String   @map("story_id")
   sceneId         String?  @map("scene_id")
   chapterId       String?  @map("chapter_id")
@@ -396,7 +433,7 @@ model ContinuityIssue {
 }
 
 model RetrievalLog {
-  id             String   @id @default(cuid())
+  id              String   @id @default(cuid())
   storyId         String   @map("story_id")
   generationRunId String?  @map("generation_run_id")
   query           String

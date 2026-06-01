@@ -10,13 +10,13 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-forest text-white hover:bg-[#264d42] focus-visible:outline-forest",
+    "bg-primary text-on-primary hover:bg-primary-container focus-visible:outline-primary",
   secondary:
-    "border border-line bg-panel text-ink hover:border-forest hover:text-forest focus-visible:outline-forest",
+    "border border-text-secondary/70 bg-transparent text-text-secondary hover:border-primary hover:text-primary focus-visible:outline-primary",
   ghost:
-    "bg-transparent text-muted hover:bg-white hover:text-ink focus-visible:outline-forest",
+    "bg-transparent text-on-surface-variant hover:bg-surface-container-high hover:text-primary focus-visible:outline-primary",
   danger:
-    "bg-accent text-white hover:bg-[#743341] focus-visible:outline-accent",
+    "bg-error-container text-error hover:bg-error-container/80 focus-visible:outline-error",
 };
 
 export function Button({
@@ -28,7 +28,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex h-9 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex h-9 items-center justify-center gap-2 rounded px-3 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
         variants[variant],
         className,
       )}
@@ -37,4 +37,3 @@ export function Button({
     />
   );
 }
-

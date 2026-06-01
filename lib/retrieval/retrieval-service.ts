@@ -28,7 +28,7 @@ export async function retrieveContext(
     ? { id: { in: input.activeCharacterIds }, storyId: input.storyId }
     : { storyId: input.storyId };
 
-  const [characters, relationships, recentEvents, lore, secrets] =
+  const [characters, relationships, recentEvents, lore, secrets, plotThreads] =
     await Promise.all([
       prisma.character.findMany({
         where: characterWhere,
@@ -81,6 +81,14 @@ export async function retrieveContext(
             orderBy: [{ salience: "desc" }, { updatedAt: "desc" }],
             take: 20,
           }),
+      prisma.plotThread.findMany({
+        where: {
+          storyId: input.storyId,
+          status: { not: "RESOLVED" },
+        },
+        orderBy: [{ salience: "desc" }, { updatedAt: "desc" }],
+        take: 20,
+      }),
     ]);
 
   let memories: RetrievedMemory[] = [];
@@ -204,6 +212,15 @@ export async function retrieveContext(
       truthStatus: secret.truthStatus,
       holderCharacterId: secret.holderCharacterId,
       knownBy: secret.knowledgeTracking.map((record) => record.characterId),
+    })),
+    plotThreads: plotThreads.map((thread) => ({
+      id: thread.id,
+      title: thread.title,
+      description: thread.description,
+      status: thread.status,
+      commitments: parseJsonString(thread.commitments, []),
+      foreshadowing: parseJsonString(thread.foreshadowing, []),
+      salience: thread.salience,
     })),
     memories,
   };

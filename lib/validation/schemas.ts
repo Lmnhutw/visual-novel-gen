@@ -109,6 +109,15 @@ export const reviseChapterSchema = generateSceneSchema.extend({
   previousDraft: z.string().min(1),
 });
 
+export const createChapterSchema = z.object({
+  storyId: uuidSchema,
+  number: z.number().int().min(1),
+  title: z.string().min(1),
+  summary: z.string().optional(),
+  content: z.string().optional(),
+  status: z.enum(["OUTLINE", "DRAFT", "COMPLETE", "ARCHIVED"]).default("OUTLINE"),
+});
+
 export const retrieveContextSchema = z.object({
   storyId: uuidSchema,
   query: z.string().optional(),
@@ -120,6 +129,9 @@ export const retrieveContextSchema = z.object({
 
 export const createMemorySchema = z.object({
   storyId: uuidSchema,
+  characterId: uuidSchema.optional(),
+  chapterId: uuidSchema.optional(),
+  sceneId: uuidSchema.optional(),
   sourceType: z.string().min(1),
   sourceId: uuidSchema.optional(),
   memoryType: z.string().min(1),
@@ -128,7 +140,7 @@ export const createMemorySchema = z.object({
   salience: z.number().min(0).max(1).optional(),
   emotionalWeight: z.number().min(0).max(1).optional(),
   entities: z.record(z.unknown()).optional(),
-  generateEmbedding: z.boolean().default(true),
+  generateEmbedding: z.boolean().default(false),
 });
 
 export const searchMemoriesSchema = z.object({

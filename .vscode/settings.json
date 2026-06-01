@@ -1,0 +1,13 @@
+{
+  "files.exclude": {
+    ".cache": true,
+    ".next": true,
+    "logs": true,
+    "tsconfig.tsbuildinfo": true
+  },
+  "search.exclude": {
+    ".cache": true,
+    ".next": true,
+    "logs": true
+  }
+}

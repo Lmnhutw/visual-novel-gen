@@ -1,6 +1,6 @@
 # Retrieval System
 
-Retrieval is hybrid: relational SQLite queries first, semantic vector ranking second.
+Retrieval is relational-first. The app uses Supabase PostgreSQL queries plus keyword, recency, salience, emotional-weight, entity-match, and optional pgvector ranking.
 
 ## Retrieval Flow
 
@@ -10,14 +10,14 @@ Retrieval is hybrid: relational SQLite queries first, semantic vector ranking se
 4. Load recent events.
 5. Load relevant lore.
 6. Load secrets and knowledge constraints.
-7. Embed the generation query with OpenRouter.
-8. Compare query embedding against stored memory embeddings in TypeScript.
+7. If embeddings are enabled, compare the query vector against stored memory vectors with pgvector.
+8. Otherwise, rank stored memories by keyword match, salience, recency, emotional weight, and entity match.
 9. Merge and rank context.
 10. Trim to token budget.
 
-## SQLite Vector Workaround
+## Vector Retrieval
 
-SQLite has no built-in vector index in this MVP. Embeddings are stored as JSON-array text and cosine similarity is computed in TypeScript. This is acceptable for personal stories under roughly 100 chapters. If memory volume grows, add `sqlite-vec` or move retrieval to a dedicated vector store later.
+Supabase PostgreSQL uses pgvector for semantic memory retrieval. Embeddings are disabled by default with `ENABLE_EMBEDDINGS=false`; when enabled, vector writes and cosine similarity search stay isolated in `lib/memory/memory-service.ts` and `lib/retrieval/vector-search.ts`.
 
 ## Token Priority
 

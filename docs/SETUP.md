@@ -1,11 +1,12 @@
 # Local Setup and Run Guide
 
-This project is a local-first AI storytelling app built with Next.js, TypeScript, Tailwind CSS, Prisma, SQLite, and OpenRouter.
+This project is an AI storytelling app built with Next.js, TypeScript, Tailwind CSS, Prisma, Supabase PostgreSQL, pgvector, and OpenRouter.
 
 ## Requirements
 
 - Node.js 18 or newer
 - npm
+- A Supabase project
 - An OpenRouter account
 - An OpenRouter API key
 
@@ -32,21 +33,30 @@ OpenRouter documentation:
 Create a `.env.local` file in the project root and use the values below:
 
 ```env
-DATABASE_URL="file:./dev.db"
+AI_PROVIDER="openrouter"
 OPENROUTER_API_KEY="sk-or-v1-your-real-key"
 OPENROUTER_BASE_URL="https://openrouter.ai/api/v1"
-OPENROUTER_GENERATION_MODEL="qwen/qwen-2.5-72b-instruct"
-OPENROUTER_EMBEDDING_MODEL="openai/text-embedding-3-small"
-OPENROUTER_HTTP_REFERER="http://localhost:3000"
-OPENROUTER_APP_TITLE="Visual Novel Gen"
-LOCAL_FIRST_MODE="true"
+GENERATION_MODEL="qwen/qwen-2.5-72b-instruct"
+ENABLE_EMBEDDINGS="false"
+
+DATABASE_URL="your-supabase-pooled-connection-string"
+DIRECT_URL="your-supabase-direct-connection-string"
+
+SUPABASE_URL="your-supabase-project-url"
+SUPABASE_ANON_KEY="your-supabase-anon-key"
+SUPABASE_SERVICE_ROLE_KEY="your-supabase-service-role-key"
+
+NEXT_PUBLIC_SUPABASE_URL="your-supabase-project-url"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
 ```
 
 Notes:
 
 - Do not put secrets in source files.
 - The OpenRouter API key is used only on the server side.
-- `DATABASE_URL="file:./dev.db"` creates a local SQLite database file.
+- `DATABASE_URL` should use the Supabase pooled connection string.
+- `DIRECT_URL` should use the Supabase direct connection string for migrations.
+- Embeddings are disabled by default; pgvector is available when embeddings are explicitly enabled later.
 
 ## 3. Install Dependencies
 
@@ -64,15 +74,15 @@ Run:
 npx.cmd prisma generate
 ```
 
-## 5. Create or Sync the Local SQLite Database
+## 5. Run Supabase Migrations
 
 Run:
 
 ```bash
-npm.cmd run prisma:push
+npm.cmd run prisma:migrate
 ```
 
-This will create or sync the local SQLite database using the current Prisma schema.
+This will apply Prisma migrations to Supabase PostgreSQL.
 
 ## 6. Run the Source Code
 
@@ -120,10 +130,10 @@ Generate Prisma client:
 npx.cmd prisma generate
 ```
 
-Sync SQLite schema:
+Run migrations:
 
 ```bash
-npm.cmd run prisma:push
+npm.cmd run prisma:migrate
 ```
 
 Run lint:
@@ -152,7 +162,7 @@ npm.cmd run start
 
 ## 9. Main Source Files
 
-- OpenRouter integration: `lib/ai/openrouter-client.ts`
+- OpenRouter integration: `lib/ai/openrouter.ts`
 - Prisma schema: `prisma/schema.prisma`
 - Generation flow: `lib/generation/generation-service.ts`
 - Retrieval flow: `lib/retrieval/retrieval-service.ts`
@@ -164,7 +174,7 @@ If Prisma is out of sync:
 
 ```bash
 npx.cmd prisma generate
-npm.cmd run prisma:push
+npm.cmd run prisma:migrate
 ```
 
 If the app builds but generation fails:
@@ -178,4 +188,3 @@ If the UI opens but generation returns an error:
 - confirm `.env.local` exists
 - confirm the server was restarted after editing env values
 - confirm the request is using a valid `storyId`
-

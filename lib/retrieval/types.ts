@@ -77,6 +77,14 @@ export type GenerationContext = {
     holderCharacterId?: string | null;
     knownBy: string[];
   }>;
+  plotThreads: Array<{
+    id: string;
+    title: string;
+    description?: string | null;
+    status: string;
+    commitments: unknown;
+    foreshadowing: unknown;
+    salience: number;
+  }>;
   memories: RetrievedMemory[];
 };
-

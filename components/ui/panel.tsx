@@ -6,11 +6,10 @@ export function Panel({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <section
       className={cn(
-        "rounded-lg border border-line bg-panel shadow-soft",
+        "rounded border border-text-secondary/20 bg-surface-container shadow-none",
         className,
       )}
       {...props}
     />
   );
 }
-

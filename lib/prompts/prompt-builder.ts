@@ -46,6 +46,7 @@ export function buildGenerationPrompt(input: BuildGenerationPromptInput): string
     block("Recent Timeline Events", context.recentEvents),
     block("Lore", context.lore),
     block("Secrets And Knowledge Constraints", context.secrets),
+    block("Unresolved Plot Threads", context.plotThreads),
     block("Retrieved Long-Term Memories", context.memories),
     input.previousDraft ? block("Previous Draft", input.previousDraft) : "",
     `# Task
@@ -131,4 +132,3 @@ ${JSON.stringify(input.context, null, 2)}
 Draft:
 ${input.draft}`;
 }
-

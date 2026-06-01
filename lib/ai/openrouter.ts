@@ -1,0 +1,118 @@
+import type {
+  AIProvider,
+  EmbedTextResult,
+  GenerateTextInput,
+  GenerateTextResult,
+} from "@/lib/ai/types";
+import { getModelConfig } from "@/lib/ai/model-config";
+import { getRequiredServerEnv } from "@/lib/security/env";
+
+type OpenRouterChatResponse = {
+  model?: string;
+  choices?: Array<{ message?: { content?: string } }>;
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+  };
+  error?: { message?: string };
+};
+
+function buildUrl(path: string): string {
+  const config = getModelConfig();
+  return `${config.openRouterBaseUrl.replace(/\/$/, "")}${path}`;
+}
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export class OpenRouterProvider implements AIProvider {
+  async generateText(input: GenerateTextInput): Promise<GenerateTextResult> {
+    const config = getModelConfig();
+    const model = input.model ?? config.generationModel;
+    const retries = input.retries ?? config.generationDefaults.retries;
+    const timeoutMs = input.timeoutMs ?? config.generationDefaults.timeoutMs;
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      try {
+        const response = await fetchWithTimeout(
+          buildUrl("/chat/completions"),
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${getRequiredServerEnv("OPENROUTER_API_KEY")}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model,
+              messages: input.messages ?? [
+                { role: "user", content: input.prompt },
+              ],
+              temperature:
+                input.temperature ?? config.generationDefaults.temperature,
+              top_p: input.topP ?? config.generationDefaults.topP,
+              max_tokens:
+                input.maxTokens ?? config.generationDefaults.maxTokens,
+              response_format: input.responseFormat,
+            }),
+          },
+          timeoutMs,
+        );
+        const data = (await response
+          .json()
+          .catch(() => ({}))) as OpenRouterChatResponse;
+
+        if (!response.ok || data.error) {
+          throw new Error(
+            data.error?.message ?? `OpenRouter generation failed: ${response.status}`,
+          );
+        }
+
+        const text = data.choices?.[0]?.message?.content;
+        if (!text) {
+          throw new Error("OpenRouter generation returned an empty response.");
+        }
+
+        return {
+          text,
+          model: data.model ?? model,
+          usage: data.usage
+            ? {
+                promptTokens: data.usage.prompt_tokens,
+                completionTokens: data.usage.completion_tokens,
+                totalTokens: data.usage.total_tokens,
+              }
+            : undefined,
+        };
+      } catch (error) {
+        lastError = error;
+        if (attempt === retries) {
+          break;
+        }
+      }
+    }
+
+    throw lastError instanceof Error
+      ? lastError
+      : new Error("OpenRouter generation failed.");
+  }
+
+  async embedText(): Promise<EmbedTextResult> {
+    throw new Error(
+      "Embeddings are disabled for this local-first MVP. Use relational, keyword, recency, and salience retrieval.",
+    );
+  }
+}

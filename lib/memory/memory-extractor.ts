@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { generateText } from "@/lib/ai/openrouter-client";
+import { generateText } from "@/lib/ai/provider";
 import { buildMemoryExtractionPrompt } from "@/lib/prompts/prompt-builder";
 
 export const ExtractedMemorySchema = z.object({

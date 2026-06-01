@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
-  title: "Visual Novel Gen",
-  description: "Local-first AI writing workspace for long-form fiction.",
+  title: "Inkwell",
+  description: "AI storytelling workspace for canon, lore, and generation.",
 };
 
 export default function RootLayout({
@@ -18,4 +18,3 @@ export default function RootLayout({
     </html>
   );
 }
-

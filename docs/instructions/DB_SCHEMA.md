@@ -1,19 +1,20 @@
 # Database Schema
 
-The app uses SQLite through Prisma. The default database URL is:
+The app uses Supabase PostgreSQL through Prisma.
 
 ```text
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="<supabase pooled connection string>"
+DIRECT_URL="<supabase direct connection string>"
 ```
 
-## SQLite Strategy
+## Supabase PostgreSQL Strategy
 
 - Use `String` IDs with `cuid()`.
 - Use `DateTime` for timestamps.
 - Store flexible structured data as JSON text columns.
 - Serialize and parse JSON through `lib/db/json.ts`.
-- Store embeddings as JSON number-array strings in SQLite.
-- Rank vectors in TypeScript for the MVP.
+- Store embeddings in pgvector columns.
+- Use raw SQL for vector writes and cosine similarity search because Prisma treats pgvector as `Unsupported("vector")`.
 - Normalize canonical state into tables.
 - Use JSON text only for flexible attributes that do not need joins.
 
@@ -32,7 +33,7 @@ DATABASE_URL="file:./dev.db"
 - `lore_entries`: worldbuilding facts and rules.
 - `secrets`: secret truth and reveal status.
 - `knowledge_tracking`: what each character knows.
-- `memories`: durable memory records and optional embedding vector JSON text.
+- `memories`: durable memory records and optional pgvector embedding.
 - `embeddings`: generic chunk embeddings for future indexing.
 - `continuity_issues`: saved warnings and contradictions.
 - `generation_runs`: prompts, outputs, token usage, model, status.

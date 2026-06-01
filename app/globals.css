@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 * {
@@ -12,19 +12,18 @@
 
 html {
   min-height: 100%;
-  background: #f6f7f5;
+  background: #222831;
 }
 
 body {
   min-height: 100%;
   margin: 0;
-  color: #151515;
+  color: #dde3ef;
   background:
-    linear-gradient(180deg, rgba(47, 93, 80, 0.07), transparent 320px),
-    #f6f7f5;
+    #222831;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+    "Hanken Grotesk", Inter, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 button,
@@ -38,8 +37,41 @@ textarea {
   resize: vertical;
 }
 
-::selection {
-  color: #ffffff;
-  background: #8c3f4d;
+input,
+textarea,
+select {
+  color: #dde3ef;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: rgba(206, 197, 186, 0.48);
+}
+
+::selection {
+  color: #382f1f;
+  background: #fcecd3;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #48505c;
+  border-radius: 4px;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

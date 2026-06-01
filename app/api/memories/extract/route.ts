@@ -21,7 +21,6 @@ export async function POST(request: Request) {
           salience: memory.salience,
           emotionalWeight: memory.emotionalWeight,
           entities: memory.entities,
-          generateEmbedding: true,
         });
       }
     }
@@ -31,4 +30,3 @@ export async function POST(request: Request) {
     return apiError(error);
   }
 }
-

@@ -24,9 +24,9 @@ The memory system separates canonical truth from semantic recall.
 
 Transient data is not canon until a service persists it.
 
-## Embedding Rules
+## Optional Embedding Rules
 
-Embed:
+Embeddings are disabled by default. If explicitly enabled later, embed:
 
 - scene summaries
 - chapter summaries
@@ -57,4 +57,3 @@ score =
 ```
 
 High salience includes betrayal, confession, injury, death, vow, intimacy change, secret reveal, lore rule change, or unresolved plot commitment.
-
