@@ -57,9 +57,9 @@ export async function searchMemoryVectors(input: {
       "embedding_dimensions" AS "embeddingDimensions",
       "created_at" AS "createdAt",
       "updated_at" AS "updatedAt",
-      (1 - ("embedding" <=> ${vector}::vector))::float AS "similarity",
+      (1 - ("embedding" OPERATOR(extensions.<=>) ${vector}::extensions.vector))::float AS "similarity",
       (
-        ((1 - ("embedding" <=> ${vector}::vector)) * 0.72) +
+        ((1 - ("embedding" OPERATOR(extensions.<=>) ${vector}::extensions.vector)) * 0.72) +
         ("salience" * 0.18) +
         (LEAST(GREATEST("emotional_weight", 0), 1) * 0.10)
       )::float AS "finalScore"
@@ -67,7 +67,7 @@ export async function searchMemoryVectors(input: {
     WHERE "story_id" = ${input.storyId}
       AND "embedding" IS NOT NULL
       ${memoryTypeFilter}
-      AND (1 - ("embedding" <=> ${vector}::vector)) >= ${threshold}
+      AND (1 - ("embedding" OPERATOR(extensions.<=>) ${vector}::extensions.vector)) >= ${threshold}
     ORDER BY "finalScore" DESC, "created_at" DESC
     LIMIT ${limit}
   `;

@@ -53,7 +53,7 @@ User submits scene goal
 ## Design Decisions
 
 - Supabase PostgreSQL is the source of truth.
-- pgvector is installed for semantic memory retrieval. Embeddings remain disabled by default until explicitly configured.
+- pgvector is installed in the `extensions` schema for semantic memory retrieval. Embeddings remain disabled by default until explicitly configured.
 - Prisma handles relational persistence.
 - OpenRouter is abstracted so future model routing can be added without rewriting generation services.
 - Mature-story support is represented as stored consent, boundaries, adult confirmation, and relationship-state continuity.

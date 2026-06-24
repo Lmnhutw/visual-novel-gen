@@ -101,7 +101,7 @@ export async function attachMemoryEmbedding(input: {
   await prisma.$executeRaw`
     UPDATE "memories"
     SET
-      "embedding" = ${formatVectorLiteral(embedding)}::vector,
+      "embedding" = ${formatVectorLiteral(embedding)}::extensions.vector,
       "embedding_model" = ${model},
       "embedding_dimensions" = ${dimensions},
       "updated_at" = CURRENT_TIMESTAMP
@@ -161,7 +161,7 @@ export async function generateEmbeddingForText(input: {
       ${model},
       ${embedding.length},
       ${input.text},
-      ${formatVectorLiteral(embedding)}::vector,
+      ${formatVectorLiteral(embedding)}::extensions.vector,
       ${toJsonString(input.metadata)},
       CURRENT_TIMESTAMP
     )

@@ -13,7 +13,7 @@ DIRECT_URL="<supabase direct connection string>"
 - Use `DateTime` for timestamps.
 - Store flexible structured data as JSON text columns.
 - Serialize and parse JSON through `lib/db/json.ts`.
-- Store embeddings in pgvector columns.
+- Store embeddings in pgvector columns with the `vector` extension installed in the `extensions` schema.
 - Use raw SQL for vector writes and cosine similarity search because Prisma treats pgvector as `Unsupported("vector")`.
 - Normalize canonical state into tables.
 - Use JSON text only for flexible attributes that do not need joins.
