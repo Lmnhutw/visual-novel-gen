@@ -26,6 +26,32 @@ npm run prisma:generate
 npm run prisma:migrate
 ```
 
+## Docker (recommended for local development)
+
+Docker Compose starts both the Next.js app and a local PostgreSQL database with
+pgvector. This replaces the separate terminal sessions for the app and database.
+
+1. Copy `.env.example` to `.env` and add at least `OPENROUTER_API_KEY`.
+2. Start everything:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:3000`. Prisma migrations run automatically after the
+database is healthy. Source changes are mounted into the container and Next.js
+reloads them automatically.
+
+To stop the stack, press `Ctrl+C`. The database persists in the
+`postgres_data` Docker volume. To reset only the local Docker database, run:
+
+```bash
+docker compose down -v
+```
+
+Do not use the local Docker database for production data. The existing Supabase
+setup remains available when you run the app outside Docker.
+
 Check Supabase connectivity:
 
 ```bash

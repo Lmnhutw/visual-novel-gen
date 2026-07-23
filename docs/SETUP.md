@@ -10,6 +10,27 @@ This project is an AI storytelling app built with Next.js, TypeScript, Tailwind 
 - An OpenRouter account
 - An OpenRouter API key
 
+> Prefer Docker for local development if you want one command to run both the
+> application and database. It provides local PostgreSQL with pgvector, so a
+> Supabase project is not required for that workflow.
+
+## Docker Local Development
+
+1. Install Docker Desktop.
+2. Copy `.env.example` to `.env` and set `OPENROUTER_API_KEY`.
+3. Start the stack:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:3000`. The Compose stack starts PostgreSQL, waits for
+it to become healthy, applies Prisma migrations, then starts Next.js. Your
+source directory is mounted, so edits reload automatically.
+
+Use `Ctrl+C` to stop it. Run `docker compose down -v` only when you explicitly
+want to delete the local Docker database volume.
+
 ## 1. Get an OpenRouter API Key
 
 1. Sign in to OpenRouter.
