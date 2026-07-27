@@ -34,6 +34,10 @@ model Story {
   continuityIssues ContinuityIssue[]
   generationRuns   GenerationRun[]
   retrievalLogs    RetrievalLog[]
+  generationJobs   GenerationJob[]
+  draftVersions    DraftVersion[]
+  canonProposals   CanonChangeProposal[]
+  auditLogs        AuditLog[]
 
   @@index([ownerId])
   @@index([status, updatedAt])
@@ -205,6 +209,8 @@ model Chapter {
   characterStates  CharacterState[]
   continuityIssues ContinuityIssue[]
   memories         Memory[]
+  generationJobs   GenerationJob[]
+  draftVersions    DraftVersion[]
 
   @@unique([storyId, number])
   @@index([storyId, status])
@@ -237,6 +243,7 @@ model Scene {
   knowledgeRecords    KnowledgeTracking[]   @relation("KnowledgeLearnedScene")
   continuityIssues    ContinuityIssue[]
   memories            Memory[]
+  draftVersions       DraftVersion[]
 
   @@unique([chapterId, number])
   @@index([storyId, startedAtStoryTime])
@@ -485,8 +492,113 @@ model GenerationRun {
   story            Story             @relation(fields: [storyId], references: [id], onDelete: Cascade)
   retrievalLogs    RetrievalLog[]
   continuityIssues ContinuityIssue[]
+  generationJob    GenerationJob?
+  draftVersions    DraftVersion[]
 
   @@index([storyId, createdAt])
   @@index([status])
   @@map("generation_runs")
+}
+
+model GenerationJob {
+  id               String   @id @default(cuid())
+  storyId          String   @map("story_id")
+  chapterId        String?  @map("chapter_id")
+  generationRunId  String?  @unique @map("generation_run_id")
+  draftVersionId   String?  @unique @map("draft_version_id")
+  type             String
+  status           String   @default("QUEUED")
+  stage            String   @default("QUEUED")
+  progress         Int      @default(0)
+  idempotencyKey   String?  @map("idempotency_key")
+  input            String   @default("{}")
+  contextSnapshot  String?  @map("context_snapshot")
+  prompt           String?
+  errorCode        String?  @map("error_code")
+  error            String?
+  attemptCount     Int      @default(0) @map("attempt_count")
+  createdAt        DateTime @default(now()) @map("created_at")
+  startedAt        DateTime? @map("started_at")
+  completedAt      DateTime? @map("completed_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  story          Story                 @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  chapter        Chapter?              @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  generationRun  GenerationRun?        @relation(fields: [generationRunId], references: [id], onDelete: SetNull)
+  draftVersion   DraftVersion?         @relation("GenerationJobDraftVersion", fields: [draftVersionId], references: [id], onDelete: SetNull)
+  proposals      CanonChangeProposal[]
+
+  @@unique([storyId, idempotencyKey])
+  @@index([status, createdAt])
+  @@index([storyId, createdAt])
+  @@map("generation_jobs")
+}
+
+model DraftVersion {
+  id              String   @id @default(cuid())
+  storyId         String   @map("story_id")
+  chapterId       String?  @map("chapter_id")
+  sceneId         String?  @map("scene_id")
+  generationRunId String?  @map("generation_run_id")
+  versionNumber   Int      @map("version_number")
+  status          String   @default("DRAFT")
+  title           String?
+  content         String
+  metadata        String   @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  story         Story          @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  chapter       Chapter?       @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  scene         Scene?         @relation(fields: [sceneId], references: [id], onDelete: SetNull)
+  generationRun GenerationRun? @relation(fields: [generationRunId], references: [id], onDelete: SetNull)
+  job           GenerationJob? @relation("GenerationJobDraftVersion")
+
+  @@index([storyId, createdAt])
+  @@index([chapterId, versionNumber])
+  @@index([generationRunId])
+  @@map("draft_versions")
+}
+
+model CanonChangeProposal {
+  id               String   @id @default(cuid())
+  storyId          String   @map("story_id")
+  generationJobId  String   @map("generation_job_id")
+  type             String
+  targetType       String   @map("target_type")
+  targetId         String?  @map("target_id")
+  title            String
+  description      String?
+  before           String?  @map("before")
+  proposedAfter    String   @map("proposed_after")
+  confidence       Float    @default(0.5)
+  actionability    String   @default("MANUAL_REVIEW")
+  status           String   @default("PENDING")
+  reviewedAt       DateTime? @map("reviewed_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  story Story         @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  job   GenerationJob @relation(fields: [generationJobId], references: [id], onDelete: Cascade)
+
+  @@index([storyId, status, createdAt])
+  @@index([generationJobId])
+  @@map("canon_change_proposals")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  storyId   String?  @map("story_id")
+  actorId   String?  @map("actor_id")
+  action    String
+  entityType String  @map("entity_type")
+  entityId  String?  @map("entity_id")
+  metadata  String   @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  story Story? @relation(fields: [storyId], references: [id], onDelete: SetNull)
+
+  @@index([storyId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
 }

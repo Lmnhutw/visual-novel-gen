@@ -14,6 +14,7 @@ const config = [
     ignores: [
       ".next/**",
       "node_modules/**",
+      ".gitnexus/**",
       "coverage/**",
       "dist/**",
       "next-env.d.ts",

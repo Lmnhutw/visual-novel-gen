@@ -1,4 +1,5 @@
 import { apiError, ok, readJson } from "@/lib/http/api-response";
+import { assertCharacterOwnership, getRequestActor } from "@/lib/security/ownership";
 import {
   deleteCharacter,
   getCharacterById,
@@ -10,9 +11,10 @@ type Context = {
   params: Promise<{ characterId: string }>;
 };
 
-export async function GET(_request: Request, context: Context) {
+export async function GET(request: Request, context: Context) {
   try {
     const { characterId } = await context.params;
+    await assertCharacterOwnership(characterId, await getRequestActor(request));
     const character = await getCharacterById(characterId);
 
     if (!character) {
@@ -28,6 +30,7 @@ export async function GET(_request: Request, context: Context) {
 export async function PATCH(request: Request, context: Context) {
   try {
     const { characterId } = await context.params;
+    await assertCharacterOwnership(characterId, await getRequestActor(request));
     const input = updateCharacterSchema.parse(await readJson(request));
     return ok({ character: await updateCharacter(characterId, input) });
   } catch (error) {
@@ -35,9 +38,10 @@ export async function PATCH(request: Request, context: Context) {
   }
 }
 
-export async function DELETE(_request: Request, context: Context) {
+export async function DELETE(request: Request, context: Context) {
   try {
     const { characterId } = await context.params;
+    await assertCharacterOwnership(characterId, await getRequestActor(request));
     return ok(await deleteCharacter(characterId));
   } catch (error) {
     return apiError(error);

@@ -1,4 +1,5 @@
 import { apiError, ok } from "@/lib/http/api-response";
+import { assertStoryOwnership, getRequestActor } from "@/lib/security/ownership";
 import { searchMemories } from "@/lib/memory/memory-service";
 import { searchMemoriesSchema } from "@/lib/validation/schemas";
 
@@ -17,6 +18,7 @@ export async function GET(request: Request) {
         ? Number(url.searchParams.get("limit"))
         : undefined,
     });
+    await assertStoryOwnership(input.storyId, await getRequestActor(request));
 
     return ok({ memories: await searchMemories(input) });
   } catch (error) {

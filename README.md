@@ -28,8 +28,8 @@ npm run prisma:migrate
 
 ## Docker (recommended for local development)
 
-Docker Compose starts both the Next.js app and a local PostgreSQL database with
-pgvector. This replaces the separate terminal sessions for the app and database.
+Docker Compose starts the Next.js app, a local PostgreSQL database with pgvector,
+and a dedicated generation worker. This replaces the separate terminal sessions.
 
 1. Copy `.env.example` to `.env` and add at least `OPENROUTER_API_KEY`.
 2. Start everything:
@@ -116,5 +116,23 @@ Key modules:
 - `lib/retrieval/retrieval-service.ts`: canonical context assembly.
 - `lib/prompts/prompt-builder.ts`: prompt assembly from retrieved context.
 - `lib/generation/generation-service.ts`: scene and chapter generation workflow.
+- `lib/generation/generation-job-service.ts`: persisted, cancellable generation
+  jobs, versioned drafts, reviewable canon proposals, and worker execution.
 - `lib/continuity/continuity-service.ts`: deterministic and LLM-assisted continuity checks.
 - `docs/instructions/`: project rules and architecture docs.
+
+## Generation jobs and ownership
+
+Generation requests are stored first as `generation_jobs`. The worker claims a
+queued job atomically, retrieves canon context, generates a draft, records
+continuity issues, and creates reviewable canon proposals. A browser may start
+the job in local development, but production should always run the worker:
+
+```bash
+npm run generation:worker
+```
+
+Routes accept a Supabase bearer token and scope every story-bound request to
+`stories.owner_id`. Set `REQUIRE_AUTH=true` outside local development to reject
+anonymous requests. Public tables retain deny-by-default RLS; application data
+is accessed through server-side Prisma routes.

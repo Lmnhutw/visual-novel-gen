@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db/prisma";
 import { optionalJsonString, toJsonString } from "@/lib/db/json";
 
 export type CreateStoryInput = {
+  ownerId?: string;
   title: string;
   description?: string;
   genre?: string[];
@@ -15,6 +16,7 @@ export type CreateStoryInput = {
 export async function createStory(input: CreateStoryInput) {
   return prisma.story.create({
     data: {
+      ownerId: input.ownerId,
       title: input.title,
       description: input.description,
       settings: {
@@ -36,8 +38,9 @@ export async function createStory(input: CreateStoryInput) {
   });
 }
 
-export async function listStories() {
+export async function listStories(ownerId?: string | null) {
   return prisma.story.findMany({
+    where: ownerId ? { ownerId } : undefined,
     orderBy: { updatedAt: "desc" },
     include: {
       settings: true,
@@ -53,9 +56,9 @@ export async function listStories() {
   });
 }
 
-export async function getStory(storyId: string) {
-  const story = await prisma.story.findUnique({
-    where: { id: storyId },
+export async function getStory(storyId: string, ownerId?: string | null) {
+  const story = await prisma.story.findFirst({
+    where: { id: storyId, ownerId: ownerId ?? undefined },
     include: {
       settings: true,
       characters: {
@@ -100,7 +103,9 @@ export async function getStory(storyId: string) {
 export async function updateStory(
   storyId: string,
   input: Partial<CreateStoryInput> & { status?: "DRAFT" | "ACTIVE" | "ARCHIVED" },
+  ownerId?: string | null,
 ) {
+  await getStory(storyId, ownerId);
   return prisma.story.update({
     where: { id: storyId },
     data: {

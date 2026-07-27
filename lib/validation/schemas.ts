@@ -79,6 +79,16 @@ export const generateSceneSchema = z.object({
   previewOnly: z.boolean().default(false),
 });
 
+export const createGenerationJobSchema = generateSceneSchema.extend({
+  includeSecrets: z.boolean().default(false),
+  idempotencyKey: z.string().min(8).max(200).optional(),
+  type: z.enum(["scene", "chapter", "revision"]).default("scene"),
+});
+
+export const reviewCanonChangeProposalSchema = z.object({
+  decision: z.enum(["accept", "reject"]),
+});
+
 export const reviseChapterSchema = generateSceneSchema.extend({
   previousDraft: z.string().min(1),
 });

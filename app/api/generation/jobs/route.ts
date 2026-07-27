@@ -1,14 +1,16 @@
-import { createChapter, listChapters } from "@/lib/chapters/chapter-service";
+import {
+  createGenerationJob,
+  listGenerationJobs,
+} from "@/lib/generation/generation-job-service";
 import { apiError, created, ok, readJson } from "@/lib/http/api-response";
+import { createGenerationJobSchema, uuidSchema } from "@/lib/validation/schemas";
 import { assertStoryOwnership, getRequestActor } from "@/lib/security/ownership";
-import { createChapterSchema, uuidSchema } from "@/lib/validation/schemas";
 
 export async function GET(request: Request) {
   try {
-    const url = new URL(request.url);
-    const storyId = uuidSchema.parse(url.searchParams.get("storyId"));
+    const storyId = uuidSchema.parse(new URL(request.url).searchParams.get("storyId"));
     await assertStoryOwnership(storyId, await getRequestActor(request));
-    return ok({ chapters: await listChapters(storyId) });
+    return ok({ jobs: await listGenerationJobs(storyId) });
   } catch (error) {
     return apiError(error);
   }
@@ -16,9 +18,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const input = createChapterSchema.parse(await readJson(request));
+    const input = createGenerationJobSchema.parse(await readJson(request));
     await assertStoryOwnership(input.storyId, await getRequestActor(request));
-    return created({ chapter: await createChapter(input) });
+    const result = await createGenerationJob(input);
+    return created(result);
   } catch (error) {
     return apiError(error);
   }

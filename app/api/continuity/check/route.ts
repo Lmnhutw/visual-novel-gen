@@ -1,11 +1,13 @@
 import { checkContinuity } from "@/lib/continuity/continuity-service";
 import { apiError, ok, readJson } from "@/lib/http/api-response";
 import { retrieveContext } from "@/lib/retrieval/retrieval-service";
+import { assertStoryOwnership, getRequestActor } from "@/lib/security/ownership";
 import { checkContinuitySchema } from "@/lib/validation/schemas";
 
 export async function POST(request: Request) {
   try {
     const input = checkContinuitySchema.parse(await readJson(request));
+    await assertStoryOwnership(input.storyId, await getRequestActor(request));
     const context = await retrieveContext({
       storyId: input.storyId,
       query: input.query ?? input.draft.slice(0, 500),

@@ -18,7 +18,9 @@
     "supabase:check": "tsx scripts/check-supabase-connection.ts",
     "db:migrate-characters": "tsx scripts/migrate-character-system.ts",
     "db:seed": "tsx scripts/seed-dev-data.ts",
-    "test": "tsx --test tests/**/*.test.ts"
+    "generation:worker": "tsx scripts/run-generation-worker.ts",
+    "test": "tsx --test tests/**/*.test.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
