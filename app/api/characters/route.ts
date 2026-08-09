@@ -1,6 +1,6 @@
 import { apiError, created, readJson } from "@/lib/http/api-response";
 import { assertStoryOwnership, getRequestActor } from "@/lib/security/ownership";
-import { createCharacter } from "@/lib/services/character-service";
+import { createCharacter } from "@/lib/characters/character-service";
 import { createCharacterSchema } from "@/lib/validation/schemas";
 
 export async function POST(request: Request) {

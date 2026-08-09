@@ -3,7 +3,7 @@ import { assertStoryOwnership, getRequestActor } from "@/lib/security/ownership"
 import {
   createCharacter,
   listCharactersByStory,
-} from "@/lib/services/character-service";
+} from "@/lib/characters/character-service";
 import { createCharacterSchema, uuidSchema } from "@/lib/validation/schemas";
 
 type Context = {

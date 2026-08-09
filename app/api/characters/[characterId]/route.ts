@@ -4,7 +4,7 @@ import {
   deleteCharacter,
   getCharacterById,
   updateCharacter,
-} from "@/lib/services/character-service";
+} from "@/lib/characters/character-service";
 import { updateCharacterSchema } from "@/lib/validation/schemas";
 
 type Context = {

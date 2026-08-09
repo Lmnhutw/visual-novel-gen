@@ -5,7 +5,7 @@
 /app/api
 /components
 /components/ui
-/components/workspace
+/components/workspace/studio
 /lib
 /lib/ai
 /lib/db
@@ -30,7 +30,7 @@
 - Prompt construction stays in `lib/prompts`.
 - Continuity checks stay in `lib/continuity`.
 - Shared UI primitives stay in `components/ui`.
-- Feature UI stays in `components/workspace` until the app grows enough to split by feature.
+- Studio-only UI stays in `components/workspace/studio`; reusable primitives stay in `components/ui`.
 
 ## Avoid
 

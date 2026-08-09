@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { createCharacter } from "@/lib/services/character-service";
+import { createCharacter } from "@/lib/characters/character-service";
 import { createMemory } from "@/lib/memory/memory-service";
 import { createStory } from "@/lib/stories/story-service";
 

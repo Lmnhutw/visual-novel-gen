@@ -1,6 +1,6 @@
 import { apiError, created, readJson } from "@/lib/http/api-response";
 import { assertCharacterOwnership, getRequestActor } from "@/lib/security/ownership";
-import { updateCharacterState } from "@/lib/services/character-service";
+import { updateCharacterState } from "@/lib/characters/character-service";
 import { updateCharacterStateSchema } from "@/lib/validation/schemas";
 
 type Context = {

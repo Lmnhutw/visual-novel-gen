@@ -31,7 +31,8 @@ There are no microservices, queues, containers, or local LLM inference in the MV
 - `lib/generation`: scene/chapter/revision workflows.
 - `lib/continuity`: rule-based and LLM-assisted continuity checks.
 - `lib/security`: server-only key access and request guards.
-- `components`: presentation-focused UI.
+- `components/ui`: reusable presentation primitives.
+- `components/workspace/studio`: the writing workspace and its feature-specific UI.
 
 ## Request Flow
 

@@ -11,21 +11,18 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import {
-  CharacterForm,
-  type CharacterFormRecord,
-} from "@/components/characters/character-form";
+import { CharacterForm, type CharacterFormRecord } from "./character-form";
 import type {
   CreateCharacterInput,
   UpdateCharacterInput,
 } from "@/lib/validators/character.schema";
 
-import { requestJson } from "./studio/api";
-import { DraftReview } from "./studio/draft-review";
-import { GenerationStudio } from "./studio/generation-studio";
-import { CanonLedger, CastLedger, ChapterLedger, StoryLedger } from "./studio/story-ledgers";
-import type { CanonProposal, GenerationJob, StoryDetail, StorySummary, WorkspaceView } from "./studio/types";
-import { WorkspaceNavigation } from "./studio/workspace-navigation";
+import { requestJson } from "./api";
+import { DraftReview } from "./draft-review";
+import { GenerationStudio } from "./generation-studio";
+import { CanonLedger, CastLedger, ChapterLedger, StoryLedger } from "./story-ledgers";
+import type { CanonProposal, GenerationJob, StoryDetail, StorySummary, WorkspaceView } from "./types";
+import { WorkspaceNavigation } from "./workspace-navigation";
 
 const defaultGoal = "Write the next scene with a choice that shifts the relationship and creates a new consequence for the story.";
 
