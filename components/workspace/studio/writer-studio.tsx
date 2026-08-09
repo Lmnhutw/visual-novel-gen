@@ -12,6 +12,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CharacterForm, type CharacterFormRecord } from "./character-form";
+import type { GenerationContext } from "@/lib/retrieval/types";
 import type {
   CreateCharacterInput,
   UpdateCharacterInput,
@@ -39,6 +40,8 @@ export function WriterStudio() {
   const [activeCharacterIds, setActiveCharacterIds] = useState<string[]>([]);
   const [maturityMode, setMaturityMode] = useState<"safe" | "mature">("safe");
   const [includeSecrets, setIncludeSecrets] = useState(false);
+  const [contextPreview, setContextPreview] = useState<GenerationContext | null>(null);
+  const [isContextPreviewLoading, setIsContextPreviewLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("Loading workspace…");
   const [error, setError] = useState("");
@@ -205,6 +208,31 @@ export function WriterStudio() {
     } finally { setIsLoading(false); }
   }
 
+  const previewContext = useCallback(async () => {
+    if (!storyId || goal.trim().length < 10) return;
+
+    setIsContextPreviewLoading(true);
+    setError("");
+    try {
+      const result = await requestJson<{ context: GenerationContext }>("/api/retrieval/context", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          storyId,
+          query: goal,
+          activeCharacterIds,
+          includeSecrets,
+        }),
+      });
+      setContextPreview(result.context);
+      setMessage("Context preview is ready. Nothing has been sent to the model.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not preview generation context.");
+    } finally {
+      setIsContextPreviewLoading(false);
+    }
+  }, [activeCharacterIds, goal, includeSecrets, storyId]);
+
   async function cancelGeneration(jobId: string) {
     try {
       await requestJson(`/api/generation/jobs/${jobId}/cancel`, { method: "POST" });
@@ -230,7 +258,7 @@ export function WriterStudio() {
     if (storyId) await loadJobs(storyId);
   }, [loadJobs, storyId]);
 
-  const body = !story ? <EmptyWorkspace onCreate={() => setIsStoryModalOpen(true)} /> : activeView === "studio" ? <div className="space-y-5"><GenerationStudio form={{ goal, chapterId, activeCharacterIds, maturityMode, includeSecrets }} chapters={chapters} characters={story.characters} jobs={jobs} selectedJobId={selectedJobId} isSubmitting={isLoading} onFormChange={(patch) => { if (patch.goal !== undefined) setGoal(patch.goal); if (patch.chapterId !== undefined) setChapterId(patch.chapterId); if (patch.activeCharacterIds !== undefined) setActiveCharacterIds(patch.activeCharacterIds); if (patch.maturityMode !== undefined) setMaturityMode(patch.maturityMode); if (patch.includeSecrets !== undefined) setIncludeSecrets(patch.includeSecrets); }} onGenerate={startGeneration} onCancel={cancelGeneration} onSelectJob={setSelectedJobId} /><DraftReview job={selectedJob} onSaveDraft={saveDraft} onAcceptDraft={acceptDraft} onReviewProposal={reviewProposal} /></div> : activeView === "story" ? <StoryLedger story={story} stories={stories} onSelectStory={setStoryId} onNewStory={() => setIsStoryModalOpen(true)} /> : activeView === "cast" ? <CastLedger characters={story.characters} onAdd={() => setIsCharacterModalOpen(true)} /> : activeView === "chapters" ? <ChapterLedger chapters={chapters} onAdd={() => setIsChapterModalOpen(true)} /> : <CanonLedger issues={story.continuityIssues} view={activeView} />;
+  const body = !story ? <EmptyWorkspace onCreate={() => setIsStoryModalOpen(true)} /> : activeView === "studio" ? <div className="space-y-5"><GenerationStudio form={{ goal, chapterId, activeCharacterIds, maturityMode, includeSecrets }} chapters={chapters} characters={story.characters} jobs={jobs} selectedJobId={selectedJobId} isSubmitting={isLoading} contextPreview={contextPreview} isContextPreviewLoading={isContextPreviewLoading} onFormChange={(patch) => { setContextPreview(null); if (patch.goal !== undefined) setGoal(patch.goal); if (patch.chapterId !== undefined) setChapterId(patch.chapterId); if (patch.activeCharacterIds !== undefined) setActiveCharacterIds(patch.activeCharacterIds); if (patch.maturityMode !== undefined) setMaturityMode(patch.maturityMode); if (patch.includeSecrets !== undefined) setIncludeSecrets(patch.includeSecrets); }} onGenerate={startGeneration} onPreviewContext={previewContext} onCloseContextPreview={() => setContextPreview(null)} onNavigate={setActiveView} onCancel={cancelGeneration} onSelectJob={setSelectedJobId} /><DraftReview job={selectedJob} onSaveDraft={saveDraft} onAcceptDraft={acceptDraft} onReviewProposal={reviewProposal} /></div> : activeView === "story" ? <StoryLedger story={story} stories={stories} onSelectStory={setStoryId} onNewStory={() => setIsStoryModalOpen(true)} /> : activeView === "cast" ? <CastLedger characters={story.characters} onAdd={() => setIsCharacterModalOpen(true)} /> : activeView === "chapters" ? <ChapterLedger chapters={chapters} onAdd={() => setIsChapterModalOpen(true)} /> : <CanonLedger issues={story.continuityIssues} view={activeView} />;
 
   return (
     <main className="min-h-screen bg-background text-on-surface">
