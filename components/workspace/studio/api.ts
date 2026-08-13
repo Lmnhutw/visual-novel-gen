@@ -1,12 +1,55 @@
+type ApiErrorPayload = {
+  error?: string;
+  code?: string;
+  details?: unknown;
+  requestId?: string;
+};
+
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly code?: string,
+    public readonly details?: unknown,
+    public readonly requestId?: string,
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
+}
+
+export function formatRequestError(error: unknown, fallback: string): string {
+  if (error instanceof ApiRequestError) {
+    return error.requestId ? `${error.message} Request ID: ${error.requestId}` : error.message;
+  }
+  return error instanceof Error ? error.message : fallback;
+}
+
 export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
-  const payload = (await response.json()) as T & { error?: string; code?: string };
+  const payload = (await response.json().catch(() => null)) as (T & ApiErrorPayload) | null;
 
   if (!response.ok) {
-    throw new Error(payload.error ?? payload.code ?? `Request failed with ${response.status}.`);
+    throw new ApiRequestError(
+      payload?.error ?? payload?.code ?? `Request failed with ${response.status}.`,
+      response.status,
+      payload?.code,
+      payload?.details,
+      payload?.requestId ?? response.headers.get("x-request-id") ?? undefined,
+    );
   }
 
-  return payload;
+  if (payload === null) {
+    throw new ApiRequestError(
+      "The server returned an invalid JSON response.",
+      response.status,
+      "INVALID_RESPONSE",
+      undefined,
+      response.headers.get("x-request-id") ?? undefined,
+    );
+  }
+
+  return payload as T;
 }
 
 export function formatRelativeDate(value: string | null | undefined) {

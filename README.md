@@ -83,6 +83,7 @@ OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 GENERATION_MODEL=qwen/qwen-2.5-72b-instruct
 
 ENABLE_EMBEDDINGS=false
+REQUIRE_AUTH=false
 
 DATABASE_URL=
 DIRECT_URL=
@@ -125,8 +126,10 @@ Key modules:
 
 Generation requests are stored first as `generation_jobs`. The worker claims a
 queued job atomically, retrieves canon context, generates a draft, records
-continuity issues, and creates reviewable canon proposals. A browser may start
-the job in local development, but production should always run the worker:
+continuity issues, and creates reviewable canon proposals. Failed or cancelled
+jobs can be retried without creating a duplicate job, while terminal states
+cannot be overwritten by a late provider response. A browser may start the job
+in local development, but production should always run the worker:
 
 ```bash
 npm run generation:worker

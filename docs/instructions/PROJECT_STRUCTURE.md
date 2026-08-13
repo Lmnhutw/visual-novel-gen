@@ -9,6 +9,8 @@
 /lib
 /lib/ai
 /lib/db
+/lib/generation
+/lib/http
 /lib/memory
 /lib/retrieval
 /lib/prompts

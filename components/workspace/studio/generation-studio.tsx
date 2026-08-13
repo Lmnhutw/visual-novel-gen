@@ -4,6 +4,7 @@ import { AlertTriangle, BookOpen, CheckCircle2, Eye, Loader2, RefreshCw, ShieldC
 
 import { cn } from "@/lib/utils";
 import type { GenerationContext } from "@/lib/retrieval/types";
+import { isRetryableGenerationStatus } from "@/lib/generation/job-state";
 
 import { formatRelativeDate, titleCase } from "./api";
 import type { CharacterRecord, ChapterRecord, GenerationJob, WorkspaceView } from "./types";
@@ -18,7 +19,8 @@ type StudioForm = {
 
 function jobTone(status: string) {
   if (status === "READY_FOR_REVIEW") return "text-emerald-200 bg-emerald-300/10 border-emerald-300/20";
-  if (status === "FAILED" || status === "CANCELLED") return "text-rose-200 bg-rose-300/10 border-rose-300/20";
+  if (status === "FAILED") return "text-rose-200 bg-rose-300/10 border-rose-300/20";
+  if (status === "CANCELLED") return "text-amber-100 bg-amber-300/10 border-amber-300/20";
   return "text-violet-200 bg-violet-300/10 border-violet-300/20";
 }
 
@@ -37,6 +39,7 @@ export function GenerationStudio({
   onCloseContextPreview,
   onNavigate,
   onCancel,
+  onRetry,
   onSelectJob,
 }: {
   form: StudioForm;
@@ -53,10 +56,15 @@ export function GenerationStudio({
   onCloseContextPreview: () => void;
   onNavigate: (view: WorkspaceView) => void;
   onCancel: (jobId: string) => void;
+  onRetry: (jobId: string) => void;
   onSelectJob: (jobId: string) => void;
 }) {
   const activeJob = jobs.find((job) => job.id === selectedJobId);
-  const isRunning = activeJob?.status === "RUNNING" || activeJob?.status === "QUEUED";
+  const isRunning =
+    activeJob?.status === "RUNNING" ||
+    activeJob?.status === "QUEUED" ||
+    activeJob?.status === "RETRYING";
+  const isRetryable = activeJob ? isRetryableGenerationStatus(activeJob.status) : false;
   const readiness = [
     { label: "Story workspace", detail: "A story is selected.", complete: true, action: "story" as const, actionLabel: "View story" },
     { label: "Cast", detail: "Add at least one character to ground the scene.", complete: characters.length > 0, action: "cast" as const, actionLabel: "Add character" },
@@ -246,7 +254,14 @@ export function GenerationStudio({
                 {titleCase(activeJob.status)}
               </span>
             </div>
-            <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/[0.07]">
+            <div
+              aria-label="Generation progress"
+              aria-valuemax={100}
+              aria-valuemin={0}
+              aria-valuenow={activeJob.progress}
+              className="mt-5 h-2 overflow-hidden rounded-full bg-white/[0.07]"
+              role="progressbar"
+            >
               <div
                 className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
                 style={{ width: `${Math.max(activeJob.progress, isRunning ? 8 : 0)}%` }}
@@ -261,6 +276,14 @@ export function GenerationStudio({
                   onClick={() => onCancel(activeJob.id)}
                 >
                   <X className="size-3.5" /> Cancel job
+                </button>
+              ) : isRetryable ? (
+                <button
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-amber-100 transition hover:bg-amber-300/10 hover:text-amber-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  type="button"
+                  onClick={() => onRetry(activeJob.id)}
+                >
+                  <RefreshCw className="size-3.5" /> Retry job
                 </button>
               ) : null}
             </div>

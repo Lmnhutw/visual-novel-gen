@@ -59,6 +59,7 @@ OPENROUTER_API_KEY="sk-or-v1-your-real-key"
 OPENROUTER_BASE_URL="https://openrouter.ai/api/v1"
 GENERATION_MODEL="qwen/qwen-2.5-72b-instruct"
 ENABLE_EMBEDDINGS="false"
+REQUIRE_AUTH="false"
 
 DATABASE_URL="your-supabase-pooled-connection-string"
 DIRECT_URL="your-supabase-direct-connection-string"
@@ -78,6 +79,7 @@ Notes:
 - `DATABASE_URL` should use the Supabase pooled connection string.
 - `DIRECT_URL` should use the Supabase direct connection string for migrations.
 - Embeddings are disabled by default; pgvector is available when embeddings are explicitly enabled later.
+- Set `REQUIRE_AUTH="true"` outside trusted local development. Authenticated API calls must send a Supabase access token as `Authorization: Bearer <token>`.
 
 ## 3. Install Dependencies
 
@@ -112,6 +114,16 @@ Start the development server:
 ```bash
 npm.cmd run dev -- --hostname 127.0.0.1 --port 3000
 ```
+
+In another terminal, start the persisted generation worker:
+
+```bash
+npm.cmd run generation:worker
+```
+
+The UI can execute a queued job directly during local development, but deployed
+environments should keep the worker running so queued and retried jobs continue
+when no browser request is active.
 
 Then open:
 
@@ -186,6 +198,7 @@ npm.cmd run start
 - OpenRouter integration: `lib/ai/openrouter.ts`
 - Prisma schema: `prisma/schema.prisma`
 - Generation flow: `lib/generation/generation-service.ts`
+- Persisted generation jobs and retries: `lib/generation/generation-job-service.ts`
 - Retrieval flow: `lib/retrieval/retrieval-service.ts`
 - Project rules and architecture docs: `docs/instructions/`
 

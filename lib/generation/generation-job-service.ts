@@ -1,9 +1,15 @@
+import { Prisma } from "@prisma/client";
+
 import { getModelConfig } from "@/lib/ai/model-config";
 import { generateText } from "@/lib/ai/provider";
 import { checkContinuity } from "@/lib/continuity/continuity-service";
 import { parseJsonString, toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
 import { WorkflowError } from "@/lib/http/api-response";
+import {
+  isRetryableGenerationStatus,
+  isTerminalGenerationStatus,
+} from "@/lib/generation/job-state";
 import {
   extractMemoriesFromDraft,
   type MemoryExtractionResult,
@@ -24,8 +30,6 @@ export type GenerationJobInput = {
   idempotencyKey?: string;
   type?: "scene" | "chapter" | "revision";
 };
-
-const terminalStatuses = new Set(["READY_FOR_REVIEW", "FAILED", "CANCELLED"]);
 
 function proposalTitle(type: string, value: Record<string, unknown>) {
   if (type === "memory") {
@@ -106,7 +110,11 @@ async function ensureNotCancelled(jobId: string) {
     select: { status: true },
   });
 
-  if (job?.status === "CANCELLED") {
+  if (!job) {
+    throw new WorkflowError("GENERATION_JOB_NOT_FOUND", "Generation job not found.", 404);
+  }
+
+  if (job.status === "CANCELLED") {
     throw new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409);
   }
 }
@@ -117,10 +125,55 @@ async function setStage(
   progress: number,
   data: Record<string, unknown> = {},
 ) {
-  await prisma.generationJob.update({
-    where: { id: jobId },
+  const updated = await prisma.generationJob.updateMany({
+    where: { id: jobId, status: "RUNNING" },
     data: { stage, progress, ...data },
   });
+
+  if (updated.count === 0) {
+    await ensureNotCancelled(jobId);
+    throw new WorkflowError(
+      "INVALID_GENERATION_STATE",
+      "Generation is no longer running.",
+      409,
+    );
+  }
+}
+
+async function generateTextForJob(
+  jobId: string,
+  prompt: string,
+  options: { model: string; maxTokens: number },
+) {
+  const controller = new AbortController();
+  let pollInFlight = false;
+  const pollCancellation = async () => {
+    if (pollInFlight || controller.signal.aborted) return;
+    pollInFlight = true;
+    try {
+      const job = await prisma.generationJob.findUnique({
+        where: { id: jobId },
+        select: { status: true },
+      });
+      if (job?.status === "CANCELLED") {
+        controller.abort(
+          new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409),
+        );
+      }
+    } catch {
+      // Cancellation polling is best-effort; the normal stage guards still
+      // prevent terminal jobs from being revived if a poll query fails.
+    } finally {
+      pollInFlight = false;
+    }
+  };
+  const interval = setInterval(() => void pollCancellation(), 750);
+
+  try {
+    return await generateText(prompt, { ...options, signal: controller.signal });
+  } finally {
+    clearInterval(interval);
+  }
 }
 
 function proposalsFromExtraction(extraction: MemoryExtractionResult) {
@@ -189,15 +242,32 @@ export async function createGenerationJob(input: GenerationJobInput) {
     }
   }
 
-  const job = await prisma.generationJob.create({
-    data: {
-      storyId: input.storyId,
-      chapterId: input.chapterId,
-      type: input.type ?? "scene",
-      idempotencyKey: input.idempotencyKey,
-      input: toJsonString(input),
-    },
-  });
+  let job;
+  try {
+    job = await prisma.generationJob.create({
+      data: {
+        storyId: input.storyId,
+        chapterId: input.chapterId,
+        type: input.type ?? "scene",
+        idempotencyKey: input.idempotencyKey,
+        input: toJsonString(input),
+      },
+    });
+  } catch (error) {
+    if (
+      input.idempotencyKey &&
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      const existing = await prisma.generationJob.findFirst({
+        where: { storyId: input.storyId, idempotencyKey: input.idempotencyKey },
+      });
+      if (existing) {
+        return { job: existing, reused: true };
+      }
+    }
+    throw error;
+  }
 
   await prisma.auditLog.create({
     data: {
@@ -240,14 +310,71 @@ export async function listGenerationJobs(storyId: string) {
 
 export async function cancelGenerationJob(jobId: string) {
   const job = await getGenerationJob(jobId);
-  if (terminalStatuses.has(job.status)) {
+  if (isTerminalGenerationStatus(job.status)) {
     return job;
   }
 
-  return prisma.generationJob.update({
-    where: { id: jobId },
+  await prisma.generationJob.updateMany({
+    where: {
+      id: jobId,
+      status: { notIn: ["READY_FOR_REVIEW", "FAILED", "CANCELLED"] },
+    },
     data: { status: "CANCELLED", stage: "CANCELLED", completedAt: new Date() },
   });
+  return getGenerationJob(jobId);
+}
+
+export async function retryGenerationJob(jobId: string) {
+  const job = await getGenerationJob(jobId);
+  if (!isRetryableGenerationStatus(job.status)) {
+    throw new WorkflowError(
+      "GENERATION_NOT_RETRYABLE",
+      "Only failed or cancelled generation jobs can be retried.",
+      409,
+    );
+  }
+
+  const retried = await prisma.$transaction(async (tx) => {
+    const reset = await tx.generationJob.updateMany({
+      where: { id: jobId, status: job.status },
+      data: {
+        status: "RETRYING",
+        stage: "QUEUED",
+        progress: 0,
+        contextSnapshot: null,
+        prompt: null,
+        errorCode: null,
+        error: null,
+        generationRunId: null,
+        draftVersionId: null,
+        startedAt: null,
+        completedAt: null,
+      },
+    });
+    if (reset.count === 0) {
+      throw new WorkflowError(
+        "GENERATION_STATE_CHANGED",
+        "Generation status changed before it could be retried.",
+        409,
+      );
+    }
+
+    await tx.auditLog.create({
+      data: {
+        storyId: job.storyId,
+        action: "generation.job.retry_requested",
+        entityType: "generation_job",
+        entityId: jobId,
+        metadata: toJsonString({ previousStatus: job.status, attemptCount: job.attemptCount }),
+      },
+    });
+    return tx.generationJob.findUnique({ where: { id: jobId } });
+  });
+
+  if (!retried) {
+    throw new WorkflowError("GENERATION_JOB_NOT_FOUND", "Generation job not found.", 404);
+  }
+  return retried;
 }
 
 export async function executeGenerationJob(jobId: string) {
@@ -290,53 +417,75 @@ export async function executeGenerationJob(jobId: string) {
       povCharacterId: input.povCharacterId,
       maturityMode: input.maturityMode,
     });
-    const run = await prisma.generationRun.create({
-      data: {
-        storyId: input.storyId,
-        type: input.type ?? "scene",
-        status: "RUNNING",
-        input: toJsonString(input),
-        prompt,
-        model: modelConfig.generationModel,
-      },
+    const run = await prisma.$transaction(async (tx) => {
+      const createdRun = await tx.generationRun.create({
+        data: {
+          storyId: input.storyId,
+          type: input.type ?? "scene",
+          status: "RUNNING",
+          input: toJsonString(input),
+          prompt,
+          model: modelConfig.generationModel,
+        },
+      });
+      const staged = await tx.generationJob.updateMany({
+        where: { id: jobId, status: "RUNNING" },
+        data: { stage: "GENERATING", progress: 35, prompt, generationRunId: createdRun.id },
+      });
+      if (staged.count === 0) {
+        throw new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409);
+      }
+      return createdRun;
     });
-    await setStage(jobId, "GENERATING", 35, { prompt, generationRunId: run.id });
 
     await ensureNotCancelled(jobId);
-    const generation = await generateText(prompt, {
+    const generation = await generateTextForJob(jobId, prompt, {
       model: modelConfig.generationModel,
       maxTokens: input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
     });
     const draft = generation.text;
 
+    await ensureNotCancelled(jobId);
     await setStage(jobId, "SAVING_DRAFT", 62);
-    const previous = await prisma.draftVersion.aggregate({
-      where: { storyId: input.storyId, chapterId: input.chapterId },
-      _max: { versionNumber: true },
+    await prisma.$transaction(async (tx) => {
+      const previous = await tx.draftVersion.aggregate({
+        where: { storyId: input.storyId, chapterId: input.chapterId },
+        _max: { versionNumber: true },
+      });
+      const persistedDraft = await tx.draftVersion.create({
+        data: {
+          storyId: input.storyId,
+          chapterId: input.chapterId,
+          generationRunId: run.id,
+          versionNumber: (previous._max.versionNumber ?? 0) + 1,
+          title: input.sceneGoal ?? input.goal.slice(0, 80),
+          content: draft,
+          metadata: toJsonString({ generationJobId: jobId }),
+        },
+      });
+      await tx.generationRun.update({
+        where: { id: run.id },
+        data: {
+          output: draft,
+          status: "SUCCEEDED",
+          model: generation.model,
+          promptTokens: generation.usage?.promptTokens,
+          completionTokens: generation.usage?.completionTokens,
+          totalTokens: generation.usage?.totalTokens,
+        },
+      });
+      const staged = await tx.generationJob.updateMany({
+        where: { id: jobId, status: "RUNNING" },
+        data: {
+          stage: "CHECKING_CONTINUITY",
+          progress: 75,
+          draftVersionId: persistedDraft.id,
+        },
+      });
+      if (staged.count === 0) {
+        throw new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409);
+      }
     });
-    const draftVersion = await prisma.draftVersion.create({
-      data: {
-        storyId: input.storyId,
-        chapterId: input.chapterId,
-        generationRunId: run.id,
-        versionNumber: (previous._max.versionNumber ?? 0) + 1,
-        title: input.sceneGoal ?? input.goal.slice(0, 80),
-        content: draft,
-        metadata: toJsonString({ generationJobId: jobId }),
-      },
-    });
-    await prisma.generationRun.update({
-      where: { id: run.id },
-      data: {
-        output: draft,
-        status: "SUCCEEDED",
-        model: generation.model,
-        promptTokens: generation.usage?.promptTokens,
-        completionTokens: generation.usage?.completionTokens,
-        totalTokens: generation.usage?.totalTokens,
-      },
-    });
-    await setStage(jobId, "CHECKING_CONTINUITY", 75, { draftVersionId: draftVersion.id });
 
     await ensureNotCancelled(jobId);
     const continuityWarnings = await checkContinuity({
@@ -346,10 +495,33 @@ export async function executeGenerationJob(jobId: string) {
       chapterId: input.chapterId,
       generationRunId: run.id,
       maturityMode: input.maturityMode,
-      persist: true,
+      persist: false,
+    });
+    await ensureNotCancelled(jobId);
+    await prisma.$transaction(async (tx) => {
+      if (continuityWarnings.length) {
+        await tx.continuityIssue.createMany({
+          data: continuityWarnings.map((warning) => ({
+            storyId: input.storyId,
+            chapterId: input.chapterId,
+            generationRunId: run.id,
+            severity: warning.severity,
+            category: warning.category,
+            description: warning.description,
+            evidence: toJsonString(warning.evidence),
+            confidence: warning.confidence,
+          })),
+        });
+      }
+      const staged = await tx.generationJob.updateMany({
+        where: { id: jobId, status: "RUNNING" },
+        data: { stage: "EXTRACTING_CANON_PROPOSALS", progress: 88 },
+      });
+      if (staged.count === 0) {
+        throw new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409);
+      }
     });
 
-    await setStage(jobId, "EXTRACTING_CANON_PROPOSALS", 88);
     let extraction: MemoryExtractionResult | null = null;
     try {
       extraction = await extractMemoriesFromDraft({
@@ -357,6 +529,7 @@ export async function executeGenerationJob(jobId: string) {
         contextSummary: JSON.stringify({ story: context.story, characters: context.characters }),
       });
     } catch (error) {
+      await ensureNotCancelled(jobId);
       await prisma.auditLog.create({
         data: {
           storyId: input.storyId,
@@ -368,10 +541,23 @@ export async function executeGenerationJob(jobId: string) {
       });
     }
 
-    if (extraction) {
-      const proposals = proposalsFromExtraction(extraction);
+    await ensureNotCancelled(jobId);
+    const proposals = extraction ? proposalsFromExtraction(extraction) : [];
+    await prisma.$transaction(async (tx) => {
+      const completed = await tx.generationJob.updateMany({
+        where: { id: jobId, status: "RUNNING" },
+        data: {
+          status: "READY_FOR_REVIEW",
+          stage: "READY_FOR_REVIEW",
+          progress: 100,
+          completedAt: new Date(),
+        },
+      });
+      if (completed.count === 0) {
+        throw new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409);
+      }
       if (proposals.length) {
-        await prisma.canonChangeProposal.createMany({
+        await tx.canonChangeProposal.createMany({
           data: proposals.map((proposal) => ({
             storyId: input.storyId,
             generationJobId: jobId,
@@ -384,35 +570,32 @@ export async function executeGenerationJob(jobId: string) {
           })),
         });
       }
-    }
-
-    await prisma.generationJob.update({
-      where: { id: jobId },
-      data: {
-        status: "READY_FOR_REVIEW",
-        stage: "READY_FOR_REVIEW",
-        progress: 100,
-        completedAt: new Date(),
-      },
-    });
-    await prisma.auditLog.create({
-      data: {
-        storyId: input.storyId,
-        action: "generation.job.ready_for_review",
-        entityType: "generation_job",
-        entityId: jobId,
-        metadata: toJsonString({ continuityWarningCount: continuityWarnings.length }),
-      },
+      await tx.auditLog.create({
+        data: {
+          storyId: input.storyId,
+          action: "generation.job.ready_for_review",
+          entityType: "generation_job",
+          entityId: jobId,
+          metadata: toJsonString({ continuityWarningCount: continuityWarnings.length }),
+        },
+      });
     });
 
     return getGenerationJob(jobId);
   } catch (error) {
-    if (error instanceof WorkflowError && error.code === "GENERATION_CANCELLED") {
-      return cancelGenerationJob(jobId);
+    const current = await prisma.generationJob.findUnique({
+      where: { id: jobId },
+      select: { status: true },
+    });
+    if (
+      current?.status === "CANCELLED" ||
+      (error instanceof WorkflowError && error.code === "GENERATION_CANCELLED")
+    ) {
+      return getGenerationJob(jobId);
     }
 
-    await prisma.generationJob.update({
-      where: { id: jobId },
+    const failed = await prisma.generationJob.updateMany({
+      where: { id: jobId, status: "RUNNING" },
       data: {
         status: "FAILED",
         stage: "FAILED",
@@ -421,6 +604,9 @@ export async function executeGenerationJob(jobId: string) {
         completedAt: new Date(),
       },
     });
+    if (failed.count === 0) {
+      return getGenerationJob(jobId);
+    }
 
     const jobAfterFailure = await getGenerationJob(jobId);
     if (jobAfterFailure.generationRunId) {
@@ -467,17 +653,40 @@ export async function reviewCanonChangeProposal(
   }
 
   if (decision === "reject") {
-    return prisma.canonChangeProposal.update({
-      where: { id: proposalId },
-      data: { status: "REJECTED", reviewedAt: new Date() },
+    return prisma.$transaction(async (tx) => {
+      const reviewed = await tx.canonChangeProposal.update({
+        where: { id: proposalId },
+        data: { status: "REJECTED", reviewedAt: new Date() },
+      });
+      await tx.auditLog.create({
+        data: {
+          storyId: proposal.storyId,
+          action: "canon.proposal.rejected",
+          entityType: "canon_change_proposal",
+          entityId: proposalId,
+        },
+      });
+      return reviewed;
     });
   }
 
   const proposedAfter = parseJsonString<Record<string, unknown>>(proposal.proposedAfter, {});
   if (proposal.actionability !== "AUTO_APPLY") {
-    return prisma.canonChangeProposal.update({
-      where: { id: proposalId },
-      data: { status: "NEEDS_MANUAL_APPLICATION", reviewedAt: new Date() },
+    return prisma.$transaction(async (tx) => {
+      const reviewed = await tx.canonChangeProposal.update({
+        where: { id: proposalId },
+        data: { status: "NEEDS_MANUAL_APPLICATION", reviewedAt: new Date() },
+      });
+      await tx.auditLog.create({
+        data: {
+          storyId: proposal.storyId,
+          action: "canon.proposal.manual_application_requested",
+          entityType: "canon_change_proposal",
+          entityId: proposalId,
+          metadata: toJsonString({ type: proposal.type }),
+        },
+      });
+      return reviewed;
     });
   }
 
@@ -511,10 +720,20 @@ export async function reviewCanonChangeProposal(
       });
     }
 
-    return tx.canonChangeProposal.update({
+    const reviewed = await tx.canonChangeProposal.update({
       where: { id: proposalId },
       data: { status: "ACCEPTED", reviewedAt: new Date() },
     });
+    await tx.auditLog.create({
+      data: {
+        storyId: proposal.storyId,
+        action: "canon.proposal.accepted",
+        entityType: "canon_change_proposal",
+        entityId: proposalId,
+        metadata: toJsonString({ type: proposal.type, actionability: proposal.actionability }),
+      },
+    });
+    return reviewed;
   });
 }
 

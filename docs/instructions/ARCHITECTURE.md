@@ -8,6 +8,7 @@ This project is a local-first AI storytelling application for long-form fiction,
 Browser
   -> Next.js App Router UI
   -> Next.js Route Handlers under /app/api
+  -> Supabase bearer-token validation and story ownership guard
   -> Zod validation
   -> TypeScript service layer under /lib
   -> Prisma Client
@@ -15,7 +16,11 @@ Browser
   -> OpenRouter HTTPS API
 ```
 
-There are no microservices, queues, containers, or local LLM inference in the MVP. The app runs on a laptop and calls OpenRouter from server-side route handlers.
+The application is a modular monolith rather than a microservice system. It has
+a PostgreSQL-backed generation queue and a dedicated worker process, but no
+external message broker. Docker Compose packages the web app, worker, and local
+pgvector-enabled PostgreSQL for development. Model inference remains a
+server-side OpenRouter call; there is no local LLM runtime.
 
 ## Main Modules
 
@@ -28,7 +33,8 @@ There are no microservices, queues, containers, or local LLM inference in the MV
 - `lib/memory`: memory persistence, extraction, and optional pgvector embedding storage.
 - `lib/retrieval`: relational-first retrieval with optional pgvector ranking.
 - `lib/prompts`: prompt templates and prompt assembly.
-- `lib/generation`: scene/chapter/revision workflows.
+- `lib/generation`: synchronous scene/chapter/revision workflows plus persisted,
+  cancellable generation jobs, versioned drafts, and canon review.
 - `lib/continuity`: rule-based and LLM-assisted continuity checks.
 - `lib/security`: server-only key access and request guards.
 - `components/ui`: reusable presentation primitives.
@@ -38,17 +44,14 @@ There are no microservices, queues, containers, or local LLM inference in the MV
 
 ```text
 User submits scene goal
-  -> /api/generation/scene
-  -> validate request with Zod
-  -> retrieve structured canon from Supabase PostgreSQL
-  -> retrieve ranked memories from relational, keyword, recency, salience, and optional pgvector signals
-  -> build prompt
-  -> call OpenRouter qwen/qwen-2.5-72b-instruct
-  -> save generation run
-  -> extract memories
-  -> optionally update embeddings only if explicitly enabled later
-  -> run continuity checker
-  -> return draft, context preview, warnings
+  -> POST /api/generation/jobs (validate, authorize, persist QUEUED job)
+  -> worker atomically claims the job, or local UI calls /jobs/:jobId/run
+  -> retrieve structured canon and ranked memories from PostgreSQL
+  -> build prompt and call OpenRouter with cancellation propagation
+  -> transactionally save the generation run and versioned draft
+  -> run continuity checks and create reviewable canon proposals
+  -> mark the job COMPLETED, FAILED, or CANCELLED
+  -> editor reviews the draft and explicitly accepts canon changes
 ```
 
 ## Design Decisions
@@ -56,5 +59,11 @@ User submits scene goal
 - Supabase PostgreSQL is the source of truth.
 - pgvector is installed in the `extensions` schema for semantic memory retrieval. Embeddings remain disabled by default until explicitly configured.
 - Prisma handles relational persistence.
+- Generation job state is monotonic: terminal jobs cannot be revived by late
+  writes. Retry re-queues only failed or cancelled jobs and preserves audit
+  history.
+- PostgreSQL constraints enforce progress, attempt-count, version, and
+  confidence ranges. Data API roles have no direct table privileges; server
+  routes remain the application boundary.
 - OpenRouter is abstracted so future model routing can be added without rewriting generation services.
 - Mature-story support is represented as stored consent, boundaries, adult confirmation, and relationship-state continuity.

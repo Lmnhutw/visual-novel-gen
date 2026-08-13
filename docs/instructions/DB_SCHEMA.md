@@ -37,6 +37,11 @@ DIRECT_URL="<supabase direct connection string>"
 - `embeddings`: generic chunk embeddings for future indexing.
 - `continuity_issues`: saved warnings and contradictions.
 - `generation_runs`: prompts, outputs, token usage, model, status.
+- `generation_jobs`: idempotent queue state, progress, attempts, cancellation,
+  and links to persisted runs and drafts.
+- `draft_versions`: provisional generated prose with explicit acceptance state.
+- `canon_change_proposals`: reviewable changes extracted from a generated draft.
+- `audit_logs`: append-only workflow and review actions.
 
 ## Constraints
 
@@ -46,3 +51,7 @@ DIRECT_URL="<supabase direct connection string>"
 - Relationship pairs cannot target the same character.
 - Knowledge tracking is unique per secret and character.
 - Memory salience and emotional weight are clamped from `0` to `1`.
+- Generation progress stays within `0..100`; attempt counts cannot be negative.
+- Draft version numbers start at `1`; proposal confidence stays within `0..1`.
+- Data API roles do not have direct privileges on application workflow tables;
+  server-side Prisma routes enforce ownership and RLS remains defense in depth.

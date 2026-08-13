@@ -19,6 +19,11 @@ Retrieval is relational-first. The app uses Supabase PostgreSQL queries plus key
 
 Supabase PostgreSQL uses pgvector for semantic memory retrieval. Embeddings are disabled by default with `ENABLE_EMBEDDINGS=false`; when enabled, vector writes and cosine similarity search stay isolated in `lib/memory/memory-service.ts` and `lib/retrieval/vector-search.ts`.
 
+This is PostgreSQL with the pgvector extension, not a separate vector-database
+service. The current vector columns permit model-dependent dimensions, so an
+HNSW index is intentionally deferred until one embedding model, dimension, and
+distance operator are fixed and existing rows are backfilled consistently.
+
 ## Token Priority
 
 1. non-negotiable safety and canon rules

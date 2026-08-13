@@ -28,6 +28,14 @@ Agents must not automatically modify:
 ## Server-Only Rules
 
 - `OPENROUTER_API_KEY` is read only by server-side code.
-- API routes return generated text, warnings, and context previews only for local authenticated use.
-- Future multi-user mode must add auth before exposing private memory APIs.
-
+- Set `REQUIRE_AUTH=true` for any environment that is not trusted local
+  development. In that mode, each API request must carry a Supabase bearer token
+  that is validated server-side with `auth.getUser`.
+- Every story-bound route verifies `stories.owner_id`; draft, job, character,
+  relationship, memory, and proposal access resolves back to the owning story.
+- The browser never receives the service-role key or a direct Prisma connection.
+- Application tables deny direct Data API access to `anon` and `authenticated`;
+  RLS remains enabled as defense in depth while trusted server-side Prisma routes
+  form the data-access boundary.
+- API responses include a request ID for correlation, but logs and responses must
+  not include authorization headers, provider keys, or private prompts by default.

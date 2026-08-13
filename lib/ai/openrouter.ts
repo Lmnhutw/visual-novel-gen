@@ -27,14 +27,25 @@ async function fetchWithTimeout(
   url: string,
   init: RequestInit,
   timeoutMs: number,
+  parentSignal?: AbortSignal,
 ): Promise<Response> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const abortFromParent = () => controller.abort(parentSignal?.reason);
+  if (parentSignal?.aborted) {
+    abortFromParent();
+  } else {
+    parentSignal?.addEventListener("abort", abortFromParent, { once: true });
+  }
+  const timeout = setTimeout(
+    () => controller.abort(new DOMException("OpenRouter request timed out.", "TimeoutError")),
+    timeoutMs,
+  );
 
   try {
     return await fetch(url, { ...init, signal: controller.signal });
   } finally {
     clearTimeout(timeout);
+    parentSignal?.removeEventListener("abort", abortFromParent);
   }
 }
 
@@ -70,6 +81,7 @@ export class OpenRouterProvider implements AIProvider {
             }),
           },
           timeoutMs,
+          input.signal,
         );
         const data = (await response
           .json()
@@ -98,6 +110,11 @@ export class OpenRouterProvider implements AIProvider {
             : undefined,
         };
       } catch (error) {
+        if (input.signal?.aborted) {
+          throw input.signal.reason instanceof Error
+            ? input.signal.reason
+            : new Error("OpenRouter generation was cancelled.");
+        }
         lastError = error;
         if (attempt === retries) {
           break;

@@ -12,6 +12,7 @@ export type GenerateTextInput = {
   maxTokens?: number;
   retries?: number;
   timeoutMs?: number;
+  signal?: AbortSignal;
   responseFormat?: {
     type: "json_object" | "json_schema";
     json_schema?: unknown;
