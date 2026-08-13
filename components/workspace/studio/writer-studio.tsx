@@ -291,7 +291,7 @@ export function WriterStudio() {
     <main className="min-h-screen bg-background text-on-surface">
       <div className="mx-auto flex min-h-screen max-w-[1760px]">
         <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.08] bg-surface-dim/65 px-4 py-5 lg:flex">
-          <div className="flex items-center gap-3 px-2"><span className="grid size-9 place-items-center rounded-xl bg-primary text-on-primary shadow-lg shadow-primary/10"><Sparkles className="size-4" /></span><div><h1 className="text-lg font-semibold tracking-tight text-on-surface">Inkwell</h1><p className="text-[11px] font-semibold tracking-[0.14em] text-on-surface-variant">WRITING STUDIO</p></div></div>
+          <div className="flex items-center gap-3 px-2"><span className="grid size-9 place-items-center rounded-xl bg-primary text-on-primary shadow-lg shadow-primary/10"><Sparkles className="size-4" /></span><div><h1 className="text-lg font-semibold tracking-tight text-on-surface">Narrative Studio</h1><p className="text-[11px] font-semibold tracking-[0.14em] text-on-surface-variant">WRITING STUDIO</p></div></div>
           <div className="mt-9"><WorkspaceNavigation activeView={activeView} onChange={setActiveView} issueCount={story?.continuityIssues.length ?? 0} /></div>
           <div className="mt-auto rounded-xl border border-white/[0.08] bg-white/[0.035] p-3"><p className="text-xs font-semibold text-on-surface">Drafts are provisional</p><p className="mt-1 text-xs leading-5 text-on-surface-variant">Review canon proposals before they become part of the story.</p></div>
         </aside>

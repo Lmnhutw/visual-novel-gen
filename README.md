@@ -1,4 +1,4 @@
-# Visual Novel Gen
+# Narrative Studio
 
 Next.js app for visual-novel planning, retrieval, generation, memory, and continuity checks.
 

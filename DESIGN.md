@@ -2,7 +2,7 @@
 
 ## Design Direction
 
-Inkwell is a nocturnal editorial studio: graphite workspace chrome frames a warm manuscript surface, so the writer can distinguish durable story truth from provisional AI output at a glance. The visual language is restrained, tactile, and operational rather than decorative.
+Narrative Studio is a nocturnal editorial studio: graphite workspace chrome frames a warm manuscript surface, so the writer can distinguish durable story truth from provisional AI output at a glance. The visual language is restrained, tactile, and operational rather than decorative.
 
 ## Mode
 

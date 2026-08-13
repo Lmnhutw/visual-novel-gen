@@ -12,7 +12,7 @@ Primary users are solo visual-novel and long-form fiction writers who need to ho
 
 ## Product Purpose
 
-Inkwell is a local-first writing workspace that helps an author plan a story, generate a draft from deliberate scene direction, inspect the retrieved canon, and review continuity before committing new story facts.
+Narrative Studio is a local-first writing workspace that helps an author plan a story, generate a draft from deliberate scene direction, inspect the retrieved canon, and review continuity before committing new story facts.
 
 ## Positioning
 
@@ -32,7 +32,7 @@ An author creates a story workspace, builds chapters and character records, sele
 
 ## Brand Commitments
 
-- Product name: Inkwell.
+- Product name: Narrative Studio.
 - Voice: calm, editorial, direct, and writer-focused.
 - The app is a working studio, not a marketing site or generic analytics dashboard.
 

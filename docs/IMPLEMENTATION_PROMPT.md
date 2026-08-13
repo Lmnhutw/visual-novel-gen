@@ -1,11 +1,11 @@
-# Inkwell hardening implementation prompt
+# Narrative Studio hardening implementation prompt
 
 Purpose: Harden the existing full-stack writing workflow and finish the highest-value review items without replacing the current architecture.
 
 Assumptions:
 
 - The current repository is authoritative.
-- Inkwell remains a Next.js 15, React 19, TypeScript, Prisma, Supabase PostgreSQL, pgvector, and OpenRouter application.
+- Narrative Studio remains a Next.js 15, React 19, TypeScript, Prisma, Supabase PostgreSQL, pgvector, and OpenRouter application.
 - Local-first mode may run without a signed-in actor; deployments that set `REQUIRE_AUTH=true` must enforce Supabase Auth and story ownership on every API route.
 - There is no Go module or Go deployment boundary in this repository. Do not introduce Go, pgx, a second backend, or microservices in this phase. Revisit Go only when independent deployment, ownership, or scaling requirements are proven.
 - The untracked technical DOCX is user-owned and out of scope.
@@ -14,11 +14,11 @@ Final Prompt:
 
 ## Objective
 
-Finish Inkwell's recoverable editorial-generation workflow so that retries, cancellation, API failures, database exposure, and high-consequence UI actions are explicit, safe, and testable.
+Finish Narrative Studio's recoverable editorial-generation workflow so that retries, cancellation, API failures, database exposure, and high-consequence UI actions are explicit, safe, and testable.
 
 ## Context
 
-Inkwell is a local-first visual-novel writing studio. Generated prose is provisional. The writer reviews a draft and separately approves proposed canon changes. The application is a modular monolith: browser UI -> Next.js route handlers -> domain services -> Prisma -> Supabase PostgreSQL, with OpenRouter used only from server-side code.
+Narrative Studio is a local-first visual-novel writing studio. Generated prose is provisional. The writer reviews a draft and separately approves proposed canon changes. The application is a modular monolith: browser UI -> Next.js route handlers -> domain services -> Prisma -> Supabase PostgreSQL, with OpenRouter used only from server-side code.
 
 Existing implementation already includes:
 
