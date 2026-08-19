@@ -81,6 +81,7 @@ export const generateSceneSchema = z.object({
 
 export const createGenerationJobSchema = generateSceneSchema.extend({
   includeSecrets: z.boolean().default(false),
+  contextTokenBudget: z.number().int().min(1000).max(20000).default(6000),
   idempotencyKey: z.string().min(8).max(200).optional(),
   type: z.enum(["scene", "chapter", "revision"]).default("scene"),
 });
@@ -109,6 +110,7 @@ export const retrieveContextSchema = z.object({
   memoryTypes: z.array(z.string()).optional(),
   maxMemories: z.number().int().min(1).max(50).default(12),
   includeSecrets: z.boolean().default(true),
+  tokenBudget: z.number().int().min(1000).max(20000).default(6000),
 });
 
 export const createMemorySchema = z.object({

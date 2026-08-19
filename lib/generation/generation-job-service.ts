@@ -5,6 +5,7 @@ import { generateText } from "@/lib/ai/provider";
 import { checkContinuity } from "@/lib/continuity/continuity-service";
 import { parseJsonString, toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
+import { evaluateDraft } from "@/lib/evaluation/generation-evaluator";
 import { WorkflowError } from "@/lib/http/api-response";
 import {
   isRetryableGenerationStatus,
@@ -27,6 +28,7 @@ export type GenerationJobInput = {
   maturityMode?: "safe" | "mature";
   maxTokens?: number;
   includeSecrets?: boolean;
+  contextTokenBudget?: number;
   idempotencyKey?: string;
   type?: "scene" | "chapter" | "revision";
 };
@@ -64,6 +66,14 @@ async function assertPreflight(input: GenerationJobInput) {
   }
 
   const activeIds = input.activeCharacterIds ?? [];
+  if (input.maturityMode === "mature" && activeIds.length === 0) {
+    throw new WorkflowError(
+      "ACTIVE_CHARACTERS_REQUIRED",
+      "Select every character participating in a mature scene before generation.",
+      422,
+    );
+  }
+
   if (activeIds.length) {
     const activeCharacters = await prisma.character.findMany({
       where: { storyId: input.storyId, id: { in: activeIds } },
@@ -302,7 +312,19 @@ export async function getGenerationJob(jobId: string) {
 export async function listGenerationJobs(storyId: string) {
   return prisma.generationJob.findMany({
     where: { storyId },
-    include: { draftVersion: true, _count: { select: { proposals: true } } },
+    include: {
+      draftVersion: true,
+      proposals: { orderBy: { createdAt: "asc" } },
+      generationRun: {
+        select: {
+          model: true,
+          promptTokens: true,
+          completionTokens: true,
+          totalTokens: true,
+        },
+      },
+      _count: { select: { proposals: true } },
+    },
     orderBy: { createdAt: "desc" },
     take: 30,
   });
@@ -404,6 +426,7 @@ export async function executeGenerationJob(jobId: string) {
       query: input.goal,
       activeCharacterIds: input.activeCharacterIds,
       includeSecrets: input.includeSecrets ?? false,
+      tokenBudget: input.contextTokenBudget,
     });
     await setStage(jobId, "BUILDING_PROMPT", 22, {
       contextSnapshot: toJsonString(context),
@@ -437,6 +460,23 @@ export async function executeGenerationJob(jobId: string) {
       }
       return createdRun;
     });
+    await prisma.retrievalLog.create({
+      data: {
+        storyId: input.storyId,
+        generationRunId: run.id,
+        query: input.goal,
+        filters: toJsonString({
+          activeCharacterIds: input.activeCharacterIds ?? [],
+          includeSecrets: input.includeSecrets ?? false,
+        }),
+        results: toJsonString({
+          budget: context.budget,
+          characterIds: context.characters.map((character) => character.id),
+          memoryIds: context.memories.map((memory) => memory.id),
+        }),
+        tokenBudget: context.budget?.maxTokens ?? input.contextTokenBudget ?? 0,
+      },
+    });
 
     await ensureNotCancelled(jobId);
     const generation = await generateTextForJob(jobId, prompt, {
@@ -447,7 +487,7 @@ export async function executeGenerationJob(jobId: string) {
 
     await ensureNotCancelled(jobId);
     await setStage(jobId, "SAVING_DRAFT", 62);
-    await prisma.$transaction(async (tx) => {
+    const draftVersion = await prisma.$transaction(async (tx) => {
       const previous = await tx.draftVersion.aggregate({
         where: { storyId: input.storyId, chapterId: input.chapterId },
         _max: { versionNumber: true },
@@ -485,6 +525,7 @@ export async function executeGenerationJob(jobId: string) {
       if (staged.count === 0) {
         throw new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409);
       }
+      return persistedDraft;
     });
 
     await ensureNotCancelled(jobId);
@@ -521,6 +562,13 @@ export async function executeGenerationJob(jobId: string) {
         throw new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409);
       }
     });
+    const evaluation = evaluateDraft(continuityWarnings);
+    await prisma.draftVersion.update({
+      where: { id: draftVersion.id },
+      data: {
+        metadata: toJsonString({ generationJobId: jobId, evaluation }),
+      },
+    });
 
     let extraction: MemoryExtractionResult | null = null;
     try {
@@ -548,7 +596,10 @@ export async function executeGenerationJob(jobId: string) {
         where: { id: jobId, status: "RUNNING" },
         data: {
           status: "READY_FOR_REVIEW",
-          stage: "READY_FOR_REVIEW",
+          stage:
+            evaluation.decision === "pass"
+              ? "READY_FOR_REVIEW"
+              : "CONTINUITY_REVIEW_REQUIRED",
           progress: 100,
           completedAt: new Date(),
         },
@@ -576,7 +627,10 @@ export async function executeGenerationJob(jobId: string) {
           action: "generation.job.ready_for_review",
           entityType: "generation_job",
           entityId: jobId,
-          metadata: toJsonString({ continuityWarningCount: continuityWarnings.length }),
+          metadata: toJsonString({
+            continuityWarningCount: continuityWarnings.length,
+            evaluation,
+          }),
         },
       });
     });

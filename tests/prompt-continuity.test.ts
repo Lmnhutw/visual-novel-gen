@@ -32,6 +32,10 @@ const context: GenerationContext = {
           partner: "okay_with_multiple",
           jealousyTolerance: 20,
         },
+        motivations: { primary: "Protect the observatory" },
+        voiceRules: "Short sentences under pressure.",
+        boundaries: { hardLimits: ["coercion"] },
+        characterArc: { currentPhase: "denial" },
       },
     },
   ],
@@ -86,6 +90,12 @@ test("character prompt context keeps profiles compact", () => {
     partner: "okay_with_multiple",
     jealousyTolerance: 20,
   });
+  assert.deepEqual(compact[0]?.motivations, {
+    primary: "Protect the observatory",
+  });
+  assert.equal(compact[0]?.voiceRules, "Short sentences under pressure.");
+  assert.deepEqual(compact[0]?.boundaries, { hardLimits: ["coercion"] });
+  assert.deepEqual(compact[0]?.characterArc, { currentPhase: "denial" });
 });
 
 test("continuity flags accepted non-exclusive dynamics framed as betrayal", () => {

@@ -4,6 +4,7 @@ import { Check, CheckCircle2, ChevronRight, FileText, Save, Sparkles, X } from "
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import type { GenerationContext } from "@/lib/retrieval/types";
 
 import { titleCase } from "./api";
 import type { CanonProposal, GenerationJob } from "./types";
@@ -11,7 +12,7 @@ import type { CanonProposal, GenerationJob } from "./types";
 function parseContext(value: string | null | undefined) {
   if (!value) return null;
   try {
-    return JSON.parse(value) as Record<string, unknown>;
+    return JSON.parse(value) as GenerationContext;
   } catch {
     return null;
   }
@@ -142,6 +143,7 @@ export function DraftReview({
               <ContextRow label="Memories" value={Array.isArray(context.memories) ? context.memories.length : 0} />
               <ContextRow label="Open threads" value={Array.isArray(context.plotThreads) ? context.plotThreads.length : 0} />
               <ContextRow label="Secrets" value={Array.isArray(context.secrets) ? context.secrets.length : 0} />
+              {context.budget ? <ContextRow label="Estimated tokens" value={context.budget.estimatedTokens} /> : null}
             </div>
           ) : <p className="mt-3 text-sm leading-6 text-on-surface-variant">Run a generation to inspect the exact context snapshot.</p>}
         </section>

@@ -68,6 +68,7 @@ export type GenerationContext = {
     characterA: string;
     characterB: string;
     notes?: string | null;
+    boundaries?: unknown;
     recentHistory: string[];
   }>;
   recentEvents: Array<{
@@ -100,4 +101,19 @@ export type GenerationContext = {
     salience: number;
   }>;
   memories: RetrievedMemory[];
+  budget?: {
+    maxTokens: number;
+    estimatedTokens: number;
+    overBudget: boolean;
+    omitted: Record<
+      | "characters"
+      | "relationships"
+      | "secrets"
+      | "recentEvents"
+      | "plotThreads"
+      | "lore"
+      | "memories",
+      number
+    >;
+  };
 };

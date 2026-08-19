@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/db/prisma";
 import { parseJsonString, parseStringArray } from "@/lib/db/json";
 import { searchMemories } from "@/lib/memory/memory-service";
+import {
+  applyContextBudget,
+  DEFAULT_CONTEXT_TOKEN_BUDGET,
+} from "@/lib/retrieval/context-budget";
 import type { GenerationContext, RetrievedMemory } from "@/lib/retrieval/types";
 
 export type RetrieveContextInput = {
@@ -10,6 +14,7 @@ export type RetrieveContextInput = {
   memoryTypes?: string[];
   maxMemories?: number;
   includeSecrets?: boolean;
+  tokenBudget?: number;
 };
 
 export async function retrieveContext(
@@ -133,7 +138,7 @@ export async function retrieveContext(
     }
   }
 
-  return {
+  const context: Omit<GenerationContext, "budget"> = {
     story: {
       id: story.id,
       title: story.title,
@@ -207,6 +212,7 @@ export async function retrieveContext(
       characterA: relationship.characterA.name,
       characterB: relationship.characterB.name,
       notes: relationship.notes,
+      boundaries: parseJsonString(relationship.boundaries, {}),
       recentHistory: relationship.history.map((history) => history.changeSummary),
     })),
     recentEvents: recentEvents.map((event) => ({
@@ -240,4 +246,10 @@ export async function retrieveContext(
     })),
     memories,
   };
+
+  return applyContextBudget(
+    context,
+    input.tokenBudget ?? DEFAULT_CONTEXT_TOKEN_BUDGET,
+    input.activeCharacterIds,
+  );
 }

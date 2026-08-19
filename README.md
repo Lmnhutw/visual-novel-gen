@@ -81,6 +81,8 @@ AI_PROVIDER=openrouter
 OPENROUTER_API_KEY=
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 GENERATION_MODEL=qwen/qwen-2.5-72b-instruct
+EVALUATION_MODEL=
+EXTRACTION_MODEL=
 
 ENABLE_EMBEDDINGS=false
 REQUIRE_AUTH=false
@@ -101,6 +103,15 @@ Do not commit real `env/.env`, `env/.env.local`, or production secret files.
 ## Retrieval
 
 Supabase PostgreSQL is the source of truth. pgvector columns are available for semantic memory retrieval when embeddings are enabled. With `ENABLE_EMBEDDINGS=false`, retrieval falls back to structured canon plus keyword, salience, recency, and emotional-weight ranking.
+
+Generation context is capped by a token budget (6,000 tokens by default). Canon,
+active characters, relationships, secrets, timeline, plot threads, lore, and
+memories are admitted in that order. The context preview shows the estimate and
+how many lower-priority records were omitted.
+
+`EVALUATION_MODEL` and `EXTRACTION_MODEL` optionally route continuity review and
+memory extraction to cheaper or faster OpenRouter models. Empty values fall back
+to `GENERATION_MODEL`.
 
 ## Architecture
 

@@ -24,6 +24,18 @@ function jobTone(status: string) {
   return "text-violet-200 bg-violet-300/10 border-violet-300/20";
 }
 
+function formatRunDuration(job: GenerationJob) {
+  if (!job.startedAt) return null;
+  const startedAt = new Date(job.startedAt).getTime();
+  const end = job.completedAt ? new Date(job.completedAt).getTime() : Date.now();
+  if (!Number.isFinite(startedAt) || !Number.isFinite(end)) return null;
+  const seconds = Math.max(
+    0,
+    Math.round((end - startedAt) / 1000),
+  );
+  return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+}
+
 export function GenerationStudio({
   form,
   chapters,
@@ -65,6 +77,7 @@ export function GenerationStudio({
     activeJob?.status === "QUEUED" ||
     activeJob?.status === "RETRYING";
   const isRetryable = activeJob ? isRetryableGenerationStatus(activeJob.status) : false;
+  const activeRunDuration = activeJob ? formatRunDuration(activeJob) : null;
   const readiness = [
     { label: "Story workspace", detail: "A story is selected.", complete: true, action: "story" as const, actionLabel: "View story" },
     { label: "Cast", detail: "Add at least one character to ground the scene.", complete: characters.length > 0, action: "cast" as const, actionLabel: "Add character" },
@@ -287,6 +300,11 @@ export function GenerationStudio({
                 </button>
               ) : null}
             </div>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-white/[0.08] pt-4 text-xs text-on-surface-variant">
+              {activeRunDuration ? <span>Elapsed: <strong className="text-on-surface">{activeRunDuration}</strong></span> : null}
+              {activeJob.generationRun?.totalTokens ? <span>Total tokens: <strong className="text-on-surface">{activeJob.generationRun.totalTokens.toLocaleString()}</strong></span> : null}
+              {activeJob.generationRun?.model ? <span className="min-w-0 truncate">Model: <strong className="text-on-surface">{activeJob.generationRun.model}</strong></span> : null}
+            </div>
             {activeJob.error ? <p className="mt-4 rounded-lg bg-rose-300/10 p-3 text-sm leading-6 text-rose-100">{activeJob.error}</p> : null}
           </section>
         ) : null}
@@ -338,6 +356,9 @@ export function GenerationStudio({
 
 function ContextPreview({ context, includeSecrets, onClose }: { context: GenerationContext; includeSecrets: boolean; onClose: () => void }) {
   const memories = context.memories.slice(0, 4);
+  const omittedCount = context.budget
+    ? Object.values(context.budget.omitted).reduce((sum, value) => sum + value, 0)
+    : 0;
 
   return (
     <section className="rounded-xl border border-primary/25 bg-primary/[0.06] p-4" aria-labelledby="context-preview-title">
@@ -349,6 +370,14 @@ function ContextPreview({ context, includeSecrets, onClose }: { context: Generat
         </div>
         <button className="rounded-lg px-2 py-1 text-xs font-semibold text-on-surface-variant transition hover:bg-white/[0.06] hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onClose}>Close preview</button>
       </div>
+      {context.budget ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-y border-white/[0.08] py-3 text-xs text-on-surface-variant">
+          <span className={context.budget.overBudget ? "text-amber-200" : undefined}>
+            Estimated context: <strong className="text-on-surface">{context.budget.estimatedTokens.toLocaleString()} / {context.budget.maxTokens.toLocaleString()} tokens</strong>
+          </span>
+          <span>{context.budget.overBudget ? "Selected character canon exceeds the target budget" : omittedCount ? `${omittedCount} lower-priority records omitted` : "All retrieved records fit"}</span>
+        </div>
+      ) : null}
       <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <ContextList title={`Characters (${context.characters.length})`} items={context.characters.map((character) => `${character.name} · ${character.status}`)} empty="No character profiles were retrieved." />
         <ContextList title={`Memories (${context.memories.length})`} items={memories.map((memory) => memory.summary ?? memory.content)} empty="No ranked memories were retrieved." />

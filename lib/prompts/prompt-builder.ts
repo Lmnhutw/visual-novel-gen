@@ -110,6 +110,12 @@ export function formatCharacterPromptContext(
       currentEmotionalState:
         currentState.emotionalState ?? latestState.emotionalState,
       currentGoals: currentState.currentGoals ?? latestState.goals,
+      currentLocation: latestState.location,
+      currentPhysicalState: latestState.physicalState,
+      motivations: profile?.motivations,
+      voiceRules: profile?.voiceRules,
+      boundaries: profile?.boundaries,
+      characterArc: profile?.characterArc,
       relationshipPreference: compactRelationshipPreference(
         profile?.relationshipPreference,
       ),

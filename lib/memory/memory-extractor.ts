@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { generateText } from "@/lib/ai/provider";
+import { getModelForTask } from "@/lib/ai/model-routing";
+import { generateStructuredObject } from "@/lib/ai/structured-output";
 import { buildMemoryExtractionPrompt } from "@/lib/prompts/prompt-builder";
 
 export const ExtractedMemorySchema = z.object({
@@ -35,28 +36,19 @@ export type MemoryExtractionResult = z.infer<
   typeof MemoryExtractionResultSchema
 >;
 
-function extractJson(text: string): unknown {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced?.[1] ?? text;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error("Model did not return a JSON object.");
-  }
-
-  return JSON.parse(candidate.slice(start, end + 1));
-}
-
 export async function extractMemoriesFromDraft(input: {
   draft: string;
   contextSummary?: string;
 }): Promise<MemoryExtractionResult> {
   const prompt = buildMemoryExtractionPrompt(input);
-  const output = await generateText(prompt, {
-    temperature: 0.1,
-    topP: 0.8,
-    responseFormat: { type: "json_object" },
+  const result = await generateStructuredObject({
+    prompt,
+    schema: MemoryExtractionResultSchema,
+    options: {
+      model: getModelForTask("extraction"),
+      temperature: 0.1,
+      topP: 0.8,
+    },
   });
-  return MemoryExtractionResultSchema.parse(extractJson(output.text));
+  return result.data;
 }

@@ -110,6 +110,12 @@ export type GenerationJob = {
   contextSnapshot?: string | null;
   draftVersion?: DraftVersion | null;
   proposals?: CanonProposal[];
+  generationRun?: {
+    model: string;
+    promptTokens: number | null;
+    completionTokens: number | null;
+    totalTokens: number | null;
+  } | null;
   _count?: { proposals: number };
 };
 

@@ -46,12 +46,16 @@ server-side OpenRouter call; there is no local LLM runtime.
 User submits scene goal
   -> POST /api/generation/jobs (validate, authorize, persist QUEUED job)
   -> worker atomically claims the job, or local UI calls /jobs/:jobId/run
-  -> retrieve structured canon and ranked memories from PostgreSQL
-  -> build prompt and call OpenRouter with cancellation propagation
+  -> retrieve structured canon and memories using relational, keyword, recency,
+     salience, and optional pgvector signals
+  -> enforce the context token budget and record a retrieval log
+  -> build the prompt and route the generation role to OpenRouter
+     with cancellation propagation
   -> transactionally save the generation run and versioned draft
-  -> run continuity checks and create reviewable canon proposals
-  -> mark the job COMPLETED, FAILED, or CANCELLED
-  -> editor reviews the draft and explicitly accepts canon changes
+  -> run continuity checks and evaluate whether review or rewrite is recommended
+  -> extract reviewable canon proposals
+  -> mark the job READY_FOR_REVIEW, FAILED, or CANCELLED
+  -> editor accepts or rejects the draft and canon proposals
 ```
 
 ## Design Decisions
@@ -66,4 +70,6 @@ User submits scene goal
   confidence ranges. Data API roles have no direct table privileges; server
   routes remain the application boundary.
 - OpenRouter is abstracted so future model routing can be added without rewriting generation services.
+- Generation, continuity evaluation, and memory extraction support role-based
+  model routing while retaining the generation model as the fallback.
 - Mature-story support is represented as stored consent, boundaries, adult confirmation, and relationship-state continuity.
