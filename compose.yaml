@@ -27,7 +27,7 @@ services:
       DIRECT_URL: postgresql://postgres:postgres@db:5432/visual_novel?schema=public
       WATCHPACK_POLLING: "true"
     env_file:
-      - .env
+      - env/.env
     ports:
       - "3000:3000"
     volumes:
@@ -47,7 +47,7 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/visual_novel?schema=public
       DIRECT_URL: postgresql://postgres:postgres@db:5432/visual_novel?schema=public
     env_file:
-      - .env
+      - env/.env
     volumes:
       - ./:/app
       - app_node_modules:/app/node_modules

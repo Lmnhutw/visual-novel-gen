@@ -17,7 +17,7 @@ This project is an AI storytelling app built with Next.js, TypeScript, Tailwind 
 ## Docker Local Development
 
 1. Install Docker Desktop.
-2. Copy `.env.example` to `.env` and set `OPENROUTER_API_KEY`.
+2. Copy `env/.env.example` to `env/.env` and set `OPENROUTER_API_KEY`.
 3. Start the stack:
 
 ```bash
@@ -51,7 +51,7 @@ OpenRouter documentation:
 
 ## 2. Create the Local Environment File
 
-Create a `.env.local` file in the project root and use the values below:
+Create `env/.env.local` and use the values below:
 
 ```env
 AI_PROVIDER="openrouter"
@@ -219,6 +219,6 @@ If the app builds but generation fails:
 
 If the UI opens but generation returns an error:
 
-- confirm `.env.local` exists
+- confirm `env/.env.local` exists
 - confirm the server was restarted after editing env values
 - confirm the request is using a valid `storyId`

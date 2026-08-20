@@ -16,7 +16,7 @@ The app does not use OpenAI, Anthropic, Google Gemini, Ollama, or local LLM infe
 
 ## Local Setup
 
-1. Copy `.env.example` to `.env.local`.
+1. Copy `env/.env.example` to `env/.env.local`.
 2. Add your Supabase connection strings and keys.
 3. Add your real `OPENROUTER_API_KEY`.
 4. Generate the Prisma client and run migrations.
@@ -31,7 +31,7 @@ npm run prisma:migrate
 Docker Compose starts the Next.js app, a local PostgreSQL database with pgvector,
 and a dedicated generation worker. This replaces the separate terminal sessions.
 
-1. Copy `.env.example` to `.env` and add at least `OPENROUTER_API_KEY`.
+1. Copy `env/.env.example` to `env/.env` and add at least `OPENROUTER_API_KEY`.
 2. Start everything:
 
 ```bash
@@ -74,7 +74,7 @@ npm run lint
 
 ## Environment
 
-`.env.example` intentionally documents placeholders only:
+`env/.env.example` intentionally documents placeholders only:
 
 ```env
 AI_PROVIDER=openrouter
@@ -96,7 +96,7 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
-Do not commit real `.env`, `.env.local`, or production secret files.
+Do not commit real `env/.env`, `env/.env.local`, or production secret files.
 
 ## Retrieval
 
