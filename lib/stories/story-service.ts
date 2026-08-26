@@ -100,9 +100,38 @@ export async function getStory(storyId: string, ownerId?: string | null) {
   return story;
 }
 
+export async function getLibraryStory(storyId: string, ownerId?: string | null) {
+  const story = await prisma.story.findFirst({
+    where: { id: storyId, ownerId: ownerId ?? undefined },
+    include: {
+      chapters: {
+        orderBy: { number: "asc" },
+        include: {
+          draftVersions: {
+            where: { status: "ACCEPTED" },
+            orderBy: { updatedAt: "desc" },
+            take: 1,
+          },
+        },
+      },
+      _count: { select: { chapters: true, characters: true } },
+    },
+  });
+
+  if (!story) throw new Error("Story not found.");
+  return story;
+}
+
+export async function deleteStory(storyId: string, ownerId?: string | null) {
+  await getStory(storyId, ownerId);
+  return prisma.story.delete({ where: { id: storyId } });
+}
+
 export async function updateStory(
   storyId: string,
-  input: Partial<CreateStoryInput> & { status?: "DRAFT" | "ACTIVE" | "ARCHIVED" },
+  input: Partial<CreateStoryInput> & {
+    status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
+  },
   ownerId?: string | null,
 ) {
   await getStory(storyId, ownerId);

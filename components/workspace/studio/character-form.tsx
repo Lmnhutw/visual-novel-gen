@@ -5,8 +5,14 @@ import { useMemo, useState } from "react";
 import { ZodError } from "zod";
 
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
-import { MultiSelectChips, type ChipOption } from "@/components/ui/multi-select-chips";
-import { RadioCardGroup, type RadioCardOption } from "@/components/ui/radio-card-group";
+import {
+  MultiSelectChips,
+  type ChipOption,
+} from "@/components/ui/multi-select-chips";
+import {
+  RadioCardGroup,
+  type RadioCardOption,
+} from "@/components/ui/radio-card-group";
 import { SliderField } from "@/components/ui/slider-field";
 import { TagInput } from "@/components/ui/tag-input";
 import {
@@ -191,7 +197,13 @@ const characterStatuses: CharacterStatus[] = [
 const positiveArchetypes = archetypes.slice(0, 18);
 const flawedArchetypes = archetypes.slice(18);
 
-const giftednessOptions = ["none", "talented", "gifted", "genius", "prodigy"] as const;
+const giftednessOptions = [
+  "none",
+  "talented",
+  "gifted",
+  "genius",
+  "prodigy",
+] as const;
 const vocabularyOptions = ["simple", "normal", "educated", "academic"] as const;
 const profanityOptions = ["none", "light", "medium", "heavy"] as const;
 
@@ -435,32 +447,51 @@ function emptyValues(): CharacterFormValues {
   };
 }
 
-function valuesFromCharacter(character?: CharacterFormRecord | null): CharacterFormValues {
+function valuesFromCharacter(
+  character?: CharacterFormRecord | null,
+): CharacterFormValues {
   const values = emptyValues();
 
   if (!character) {
     return values;
   }
 
-  const personality = character.personality ??
-    parseJsonObject<Record<string, unknown>>(character.profile?.personality, {});
-  const talents = character.talents ??
+  const personality =
+    character.personality ??
+    parseJsonObject<Record<string, unknown>>(
+      character.profile?.personality,
+      {},
+    );
+  const talents =
+    character.talents ??
     parseJsonObject<Record<string, unknown>>(character.profile?.talents, {});
-  const appearance = character.appearance ??
+  const appearance =
+    character.appearance ??
     parseJsonObject<Record<string, unknown>>(character.profile?.appearance, {});
-  const speech = character.speech ??
+  const speech =
+    character.speech ??
     parseJsonObject<Record<string, unknown>>(character.profile?.speech, {});
-  const relationshipPreference = character.relationshipPreference ??
+  const relationshipPreference =
+    character.relationshipPreference ??
     parseJsonObject<Record<string, unknown>>(
       character.profile?.relationshipPreference,
       {},
     );
-  const background = character.background ??
+  const background =
+    character.background ??
     parseJsonObject<Record<string, unknown>>(character.profile?.background, {});
-  const currentState = character.currentState ??
-    parseJsonObject<Record<string, unknown>>(character.profile?.currentState, {});
-  const characterArc = character.characterArc ??
-    parseJsonObject<Record<string, unknown>>(character.profile?.characterArc, {});
+  const currentState =
+    character.currentState ??
+    parseJsonObject<Record<string, unknown>>(
+      character.profile?.currentState,
+      {},
+    );
+  const characterArc =
+    character.characterArc ??
+    parseJsonObject<Record<string, unknown>>(
+      character.profile?.characterArc,
+      {},
+    );
 
   const femaleBody = parseJsonObject<Record<string, unknown>>(
     (appearance as { femaleBody?: unknown }).femaleBody,
@@ -475,8 +506,16 @@ function valuesFromCharacter(character?: CharacterFormRecord | null): CharacterF
     ...values,
     name: stringValue(character.name),
     aliases: stringArray(character.aliases),
-    role: enumValue(character.role, characterRoles, "SUPPORTING") as CharacterRole,
-    status: enumValue(character.status, characterStatuses, "ACTIVE") as CharacterStatus,
+    role: enumValue(
+      character.role,
+      characterRoles,
+      "SUPPORTING",
+    ) as CharacterRole,
+    status: enumValue(
+      character.status,
+      characterStatuses,
+      "ACTIVE",
+    ) as CharacterStatus,
     ageConfirmed: character.ageConfirmed ?? true,
     gender: enumValue(character.gender, genders, ""),
     age: numericValue(character.age),
@@ -486,8 +525,12 @@ function valuesFromCharacter(character?: CharacterFormRecord | null): CharacterF
     personality: {
       summary: stringValue((personality as { summary?: unknown }).summary),
       traits: stringArray((personality as { traits?: unknown }).traits),
-      strengths: stringArray((personality as { strengths?: unknown }).strengths),
-      weaknesses: stringArray((personality as { weaknesses?: unknown }).weaknesses),
+      strengths: stringArray(
+        (personality as { strengths?: unknown }).strengths,
+      ),
+      weaknesses: stringArray(
+        (personality as { weaknesses?: unknown }).weaknesses,
+      ),
       fears: stringArray((personality as { fears?: unknown }).fears),
       desires: stringArray((personality as { desires?: unknown }).desires),
       goals: stringArray((personality as { goals?: unknown }).goals),
@@ -495,8 +538,8 @@ function valuesFromCharacter(character?: CharacterFormRecord | null): CharacterF
       habits: stringArray((personality as { habits?: unknown }).habits),
       quirks: stringArray((personality as { quirks?: unknown }).quirks),
     },
-    archetypes: stringArray(character.archetypes).filter((value): value is Archetype =>
-      archetypes.includes(value as Archetype),
+    archetypes: stringArray(character.archetypes).filter(
+      (value): value is Archetype => archetypes.includes(value as Archetype),
     ),
     talents: {
       giftednessLevel: enumValue(
@@ -505,9 +548,12 @@ function valuesFromCharacter(character?: CharacterFormRecord | null): CharacterF
         "none",
       ) as CharacterFormValues["talents"]["giftednessLevel"],
       talents: stringArray((talents as { talents?: unknown }).talents),
-      limitations: stringArray((talents as { limitations?: unknown }).limitations),
+      limitations: stringArray(
+        (talents as { limitations?: unknown }).limitations,
+      ),
     },
-    addAppearance: Object.keys(appearance as Record<string, unknown>).length > 0,
+    addAppearance:
+      Object.keys(appearance as Record<string, unknown>).length > 0,
     appearance: {
       heightCm: numericValue((appearance as { heightCm?: unknown }).heightCm),
       weightKg: numericValue((appearance as { weightKg?: unknown }).weightKg),
@@ -530,29 +576,19 @@ function valuesFromCharacter(character?: CharacterFormRecord | null): CharacterF
         (appearance as { distinctiveFeatures?: unknown }).distinctiveFeatures,
       ),
       femaleBody: {
-        chestSize: enumValue(
-          femaleBody.chestSize,
-          femaleBodyScales,
-          "",
-        ),
-        waistSize: enumValue(
-          femaleBody.waistSize,
-          femaleBodyScales,
-          "",
-        ),
+        chestSize: enumValue(femaleBody.chestSize, femaleBodyScales, ""),
+        waistSize: enumValue(femaleBody.waistSize, femaleBodyScales, ""),
         hipSize: enumValue(femaleBody.hipSize, femaleBodyScales, ""),
       },
       maleBody: {
-        shoulderWidth: enumValue(
-          maleBody.shoulderWidth,
-          bodyScales,
-          "",
-        ),
+        shoulderWidth: enumValue(maleBody.shoulderWidth, bodyScales, ""),
         muscleMass: enumValue(maleBody.muscleMass, bodyScales, ""),
       },
     },
     speech: {
-      speakingStyle: stringValue((speech as { speakingStyle?: unknown }).speakingStyle),
+      speakingStyle: stringValue(
+        (speech as { speakingStyle?: unknown }).speakingStyle,
+      ),
       vocabularyLevel: enumValue(
         (speech as { vocabularyLevel?: unknown }).vocabularyLevel,
         vocabularyOptions,
@@ -563,12 +599,17 @@ function valuesFromCharacter(character?: CharacterFormRecord | null): CharacterF
         profanityOptions,
         "",
       ),
-      catchphrases: stringArray((speech as { catchphrases?: unknown }).catchphrases),
-      dialogueNotes: stringValue((speech as { dialogueNotes?: unknown }).dialogueNotes),
+      catchphrases: stringArray(
+        (speech as { catchphrases?: unknown }).catchphrases,
+      ),
+      dialogueNotes: stringValue(
+        (speech as { dialogueNotes?: unknown }).dialogueNotes,
+      ),
     },
     relationshipPreference: {
       attractedToGenders: stringArray(
-        (relationshipPreference as { attractedToGenders?: unknown }).attractedToGenders,
+        (relationshipPreference as { attractedToGenders?: unknown })
+          .attractedToGenders,
       ).filter((value): value is Gender => genders.includes(value as Gender)),
       self: enumValue(
         (relationshipPreference as { self?: unknown }).self,
@@ -586,12 +627,18 @@ function valuesFromCharacter(character?: CharacterFormRecord | null): CharacterF
         loveLanguages.includes(value as LoveLanguage),
       ),
       preferredTraits: stringArray(
-        (relationshipPreference as { preferredTraits?: unknown }).preferredTraits,
+        (relationshipPreference as { preferredTraits?: unknown })
+          .preferredTraits,
       ),
-      turnOns: stringArray((relationshipPreference as { turnOns?: unknown }).turnOns),
-      turnOffs: stringArray((relationshipPreference as { turnOffs?: unknown }).turnOffs),
+      turnOns: stringArray(
+        (relationshipPreference as { turnOns?: unknown }).turnOns,
+      ),
+      turnOffs: stringArray(
+        (relationshipPreference as { turnOffs?: unknown }).turnOffs,
+      ),
       jealousyTolerance: numericValue(
-        (relationshipPreference as { jealousyTolerance?: unknown }).jealousyTolerance,
+        (relationshipPreference as { jealousyTolerance?: unknown })
+          .jealousyTolerance,
       ),
       possessiveness: numericValue(
         (relationshipPreference as { possessiveness?: unknown }).possessiveness,
@@ -599,10 +646,14 @@ function valuesFromCharacter(character?: CharacterFormRecord | null): CharacterF
       notes: stringValue((relationshipPreference as { notes?: unknown }).notes),
     },
     background: {
-      birthplace: stringValue((background as { birthplace?: unknown }).birthplace),
+      birthplace: stringValue(
+        (background as { birthplace?: unknown }).birthplace,
+      ),
       family: stringValue((background as { family?: unknown }).family),
       education: stringValue((background as { education?: unknown }).education),
-      socialClass: stringValue((background as { socialClass?: unknown }).socialClass),
+      socialClass: stringValue(
+        (background as { socialClass?: unknown }).socialClass,
+      ),
       majorLifeEvents: stringArray(
         (background as { majorLifeEvents?: unknown }).majorLifeEvents,
       ),
@@ -616,7 +667,9 @@ function valuesFromCharacter(character?: CharacterFormRecord | null): CharacterF
       emotionalState: stringValue(
         (currentState as { emotionalState?: unknown }).emotionalState,
       ),
-      mentalState: stringValue((currentState as { mentalState?: unknown }).mentalState),
+      mentalState: stringValue(
+        (currentState as { mentalState?: unknown }).mentalState,
+      ),
       currentGoals: stringArray(
         (currentState as { currentGoals?: unknown }).currentGoals,
       ),
@@ -647,7 +700,11 @@ function valuesFromCharacter(character?: CharacterFormRecord | null): CharacterF
   };
 }
 
-function normalizeValues(values: CharacterFormValues, storyId: string, mode: "create" | "edit") {
+function normalizeValues(
+  values: CharacterFormValues,
+  storyId: string,
+  mode: "create" | "edit",
+) {
   const age = typeof values.age === "number" ? values.age : Number(values.age);
   const femaleBody =
     values.gender === "female"
@@ -666,8 +723,14 @@ function normalizeValues(values: CharacterFormValues, storyId: string, mode: "cr
       : undefined;
   const appearance = values.addAppearance
     ? compactObject({
-        heightCm: values.appearance.heightCm === "" ? undefined : values.appearance.heightCm,
-        weightKg: values.appearance.weightKg === "" ? undefined : values.appearance.weightKg,
+        heightCm:
+          values.appearance.heightCm === ""
+            ? undefined
+            : values.appearance.heightCm,
+        weightKg:
+          values.appearance.weightKg === ""
+            ? undefined
+            : values.appearance.weightKg,
         bodyType: values.appearance.bodyType || undefined,
         faceDescription: cleanText(values.appearance.faceDescription),
         hairColor: cleanText(values.appearance.hairColor),
@@ -788,7 +851,9 @@ function formError(error: unknown) {
       .join(" ");
   }
 
-  return error instanceof Error ? error.message : "Character validation failed.";
+  return error instanceof Error
+    ? error.message
+    : "Character validation failed.";
 }
 
 function TextField({
@@ -896,7 +961,10 @@ export function CharacterForm({
   onSubmit,
 }: CharacterFormProps) {
   const mode = character?.id ? "edit" : "create";
-  const initialValues = useMemo(() => valuesFromCharacter(character), [character]);
+  const initialValues = useMemo(
+    () => valuesFromCharacter(character),
+    [character],
+  );
   const [values, setValues] = useState<CharacterFormValues>(initialValues);
   const [validationError, setValidationError] = useState("");
 
@@ -945,11 +1013,13 @@ export function CharacterForm({
       <div className="flex items-center justify-between gap-3 border-b border-outline-variant bg-surface-dim px-4 py-4">
         <div>
           <h2 className="text-lg font-semibold text-primary">
-            {mode === "edit" ? "Edit Character Bible" : "Create Character Bible"}
+            {mode === "edit"
+              ? "Edit Character Bible"
+              : "Create Character Bible"}
           </h2>
           <p className="mt-1 text-xs text-on-surface-variant">
-            Required identity and personality stay visible; optional profiles expand
-            only when needed.
+            Required identity and personality stay visible; optional profiles
+            expand only when needed.
           </p>
         </div>
         <button
@@ -982,7 +1052,9 @@ export function CharacterForm({
                 required
                 label="Name"
                 value={values.name}
-                onChange={(name) => setValues((current) => ({ ...current, name }))}
+                onChange={(name) =>
+                  setValues((current) => ({ ...current, name }))
+                }
                 placeholder="Mira Vale"
               />
               <TextField
@@ -1002,19 +1074,25 @@ export function CharacterForm({
                 label="Gender"
                 options={genders}
                 value={values.gender}
-                onChange={(gender) => setValues((current) => ({ ...current, gender }))}
+                onChange={(gender) =>
+                  setValues((current) => ({ ...current, gender }))
+                }
               />
               <SelectField
                 label="Role"
                 options={characterRoles}
                 value={values.role}
-                onChange={(role) => setValues((current) => ({ ...current, role }))}
+                onChange={(role) =>
+                  setValues((current) => ({ ...current, role }))
+                }
               />
               <SelectField
                 label="Status"
                 options={characterStatuses}
                 value={values.status}
-                onChange={(status) => setValues((current) => ({ ...current, status }))}
+                onChange={(status) =>
+                  setValues((current) => ({ ...current, status }))
+                }
               />
               <TextField
                 label="Occupation"
@@ -1026,18 +1104,24 @@ export function CharacterForm({
               <TextField
                 label="Race"
                 value={values.race}
-                onChange={(race) => setValues((current) => ({ ...current, race }))}
+                onChange={(race) =>
+                  setValues((current) => ({ ...current, race }))
+                }
               />
               <TextField
                 label="Species"
                 value={values.species}
-                onChange={(species) => setValues((current) => ({ ...current, species }))}
+                onChange={(species) =>
+                  setValues((current) => ({ ...current, species }))
+                }
               />
               <TagInput
                 className="md:col-span-2"
                 label="Aliases"
                 value={values.aliases}
-                onChange={(aliases) => setValues((current) => ({ ...current, aliases }))}
+                onChange={(aliases) =>
+                  setValues((current) => ({ ...current, aliases }))
+                }
               />
             </div>
           </CollapsibleSection>
@@ -1136,7 +1220,10 @@ export function CharacterForm({
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection title="Talents" description="Optional giftedness and limits.">
+          <CollapsibleSection
+            title="Talents"
+            description="Optional giftedness and limits."
+          >
             <div className="grid gap-4 md:grid-cols-2">
               <SelectField
                 label="Giftedness Level"
@@ -1310,50 +1397,54 @@ export function CharacterForm({
                   />
                   {values.gender === "female" ? (
                     <div className="grid gap-4 rounded border border-outline-variant bg-surface p-3 md:col-span-2 md:grid-cols-3">
-                      {(["chestSize", "waistSize", "hipSize"] as const).map((field) => (
-                        <SelectField
-                          key={field}
-                          label={labelFromValue(field)}
-                          options={femaleBodyScales}
-                          value={values.appearance.femaleBody[field]}
-                          onChange={(next) =>
-                            setValues((current) => ({
-                              ...current,
-                              appearance: {
-                                ...current.appearance,
-                                femaleBody: {
-                                  ...current.appearance.femaleBody,
-                                  [field]: next,
+                      {(["chestSize", "waistSize", "hipSize"] as const).map(
+                        (field) => (
+                          <SelectField
+                            key={field}
+                            label={labelFromValue(field)}
+                            options={femaleBodyScales}
+                            value={values.appearance.femaleBody[field]}
+                            onChange={(next) =>
+                              setValues((current) => ({
+                                ...current,
+                                appearance: {
+                                  ...current.appearance,
+                                  femaleBody: {
+                                    ...current.appearance.femaleBody,
+                                    [field]: next,
+                                  },
                                 },
-                              },
-                            }))
-                          }
-                        />
-                      ))}
+                              }))
+                            }
+                          />
+                        ),
+                      )}
                     </div>
                   ) : null}
                   {values.gender === "male" ? (
                     <div className="grid gap-4 rounded border border-outline-variant bg-surface p-3 md:col-span-2 md:grid-cols-2">
-                      {(["shoulderWidth", "muscleMass"] as const).map((field) => (
-                        <SelectField
-                          key={field}
-                          label={labelFromValue(field)}
-                          options={bodyScales}
-                          value={values.appearance.maleBody[field]}
-                          onChange={(next) =>
-                            setValues((current) => ({
-                              ...current,
-                              appearance: {
-                                ...current.appearance,
-                                maleBody: {
-                                  ...current.appearance.maleBody,
-                                  [field]: next,
+                      {(["shoulderWidth", "muscleMass"] as const).map(
+                        (field) => (
+                          <SelectField
+                            key={field}
+                            label={labelFromValue(field)}
+                            options={bodyScales}
+                            value={values.appearance.maleBody[field]}
+                            onChange={(next) =>
+                              setValues((current) => ({
+                                ...current,
+                                appearance: {
+                                  ...current.appearance,
+                                  maleBody: {
+                                    ...current.appearance.maleBody,
+                                    [field]: next,
+                                  },
                                 },
-                              },
-                            }))
-                          }
-                        />
-                      ))}
+                              }))
+                            }
+                          />
+                        ),
+                      )}
                     </div>
                   ) : null}
                 </div>
@@ -1432,13 +1523,14 @@ export function CharacterForm({
                 <p>These settings are independent.</p>
                 <p className="mt-2">
                   A character may love only one person while accepting a
-                  non-exclusive partner, or love multiple people while still feeling
-                  jealous, conflicted, or possessive.
+                  non-exclusive partner, or love multiple people while still
+                  feeling jealous, conflicted, or possessive.
                 </p>
                 <p className="mt-2">
-                  These settings describe relationship preferences, not morality.
-                  Non-exclusive dynamics should be consensual, honest, and
-                  emotionally respectful unless the profile explicitly defines conflict.
+                  These settings describe relationship preferences, not
+                  morality. Non-exclusive dynamics should be consensual, honest,
+                  and emotionally respectful unless the profile explicitly
+                  defines conflict.
                 </p>
               </div>
               <MultiSelectChips
@@ -1815,7 +1907,9 @@ export function CharacterForm({
             </div>
             <div className="flex items-center justify-between gap-3">
               <span>Archetypes</span>
-              <span className="font-mono text-primary">{values.archetypes.length}</span>
+              <span className="font-mono text-primary">
+                {values.archetypes.length}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span>Optional profiles</span>
@@ -1849,8 +1943,9 @@ export function CharacterForm({
           </label>
           <div className="rounded border border-outline-variant bg-surface-dim p-3">
             <p className="text-xs leading-5 text-on-surface-variant">
-              Empty optional profiles are omitted from the API payload. Gender-specific
-              body fields are submitted only for the matching gender.
+              Empty optional profiles are omitted from the API payload.
+              Gender-specific body fields are submitted only for the matching
+              gender.
             </p>
           </div>
         </aside>

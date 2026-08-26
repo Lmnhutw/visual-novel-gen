@@ -46,7 +46,9 @@ export async function createRelationship(input: CreateRelationshipInput) {
 
 export async function updateRelationship(
   relationshipId: string,
-  input: Partial<Omit<CreateRelationshipInput, "storyId" | "characterAId" | "characterBId">> & {
+  input: Partial<
+    Omit<CreateRelationshipInput, "storyId" | "characterAId" | "characterBId">
+  > & {
     changeSummary?: string;
     sceneId?: string;
     eventId?: string;

@@ -35,11 +35,15 @@ export type GenerationJobInput = {
 
 function proposalTitle(type: string, value: Record<string, unknown>) {
   if (type === "memory") {
-    return typeof value.content === "string" ? value.content.slice(0, 96) : "New memory";
+    return typeof value.content === "string"
+      ? value.content.slice(0, 96)
+      : "New memory";
   }
 
   if (type === "event") {
-    return typeof value.summary === "string" ? value.summary.slice(0, 96) : "New timeline event";
+    return typeof value.summary === "string"
+      ? value.summary.slice(0, 96)
+      : "New timeline event";
   }
 
   return `Review ${type.replaceAll("_", " ")}`;
@@ -61,7 +65,11 @@ async function assertPreflight(input: GenerationJobInput) {
       select: { id: true },
     });
     if (!chapter) {
-      throw new WorkflowError("CHAPTER_NOT_FOUND", "Chapter does not belong to this story.", 404);
+      throw new WorkflowError(
+        "CHAPTER_NOT_FOUND",
+        "Chapter does not belong to this story.",
+        404,
+      );
     }
   }
 
@@ -101,7 +109,9 @@ async function assertPreflight(input: GenerationJobInput) {
         );
       }
 
-      const unconfirmed = activeCharacters.filter((character) => !character.ageConfirmed);
+      const unconfirmed = activeCharacters.filter(
+        (character) => !character.ageConfirmed,
+      );
       if (unconfirmed.length) {
         throw new WorkflowError(
           "ADULT_CONFIRMATION_REQUIRED",
@@ -121,11 +131,19 @@ async function ensureNotCancelled(jobId: string) {
   });
 
   if (!job) {
-    throw new WorkflowError("GENERATION_JOB_NOT_FOUND", "Generation job not found.", 404);
+    throw new WorkflowError(
+      "GENERATION_JOB_NOT_FOUND",
+      "Generation job not found.",
+      404,
+    );
   }
 
   if (job.status === "CANCELLED") {
-    throw new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409);
+    throw new WorkflowError(
+      "GENERATION_CANCELLED",
+      "Generation was cancelled.",
+      409,
+    );
   }
 }
 
@@ -167,7 +185,11 @@ async function generateTextForJob(
       });
       if (job?.status === "CANCELLED") {
         controller.abort(
-          new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409),
+          new WorkflowError(
+            "GENERATION_CANCELLED",
+            "Generation was cancelled.",
+            409,
+          ),
         );
       }
     } catch {
@@ -180,7 +202,10 @@ async function generateTextForJob(
   const interval = setInterval(() => void pollCancellation(), 750);
 
   try {
-    return await generateText(prompt, { ...options, signal: controller.signal });
+    return await generateText(prompt, {
+      ...options,
+      signal: controller.signal,
+    });
   } finally {
     clearInterval(interval);
   }
@@ -303,7 +328,11 @@ export async function getGenerationJob(jobId: string) {
   });
 
   if (!job) {
-    throw new WorkflowError("GENERATION_JOB_NOT_FOUND", "Generation job not found.", 404);
+    throw new WorkflowError(
+      "GENERATION_JOB_NOT_FOUND",
+      "Generation job not found.",
+      404,
+    );
   }
 
   return job;
@@ -387,14 +416,21 @@ export async function retryGenerationJob(jobId: string) {
         action: "generation.job.retry_requested",
         entityType: "generation_job",
         entityId: jobId,
-        metadata: toJsonString({ previousStatus: job.status, attemptCount: job.attemptCount }),
+        metadata: toJsonString({
+          previousStatus: job.status,
+          attemptCount: job.attemptCount,
+        }),
       },
     });
     return tx.generationJob.findUnique({ where: { id: jobId } });
   });
 
   if (!retried) {
-    throw new WorkflowError("GENERATION_JOB_NOT_FOUND", "Generation job not found.", 404);
+    throw new WorkflowError(
+      "GENERATION_JOB_NOT_FOUND",
+      "Generation job not found.",
+      404,
+    );
   }
   return retried;
 }
@@ -416,7 +452,10 @@ export async function executeGenerationJob(jobId: string) {
   }
 
   const job = await getGenerationJob(jobId);
-  const input = parseJsonString<GenerationJobInput>(job.input, {} as GenerationJobInput);
+  const input = parseJsonString<GenerationJobInput>(
+    job.input,
+    {} as GenerationJobInput,
+  );
   const modelConfig = getModelConfig();
 
   try {
@@ -453,10 +492,19 @@ export async function executeGenerationJob(jobId: string) {
       });
       const staged = await tx.generationJob.updateMany({
         where: { id: jobId, status: "RUNNING" },
-        data: { stage: "GENERATING", progress: 35, prompt, generationRunId: createdRun.id },
+        data: {
+          stage: "GENERATING",
+          progress: 35,
+          prompt,
+          generationRunId: createdRun.id,
+        },
       });
       if (staged.count === 0) {
-        throw new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409);
+        throw new WorkflowError(
+          "GENERATION_CANCELLED",
+          "Generation was cancelled.",
+          409,
+        );
       }
       return createdRun;
     });
@@ -523,7 +571,11 @@ export async function executeGenerationJob(jobId: string) {
         },
       });
       if (staged.count === 0) {
-        throw new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409);
+        throw new WorkflowError(
+          "GENERATION_CANCELLED",
+          "Generation was cancelled.",
+          409,
+        );
       }
       return persistedDraft;
     });
@@ -559,7 +611,11 @@ export async function executeGenerationJob(jobId: string) {
         data: { stage: "EXTRACTING_CANON_PROPOSALS", progress: 88 },
       });
       if (staged.count === 0) {
-        throw new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409);
+        throw new WorkflowError(
+          "GENERATION_CANCELLED",
+          "Generation was cancelled.",
+          409,
+        );
       }
     });
     const evaluation = evaluateDraft(continuityWarnings);
@@ -574,7 +630,10 @@ export async function executeGenerationJob(jobId: string) {
     try {
       extraction = await extractMemoriesFromDraft({
         draft,
-        contextSummary: JSON.stringify({ story: context.story, characters: context.characters }),
+        contextSummary: JSON.stringify({
+          story: context.story,
+          characters: context.characters,
+        }),
       });
     } catch (error) {
       await ensureNotCancelled(jobId);
@@ -584,7 +643,9 @@ export async function executeGenerationJob(jobId: string) {
           action: "generation.extraction.failed",
           entityType: "generation_job",
           entityId: jobId,
-          metadata: toJsonString({ message: error instanceof Error ? error.message : "Unknown error" }),
+          metadata: toJsonString({
+            message: error instanceof Error ? error.message : "Unknown error",
+          }),
         },
       });
     }
@@ -605,7 +666,11 @@ export async function executeGenerationJob(jobId: string) {
         },
       });
       if (completed.count === 0) {
-        throw new WorkflowError("GENERATION_CANCELLED", "Generation was cancelled.", 409);
+        throw new WorkflowError(
+          "GENERATION_CANCELLED",
+          "Generation was cancelled.",
+          409,
+        );
       }
       if (proposals.length) {
         await tx.canonChangeProposal.createMany({
@@ -653,8 +718,10 @@ export async function executeGenerationJob(jobId: string) {
       data: {
         status: "FAILED",
         stage: "FAILED",
-        errorCode: error instanceof WorkflowError ? error.code : "GENERATION_FAILED",
-        error: error instanceof Error ? error.message : "Unknown generation error",
+        errorCode:
+          error instanceof WorkflowError ? error.code : "GENERATION_FAILED",
+        error:
+          error instanceof Error ? error.message : "Unknown generation error",
         completedAt: new Date(),
       },
     });
@@ -668,7 +735,8 @@ export async function executeGenerationJob(jobId: string) {
         where: { id: jobAfterFailure.generationRunId },
         data: {
           status: "FAILED",
-          error: error instanceof Error ? error.message : "Unknown generation error",
+          error:
+            error instanceof Error ? error.message : "Unknown generation error",
         },
       });
     }
@@ -684,7 +752,9 @@ export async function executeQueuedGenerationJobs(limit = 1) {
     take: Math.max(1, Math.min(limit, 10)),
   });
 
-  const results = await Promise.allSettled(jobs.map((job) => executeGenerationJob(job.id)));
+  const results = await Promise.allSettled(
+    jobs.map((job) => executeGenerationJob(job.id)),
+  );
   return {
     attempted: jobs.length,
     failed: results.filter((result) => result.status === "rejected").length,
@@ -700,7 +770,11 @@ export async function reviewCanonChangeProposal(
     include: { job: true },
   });
   if (!proposal) {
-    throw new WorkflowError("CANON_PROPOSAL_NOT_FOUND", "Canon proposal not found.", 404);
+    throw new WorkflowError(
+      "CANON_PROPOSAL_NOT_FOUND",
+      "Canon proposal not found.",
+      404,
+    );
   }
   if (proposal.status !== "PENDING") {
     return proposal;
@@ -724,7 +798,10 @@ export async function reviewCanonChangeProposal(
     });
   }
 
-  const proposedAfter = parseJsonString<Record<string, unknown>>(proposal.proposedAfter, {});
+  const proposedAfter = parseJsonString<Record<string, unknown>>(
+    proposal.proposedAfter,
+    {},
+  );
   if (proposal.actionability !== "AUTO_APPLY") {
     return prisma.$transaction(async (tx) => {
       const reviewed = await tx.canonChangeProposal.update({
@@ -751,11 +828,22 @@ export async function reviewCanonChangeProposal(
           storyId: proposal.storyId,
           sourceType: "generation_job",
           sourceId: proposal.job.id,
-          memoryType: typeof proposedAfter.memoryType === "string" ? proposedAfter.memoryType : "event",
-          content: typeof proposedAfter.content === "string" ? proposedAfter.content : proposal.title,
-          salience: typeof proposedAfter.salience === "number" ? proposedAfter.salience : 0.5,
+          memoryType:
+            typeof proposedAfter.memoryType === "string"
+              ? proposedAfter.memoryType
+              : "event",
+          content:
+            typeof proposedAfter.content === "string"
+              ? proposedAfter.content
+              : proposal.title,
+          salience:
+            typeof proposedAfter.salience === "number"
+              ? proposedAfter.salience
+              : 0.5,
           emotionalWeight:
-            typeof proposedAfter.emotionalWeight === "number" ? proposedAfter.emotionalWeight : 0,
+            typeof proposedAfter.emotionalWeight === "number"
+              ? proposedAfter.emotionalWeight
+              : 0,
           entities: toJsonString(proposedAfter.entities),
         },
       });
@@ -766,9 +854,18 @@ export async function reviewCanonChangeProposal(
         data: {
           storyId: proposal.storyId,
           chapterId: proposal.job.chapterId,
-          summary: typeof proposedAfter.summary === "string" ? proposedAfter.summary : proposal.title,
-          eventType: typeof proposedAfter.eventType === "string" ? proposedAfter.eventType : "scene_event",
-          salience: typeof proposedAfter.salience === "number" ? proposedAfter.salience : 0.5,
+          summary:
+            typeof proposedAfter.summary === "string"
+              ? proposedAfter.summary
+              : proposal.title,
+          eventType:
+            typeof proposedAfter.eventType === "string"
+              ? proposedAfter.eventType
+              : "scene_event",
+          salience:
+            typeof proposedAfter.salience === "number"
+              ? proposedAfter.salience
+              : 0.5,
           participants: toJsonString(proposedAfter.participants),
         },
       });
@@ -784,7 +881,10 @@ export async function reviewCanonChangeProposal(
         action: "canon.proposal.accepted",
         entityType: "canon_change_proposal",
         entityId: proposalId,
-        metadata: toJsonString({ type: proposal.type, actionability: proposal.actionability }),
+        metadata: toJsonString({
+          type: proposal.type,
+          actionability: proposal.actionability,
+        }),
       },
     });
     return reviewed;
@@ -797,7 +897,11 @@ export async function getCanonChangeProposal(proposalId: string) {
     select: { id: true, storyId: true },
   });
   if (!proposal) {
-    throw new WorkflowError("CANON_PROPOSAL_NOT_FOUND", "Canon proposal not found.", 404);
+    throw new WorkflowError(
+      "CANON_PROPOSAL_NOT_FOUND",
+      "Canon proposal not found.",
+      404,
+    );
   }
   return proposal;
 }

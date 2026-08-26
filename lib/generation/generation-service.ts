@@ -125,7 +125,8 @@ export async function generateScene(input: GenerateSceneInput) {
       where: { id: run.id },
       data: {
         status: "FAILED",
-        error: error instanceof Error ? error.message : "Unknown generation error",
+        error:
+          error instanceof Error ? error.message : "Unknown generation error",
       },
     });
 
@@ -141,7 +142,9 @@ export async function generateChapter(input: GenerateSceneInput) {
   });
 }
 
-export async function reviseDraft(input: GenerateSceneInput & { previousDraft: string }) {
+export async function reviseDraft(
+  input: GenerateSceneInput & { previousDraft: string },
+) {
   const context = await retrieveContext({
     storyId: input.storyId,
     query: input.goal,

@@ -1,33 +1,41 @@
 "use client";
 
-import { Check, CheckCircle2, ChevronRight, FileText, Save, Sparkles, X } from "lucide-react";
+import {
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  FileText,
+  BookOpen,
+  RefreshCw,
+  Save,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
-import type { GenerationContext } from "@/lib/retrieval/types";
-
 import { titleCase } from "./api";
 import type { CanonProposal, GenerationJob } from "./types";
 
-function parseContext(value: string | null | undefined) {
-  if (!value) return null;
-  try {
-    return JSON.parse(value) as GenerationContext;
-  } catch {
-    return null;
-  }
-}
-
 export function DraftReview({
   job,
+  jobs,
+  selectedJobId,
   onSaveDraft,
   onAcceptDraft,
   onReviewProposal,
+  onSelectJob,
 }: {
   job: GenerationJob | null;
+  jobs: GenerationJob[];
+  selectedJobId: string;
   onSaveDraft: (draftVersionId: string, content: string) => Promise<void>;
   onAcceptDraft: (draftVersionId: string) => Promise<void>;
-  onReviewProposal: (proposal: CanonProposal, decision: "accept" | "reject") => Promise<void>;
+  onReviewProposal: (
+    proposal: CanonProposal,
+    decision: "accept" | "reject",
+  ) => Promise<void>;
+  onSelectJob: (jobId: string) => void;
 }) {
   const draft = job?.draftVersion ?? null;
   const [content, setContent] = useState("");
@@ -51,9 +59,10 @@ export function DraftReview({
     return () => window.clearTimeout(timeout);
   }, [content, draft, onSaveDraft]);
 
-  const context = parseContext(job?.contextSnapshot);
   const proposals = job?.proposals ?? [];
-  const pendingProposals = proposals.filter((proposal) => proposal.status === "PENDING");
+  const pendingProposals = proposals.filter(
+    (proposal) => proposal.status === "PENDING",
+  );
 
   return (
     <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
@@ -64,22 +73,34 @@ export function DraftReview({
               <FileText className="size-4" />
             </span>
             <div>
-              <p className="text-[11px] font-bold tracking-[0.14em] text-stone-500">DRAFT VERSION</p>
+              <p className="text-[11px] font-bold tracking-[0.14em] text-stone-500">
+                DRAFT VERSION
+              </p>
               <h2 className="text-sm font-semibold text-stone-900">
-                {draft ? `v${draft.versionNumber} · ${draft.title ?? "Untitled draft"}` : "No draft selected"}
+                {draft
+                  ? `v${draft.versionNumber} · ${draft.title ?? "Untitled draft"}`
+                  : "No draft selected"}
               </h2>
             </div>
           </div>
           {draft ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-stone-500">{isSaving ? "Saving…" : content === draft.content ? "Saved" : "Unsaved"}</span>
+              <span className="text-xs font-medium text-stone-500">
+                {isSaving
+                  ? "Saving…"
+                  : content === draft.content
+                    ? "Saved"
+                    : "Unsaved"}
+              </span>
               <button
                 className="inline-flex h-9 items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-700 transition hover:border-stone-400 disabled:opacity-50"
                 disabled={isSaving || content === draft.content}
                 type="button"
                 onClick={() => {
                   setIsSaving(true);
-                  void onSaveDraft(draft.id, content).finally(() => setIsSaving(false));
+                  void onSaveDraft(draft.id, content).finally(() =>
+                    setIsSaving(false),
+                  );
                 }}
               >
                 <Save className="size-3.5" /> Save
@@ -90,7 +111,9 @@ export function DraftReview({
                 type="button"
                 onClick={() => {
                   setIsAccepting(true);
-                  void onAcceptDraft(draft.id).finally(() => setIsAccepting(false));
+                  void onAcceptDraft(draft.id).finally(() =>
+                    setIsAccepting(false),
+                  );
                 }}
               >
                 <CheckCircle2 className="size-3.5" />
@@ -110,9 +133,16 @@ export function DraftReview({
         ) : (
           <div className="grid min-h-[35rem] place-items-center p-8 text-center">
             <div className="max-w-sm">
-              <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-stone-200 text-stone-500"><Sparkles className="size-5" /></span>
-              <h3 className="mt-5 text-lg font-semibold text-stone-800">A draft waits for a scene brief</h3>
-              <p className="mt-2 text-sm leading-6 text-stone-500">Start a generation run from Studio. The output will be versioned here before it can become story truth.</p>
+              <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-stone-200 text-stone-500">
+                <Sparkles className="size-5" />
+              </span>
+              <h3 className="mt-5 text-lg font-semibold text-stone-800">
+                A draft waits for a scene brief
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-stone-500">
+                Start a generation run from Studio. The output will be versioned
+                here before it can become story truth.
+              </p>
             </div>
           </div>
         )}
@@ -122,41 +152,68 @@ export function DraftReview({
         <section className="rounded-2xl border border-white/10 bg-surface-container-low p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold tracking-[0.15em] text-on-surface-variant">CANON PROPOSALS</p>
-              <h2 className="mt-1 text-base font-semibold text-on-surface">Review before commit</h2>
+              <p className="text-xs font-semibold tracking-[0.15em] text-on-surface-variant">
+                CANON PROPOSALS
+              </p>
+              <h2 className="mt-1 text-base font-semibold text-on-surface">
+                Review before commit
+              </h2>
             </div>
-            <span className="grid size-7 place-items-center rounded-full bg-primary/15 text-xs font-bold text-primary">{pendingProposals.length}</span>
+            <span className="grid size-7 place-items-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+              {pendingProposals.length}
+            </span>
           </div>
           <div className="mt-4 space-y-3">
             {proposals.map((proposal) => (
-              <ProposalRow key={proposal.id} proposal={proposal} onReview={onReviewProposal} />
+              <ProposalRow
+                key={proposal.id}
+                proposal={proposal}
+                onReview={onReviewProposal}
+              />
             ))}
-            {!proposals.length ? <p className="rounded-xl border border-dashed border-white/10 p-4 text-sm leading-6 text-on-surface-variant">Generated facts will appear here as reviewable proposals.</p> : null}
+            {!proposals.length ? (
+              <p className="rounded-xl border border-dashed border-white/10 p-4 text-sm leading-6 text-on-surface-variant">
+                Generated facts will appear here as reviewable proposals.
+              </p>
+            ) : null}
+          </div>
+        </section>
+        <section className="rounded-2xl border border-white/10 bg-surface-container-low p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.15em] text-on-surface-variant">RUNS</p>
+              <h2 className="mt-1 text-base font-semibold text-on-surface">Recent generation</h2>
+            </div>
+            <BookOpen className="size-4 text-primary" />
+          </div>
+          <div className="mt-4 space-y-2">
+            {jobs.slice(0, 7).map((entry) => (
+              <button
+                key={entry.id}
+                className={cn(
+                  "w-full rounded-xl border p-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+                  entry.id === selectedJobId
+                    ? "border-primary/40 bg-primary/10"
+                    : "border-white/10 bg-surface-dim/60 hover:border-white/25",
+                )}
+                type="button"
+                onClick={() => onSelectJob(entry.id)}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs font-semibold text-on-surface">{titleCase(entry.stage)}</span>
+                  {entry.status === "READY_FOR_REVIEW" ? <CheckCircle2 className="size-4 text-emerald-200" /> : <RefreshCw className={cn("size-3.5 text-on-surface-variant", entry.status === "RUNNING" && "animate-spin")} />}
+                </div>
+              </button>
+            ))}
+            {!jobs.length ? <p className="rounded-xl border border-dashed border-white/10 p-4 text-sm leading-6 text-on-surface-variant">Your generation history will appear here.</p> : null}
           </div>
         </section>
 
         <section className="rounded-2xl border border-white/10 bg-surface-container-low p-4">
-          <p className="text-xs font-semibold tracking-[0.15em] text-on-surface-variant">CONTEXT USED</p>
-          {context ? (
-            <div className="mt-3 space-y-3 text-sm">
-              <ContextRow label="Characters" value={Array.isArray(context.characters) ? context.characters.length : 0} />
-              <ContextRow label="Memories" value={Array.isArray(context.memories) ? context.memories.length : 0} />
-              <ContextRow label="Open threads" value={Array.isArray(context.plotThreads) ? context.plotThreads.length : 0} />
-              <ContextRow label="Secrets" value={Array.isArray(context.secrets) ? context.secrets.length : 0} />
-              {context.budget ? <ContextRow label="Estimated tokens" value={context.budget.estimatedTokens} /> : null}
-            </div>
-          ) : <p className="mt-3 text-sm leading-6 text-on-surface-variant">Run a generation to inspect the exact context snapshot.</p>}
+          <p className="text-xs font-semibold tracking-[0.15em] text-on-surface-variant">EDITORIAL GUARDRAIL</p>
+          <p className="mt-2 text-sm leading-6 text-on-surface-variant">Generated text is a draft. Memories, events, and changes to canon remain proposals until you approve them.</p>
         </section>
       </aside>
-    </div>
-  );
-}
-
-function ContextRow({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 last:border-0 last:pb-0">
-      <span className="text-on-surface-variant">{label}</span>
-      <span className="font-semibold text-on-surface">{value}</span>
     </div>
   );
 }
@@ -166,19 +223,38 @@ function ProposalRow({
   onReview,
 }: {
   proposal: CanonProposal;
-  onReview: (proposal: CanonProposal, decision: "accept" | "reject") => Promise<void>;
+  onReview: (
+    proposal: CanonProposal,
+    decision: "accept" | "reject",
+  ) => Promise<void>;
 }) {
   const [isReviewing, setIsReviewing] = useState(false);
   const completed = proposal.status !== "PENDING";
   return (
     <article className="rounded-xl border border-white/10 bg-surface-dim/60 p-3">
       <div className="flex items-start gap-2">
-        <span className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded-full", completed && proposal.status === "ACCEPTED" ? "bg-emerald-300/15 text-emerald-200" : "bg-primary/15 text-primary")}>
-          {completed && proposal.status === "ACCEPTED" ? <Check className="size-3" /> : <ChevronRight className="size-3" />}
+        <span
+          className={cn(
+            "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full",
+            completed && proposal.status === "ACCEPTED"
+              ? "bg-emerald-300/15 text-emerald-200"
+              : "bg-primary/15 text-primary",
+          )}
+        >
+          {completed && proposal.status === "ACCEPTED" ? (
+            <Check className="size-3" />
+          ) : (
+            <ChevronRight className="size-3" />
+          )}
         </span>
         <div className="min-w-0">
-          <p className="text-xs font-semibold text-on-surface">{proposal.title}</p>
-          <p className="mt-1 text-xs text-on-surface-variant">{titleCase(proposal.type)} · {Math.round(proposal.confidence * 100)}% confidence</p>
+          <p className="text-xs font-semibold text-on-surface">
+            {proposal.title}
+          </p>
+          <p className="mt-1 text-xs text-on-surface-variant">
+            {titleCase(proposal.type)} · {Math.round(proposal.confidence * 100)}
+            % confidence
+          </p>
         </div>
       </div>
       {proposal.status === "PENDING" ? (
@@ -189,10 +265,14 @@ function ProposalRow({
             type="button"
             onClick={() => {
               setIsReviewing(true);
-              void onReview(proposal, "accept").finally(() => setIsReviewing(false));
+              void onReview(proposal, "accept").finally(() =>
+                setIsReviewing(false),
+              );
             }}
           >
-            {proposal.actionability === "AUTO_APPLY" ? "Accept" : "Review manually"}
+            {proposal.actionability === "AUTO_APPLY"
+              ? "Accept"
+              : "Review manually"}
           </button>
           <button
             className="rounded-lg bg-white/[0.06] px-2.5 py-1.5 text-xs font-bold text-on-surface-variant hover:text-on-surface disabled:opacity-50"
@@ -200,13 +280,19 @@ function ProposalRow({
             type="button"
             onClick={() => {
               setIsReviewing(true);
-              void onReview(proposal, "reject").finally(() => setIsReviewing(false));
+              void onReview(proposal, "reject").finally(() =>
+                setIsReviewing(false),
+              );
             }}
           >
             <X className="inline size-3" /> Dismiss
           </button>
         </div>
-      ) : <p className="mt-3 pl-7 text-xs font-medium text-on-surface-variant">{titleCase(proposal.status)}</p>}
+      ) : (
+        <p className="mt-3 pl-7 text-xs font-medium text-on-surface-variant">
+          {titleCase(proposal.status)}
+        </p>
+      )}
     </article>
   );
 }

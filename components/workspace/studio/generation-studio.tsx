@@ -1,13 +1,13 @@
 "use client";
 
-import { AlertTriangle, BookOpen, CheckCircle2, Eye, Loader2, RefreshCw, ShieldCheck, Sparkles, X } from "lucide-react";
+import { AlertTriangle, BookOpen, CheckCircle2, Eye, Loader2, Plus, RefreshCw, ShieldCheck, Sparkles, UserPlus, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { GenerationContext } from "@/lib/retrieval/types";
 import { isRetryableGenerationStatus } from "@/lib/generation/job-state";
 
 import { formatRelativeDate, titleCase } from "./api";
-import type { CharacterRecord, ChapterRecord, GenerationJob, WorkspaceView } from "./types";
+import type { CharacterRecord, ChapterRecord, GenerationJob, StoryDetail, WorkspaceView } from "./types";
 
 type StudioForm = {
   goal: string;
@@ -52,7 +52,10 @@ export function GenerationStudio({
   onNavigate,
   onCancel,
   onRetry,
-  onSelectJob,
+  story,
+  onReadStory,
+  onAddChapter,
+  onAddCharacter,
 }: {
   form: StudioForm;
   chapters: ChapterRecord[];
@@ -69,7 +72,10 @@ export function GenerationStudio({
   onNavigate: (view: WorkspaceView) => void;
   onCancel: (jobId: string) => void;
   onRetry: (jobId: string) => void;
-  onSelectJob: (jobId: string) => void;
+  story: StoryDetail;
+  onReadStory: () => void;
+  onAddChapter: () => void;
+  onAddCharacter: () => void;
 }) {
   const activeJob = jobs.find((job) => job.id === selectedJobId);
   const isRunning =
@@ -87,8 +93,21 @@ export function GenerationStudio({
   const incompleteReadiness = readiness.filter((item) => !item.complete);
 
   return (
-    <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
-      <div className="min-w-0 space-y-5">
+    <div className="min-w-0 space-y-5">
+        <section className="border-b border-white/[0.08] pb-5">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">CURRENT STORY</p>
+              <h1 className="mt-1 truncate text-2xl font-semibold tracking-tight text-on-surface">{story.title}</h1>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-on-surface-variant">{story.description ?? "Build the next scene from this story’s canon."}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onReadStory}><BookOpen className="size-4" /> Read</button>
+              <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onAddChapter}><Plus className="size-4" /> Chapter</button>
+              <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onAddCharacter}><UserPlus className="size-4" /> Character</button>
+            </div>
+          </div>
+        </section>
         {incompleteReadiness.length ? (
           <section className="rounded-2xl border border-primary/20 bg-primary/[0.06] p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -308,48 +327,6 @@ export function GenerationStudio({
             {activeJob.error ? <p className="mt-4 rounded-lg bg-rose-300/10 p-3 text-sm leading-6 text-rose-100">{activeJob.error}</p> : null}
           </section>
         ) : null}
-      </div>
-
-      <aside className="space-y-4 xl:sticky xl:top-24 xl:h-fit">
-        <section className="rounded-2xl border border-white/10 bg-surface-container-low p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold tracking-[0.15em] text-on-surface-variant">RUNS</p>
-              <h2 className="mt-1 text-base font-semibold text-on-surface">Recent generation</h2>
-            </div>
-            <BookOpen className="size-4 text-primary" />
-          </div>
-          <div className="mt-4 space-y-2">
-            {jobs.slice(0, 7).map((job) => (
-              <button
-                key={job.id}
-                className={cn(
-                  "w-full rounded-xl border p-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                  job.id === selectedJobId
-                    ? "border-primary/40 bg-primary/10"
-                    : "border-white/10 bg-surface-dim/60 hover:border-white/25",
-                )}
-                type="button"
-                onClick={() => onSelectJob(job.id)}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs font-semibold text-on-surface">{titleCase(job.stage)}</span>
-                  {job.status === "READY_FOR_REVIEW" ? <CheckCircle2 className="size-4 text-emerald-200" /> : <RefreshCw className={cn("size-3.5 text-on-surface-variant", job.status === "RUNNING" && "animate-spin")} />}
-                </div>
-                <p className="mt-1 text-xs text-on-surface-variant">{formatRelativeDate(job.createdAt)}</p>
-              </button>
-            ))}
-            {!jobs.length ? <p className="rounded-xl border border-dashed border-white/10 p-4 text-sm leading-6 text-on-surface-variant">Your generation history will appear here.</p> : null}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-white/10 bg-surface-container-low p-4">
-          <p className="text-xs font-semibold tracking-[0.15em] text-on-surface-variant">EDITORIAL GUARDRAIL</p>
-          <p className="mt-2 text-sm leading-6 text-on-surface-variant">
-            Generated text is a draft. Memories, events, and changes to canon remain proposals until you approve them.
-          </p>
-        </section>
-      </aside>
     </div>
   );
 }

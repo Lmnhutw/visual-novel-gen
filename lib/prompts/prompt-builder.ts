@@ -123,7 +123,9 @@ export function formatCharacterPromptContext(
   });
 }
 
-export function buildGenerationPrompt(input: BuildGenerationPromptInput): string {
+export function buildGenerationPrompt(
+  input: BuildGenerationPromptInput,
+): string {
   const { context } = input;
 
   return [
@@ -133,7 +135,10 @@ export function buildGenerationPrompt(input: BuildGenerationPromptInput): string
       : "",
     block("Story", context.story),
     block("Story Settings", context.settings),
-    block("Active Characters", formatCharacterPromptContext(context.characters)),
+    block(
+      "Active Characters",
+      formatCharacterPromptContext(context.characters),
+    ),
     block("Relationships", context.relationships),
     block("Recent Timeline Events", context.recentEvents),
     block("Lore", context.lore),

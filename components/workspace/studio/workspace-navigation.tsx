@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, CircleDot, Feather, Library, Users } from "lucide-react";
+import { BookOpen, Feather, Library, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -8,7 +8,7 @@ import type { WorkspaceView } from "./types";
 
 const items = [
   { id: "studio", label: "Studio", icon: Feather },
-  { id: "story", label: "Story map", icon: CircleDot },
+  { id: "story", label: "Library", icon: Library },
   { id: "cast", label: "Cast", icon: Users },
   { id: "chapters", label: "Chapters", icon: BookOpen },
   { id: "canon", label: "Canon review", icon: Library },

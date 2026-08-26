@@ -20,14 +20,21 @@ export class ApiRequestError extends Error {
 
 export function formatRequestError(error: unknown, fallback: string): string {
   if (error instanceof ApiRequestError) {
-    return error.requestId ? `${error.message} Request ID: ${error.requestId}` : error.message;
+    return error.requestId
+      ? `${error.message} Request ID: ${error.requestId}`
+      : error.message;
   }
   return error instanceof Error ? error.message : fallback;
 }
 
-export async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
+export async function requestJson<T>(
+  url: string,
+  init?: RequestInit,
+): Promise<T> {
   const response = await fetch(url, init);
-  const payload = (await response.json().catch(() => null)) as (T & ApiErrorPayload) | null;
+  const payload = (await response.json().catch(() => null)) as
+    | (T & ApiErrorPayload)
+    | null;
 
   if (!response.ok) {
     throw new ApiRequestError(

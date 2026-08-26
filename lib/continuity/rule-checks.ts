@@ -11,7 +11,10 @@ export type ContinuityWarning = {
 };
 
 function containsName(text: string, name: string): boolean {
-  return new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(text);
+  return new RegExp(
+    `\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+    "i",
+  ).test(text);
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

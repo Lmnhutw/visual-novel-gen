@@ -48,7 +48,21 @@ test("failed generation renders an accessible retry affordance", () => {
       onNavigate: () => undefined,
       onCancel: () => undefined,
       onRetry: () => undefined,
-      onSelectJob: () => undefined,
+      story: {
+        id: "story-1",
+        title: "Test story",
+        description: null,
+        status: "ACTIVE",
+        updatedAt: new Date().toISOString(),
+        settings: null,
+        characters: [],
+        chapters: [],
+        relationships: [],
+        continuityIssues: [],
+      },
+      onReadStory: () => undefined,
+      onAddChapter: () => undefined,
+      onAddCharacter: () => undefined,
       }),
     );
   } finally {
