@@ -67,7 +67,7 @@ function templateFormRecord(template: TemplateRecord): CharacterFormRecord {
 }
 
 export function WriterStudio() {
-  const [activeView, setActiveView] = useState<WorkspaceView>("studio");
+  const [activeView, setActiveView] = useState<WorkspaceView>("story");
   const [stories, setStories] = useState<StorySummary[]>([]);
   const [storyId, setStoryId] = useState("");
   const [story, setStory] = useState<StoryDetail | null>(null);
@@ -107,9 +107,7 @@ export function WriterStudio() {
     setStories(payload.stories);
     setStoryId((current) => {
       const next = preferredId ?? current;
-      return payload.stories.some((entry) => entry.id === next)
-        ? next
-        : (payload.stories[0]?.id ?? "");
+      return next && payload.stories.some((entry) => entry.id === next) ? next : "";
     });
   }, []);
 
@@ -584,6 +582,26 @@ export function WriterStudio() {
       onEdit={openTemplateForm}
       onDelete={deleteTemplate}
     />
+  ) : activeView === "story" ? (
+    <StoryLedger
+      story={story}
+      stories={stories}
+      onSelectStory={(selectedStoryId) => {
+        setStoryId(selectedStoryId);
+        setActiveView("studio");
+      }}
+      onNewStory={() => setIsStoryModalOpen(true)}
+      onReadStory={(selectedStory) => window.location.assign(`/library/story?story=${encodeURIComponent(selectedStory.id)}&view=detail`)}
+      onAddChapter={(selectedStory) => {
+        setStoryId(selectedStory.id);
+        setIsChapterModalOpen(true);
+      }}
+      onAddCharacter={(selectedStory) => {
+        setStoryId(selectedStory.id);
+        openCreateCharacter();
+      }}
+      onDeleteStory={setStoryToDelete}
+    />
   ) : !story ? (
     <EmptyWorkspace onCreate={() => setIsStoryModalOpen(true)} />
   ) : activeView === "studio" ? (
@@ -640,26 +658,6 @@ export function WriterStudio() {
         onSelectJob={setSelectedJobId}
       />
     </div>
-  ) : activeView === "story" ? (
-    <StoryLedger
-      story={story}
-      stories={stories}
-      onSelectStory={(selectedStoryId) => {
-        setStoryId(selectedStoryId);
-        setActiveView("studio");
-      }}
-      onNewStory={() => setIsStoryModalOpen(true)}
-      onReadStory={(selectedStory) => window.location.assign(`/library/story?story=${encodeURIComponent(selectedStory.id)}&view=detail`)}
-      onAddChapter={(selectedStory) => {
-        setStoryId(selectedStory.id);
-        setIsChapterModalOpen(true);
-      }}
-      onAddCharacter={(selectedStory) => {
-        setStoryId(selectedStory.id);
-        openCreateCharacter();
-      }}
-      onDeleteStory={setStoryToDelete}
-    />
   ) : activeView === "cast" ? (
     <CastLedger
       characters={story.characters}
@@ -702,6 +700,7 @@ export function WriterStudio() {
               activeView={activeView}
               onChange={setActiveView}
               issueCount={story?.continuityIssues.length ?? 0}
+              storySelected={Boolean(story)}
             />
           </div>
           <div className="mt-auto rounded-xl border border-white/[0.08] bg-white/[0.035] p-3">
@@ -720,15 +719,22 @@ export function WriterStudio() {
                 <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">
                   {activeView === "studio"
                     ? "DRAFTING"
-                    : activeView.toUpperCase()}
+                    : activeView === "story"
+                      ? "LIBRARY"
+                      : activeView.toUpperCase()}
                 </p>
                 <div className="min-w-0">
                   <select
                     aria-label="Select story"
                     className="studio-select block w-[min(34rem,calc(100vw-10rem))] truncate bg-surface-dim/70 px-3 py-1.5 text-lg font-semibold tracking-tight"
                     value={storyId}
-                    onChange={(event) => setStoryId(event.target.value)}
+                    onChange={(event) => {
+                      const nextStoryId = event.target.value;
+                      setStoryId(nextStoryId);
+                      setActiveView(nextStoryId ? "studio" : "story");
+                    }}
                   >
+                    <option value="">Please select a story</option>
                     {stories.map((entry) => (
                       <option
                         className="bg-surface-dim"
@@ -754,6 +760,7 @@ export function WriterStudio() {
                 activeView={activeView}
                 onChange={setActiveView}
                 issueCount={story?.continuityIssues.length ?? 0}
+                storySelected={Boolean(story)}
               />
             </div>
           </header>

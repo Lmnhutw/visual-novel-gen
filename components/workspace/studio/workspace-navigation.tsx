@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 import type { WorkspaceView } from "./types";
 
 const items = [
-  { id: "studio", label: "Studio", icon: Feather },
   { id: "story", label: "Library", icon: Library },
+  { id: "studio", label: "Studio", icon: Feather },
   { id: "cast", label: "Cast", icon: Users },
   { id: "templates", label: "Character Library", icon: UserRoundPlus },
   { id: "canon", label: "Canon review", icon: Library },
@@ -18,14 +18,18 @@ export function WorkspaceNavigation({
   activeView,
   onChange,
   issueCount,
+  storySelected,
 }: {
   activeView: WorkspaceView;
   onChange: (view: WorkspaceView) => void;
   issueCount: number;
+  storySelected: boolean;
 }) {
+  const visibleItems = storySelected ? items : items.filter((item) => item.id === "story");
+
   return (
     <nav aria-label="Workspace" className="flex gap-1 overflow-x-auto px-1 py-2 lg:flex-col lg:gap-1 lg:px-0">
-      {items.map((item) => {
+      {visibleItems.map((item) => {
         const Icon = item.icon;
         const active = item.id === activeView;
         return (
@@ -51,6 +55,7 @@ export function WorkspaceNavigation({
           </button>
         );
       })}
+      {!storySelected ? <p className="px-3 py-3 text-xs leading-5 text-on-surface-variant">Please select a story to open its workspace tools.</p> : null}
     </nav>
   );
 }

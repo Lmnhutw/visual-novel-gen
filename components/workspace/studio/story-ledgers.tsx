@@ -49,11 +49,13 @@ export function StoryLedger({
               LIBRARY
             </p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-on-surface">
-              {story?.title ?? "Choose a story"}
+              {story?.title ?? (stories.length ? "Select a story to continue" : "Your story library is empty")}
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-on-surface-variant">
               {story?.description ??
-                "Create a story workspace to begin outlining your narrative world."}
+                (stories.length
+                  ? "Please select a story to review its workspace, chapters, cast, and canon."
+                  : "Create a story workspace to begin outlining your narrative world.")}
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               {story ? (
@@ -68,26 +70,25 @@ export function StoryLedger({
                     <UserPlus className="size-4" /> Add character
                   </button>
                 </>
-              ) : (
+              ) : !stories.length ? (
                 <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onNewStory}>
                   <FilePlus2 className="size-4" /> New story
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 self-end">
-            <Metric label="Characters" value={story?.characters.length ?? 0} />
-            <Metric label="Chapters" value={story?.chapters.length ?? 0} />
-            <Metric
-              label="Relationships"
-              value={story?.relationships.length ?? 0}
-            />
-            <Metric
-              label="Open issues"
-              value={story?.continuityIssues.length ?? 0}
-              tone="warn"
-            />
-          </div>
+          {story ? (
+            <div className="grid grid-cols-2 gap-3 self-end">
+              <Metric label="Characters" value={story.characters.length} />
+              <Metric label="Chapters" value={story.chapters.length} />
+              <Metric label="Relationships" value={story.relationships.length} />
+              <Metric label="Open issues" value={story.continuityIssues.length} tone="warn" />
+            </div>
+          ) : (
+            <div className="self-end border-l border-white/[0.1] pl-5 text-sm leading-6 text-on-surface-variant">
+              Please select a story to review its details.
+            </div>
+          )}
         </div>
       </section>
       <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
