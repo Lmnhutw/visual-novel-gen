@@ -23,6 +23,20 @@ export type StorySummary = {
   };
 };
 
+export type TemplateRecord = {
+  id: string;
+  name: string;
+  aliases: string[];
+  ageConfirmed: boolean;
+  gender: string;
+  age: number;
+  race: string | null;
+  species: string | null;
+  occupation: string | null;
+  archetypes: string[];
+  profile: Record<string, unknown>;
+};
+
 export type CharacterRecord = {
   id: string;
   storyId?: string;

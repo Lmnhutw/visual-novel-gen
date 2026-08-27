@@ -10,12 +10,13 @@ import {
 import {
   useCallback,
   useEffect,
-  useId,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+
+import selectStyles from "@/components/ui/select.module.css";
+import studioStyles from "./studio.module.css";
 
 import { CharacterForm, type CharacterFormRecord } from "./character-form";
 import type { GenerationContext } from "@/lib/retrieval/types";
@@ -23,6 +24,8 @@ import type {
   CreateCharacterInput,
   UpdateCharacterInput,
 } from "@/lib/validators/character.schema";
+
+import { Dialog, ModalFrame } from "@/components/ui/modal";
 
 import { formatRequestError, requestJson } from "./api";
 import { DraftReview } from "./draft-review";
@@ -37,26 +40,14 @@ import type {
   GenerationJob,
   StoryDetail,
   StorySummary,
+  TemplateRecord,
   WorkspaceView,
 } from "./types";
+import { CharacterTemplateLibrary } from "./character-template-library";
 import { WorkspaceNavigation } from "./workspace-navigation";
 
 const defaultGoal =
   "Write the next scene with a choice that shifts the relationship and creates a new consequence for the story.";
-
-type TemplateRecord = {
-  id: string;
-  name: string;
-  aliases: string[];
-  ageConfirmed: boolean;
-  gender: string;
-  age: number;
-  race: string | null;
-  species: string | null;
-  occupation: string | null;
-  archetypes: string[];
-  profile: Record<string, unknown>;
-};
 
 function templateFormRecord(template: TemplateRecord): CharacterFormRecord {
   return {
@@ -700,7 +691,6 @@ export function WriterStudio() {
         query={templateQuery}
         templates={templates}
         onQueryChange={setTemplateQuery}
-        onCreate={() => openTemplateForm()}
         onEdit={openTemplateForm}
         onDelete={deleteTemplate}
       />
@@ -710,7 +700,7 @@ export function WriterStudio() {
   );
 
   return (
-    <main className="min-h-screen bg-background text-on-surface">
+    <main className={studioStyles.workspace}>
       <div className="mx-auto flex min-h-screen max-w-[1760px]">
         <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.08] bg-surface-dim/65 px-4 py-5 lg:flex">
           <div className="flex items-center gap-3 px-2">
@@ -757,7 +747,7 @@ export function WriterStudio() {
                 <div className="min-w-0">
                   <select
                     aria-label="Select story"
-                    className="studio-select block w-[min(34rem,calc(100vw-10rem))] truncate bg-surface-dim/70 px-3 py-1.5 text-lg font-semibold tracking-tight"
+                    className={`${selectStyles["studio-select"]} block w-[min(34rem,calc(100vw-10rem))] truncate bg-surface-dim/70 px-3 py-1.5 text-lg font-semibold tracking-tight`}
                     value={storyId}
                     onChange={(event) => selectStory(event.target.value)}
                   >
@@ -796,7 +786,7 @@ export function WriterStudio() {
           </div>
           {(error || message) && (
             <div
-              className={`mx-4 mt-4 rounded-xl border px-4 py-3 text-sm sm:mx-6 lg:mx-8 ${error ? "border-rose-300/20 bg-rose-300/[0.08] text-rose-100" : "border-white/[0.08] bg-white/[0.035] text-on-surface-variant"}`}
+              className={`${studioStyles["workspace__feedback"]} ${error ? studioStyles["workspace__feedback--error"] : ""}`}
             >
               {error || message}
             </div>
@@ -899,7 +889,7 @@ export function WriterStudio() {
               <input autoFocus className="mt-2 h-10 w-full rounded-xl border border-white/10 bg-surface-dim px-3 text-on-surface outline-none focus:border-primary" value={templateQuery} onChange={(event) => setTemplateQuery(event.target.value)} />
             </label>
             <label className="text-sm font-semibold text-on-surface">Story role
-              <select className="studio-select mt-2 h-10 w-full text-sm" value={templateRole} onChange={(event) => setTemplateRole(event.target.value)}>
+              <select className={`${selectStyles["studio-select"]} mt-2 h-10 w-full text-sm`} value={templateRole} onChange={(event) => setTemplateRole(event.target.value)}>
                 <option value="SUPPORTING">Supporting</option><option value="PROTAGONIST">Protagonist</option><option value="ANTAGONIST">Antagonist</option><option value="BACKGROUND">Background</option>
               </select>
             </label>
@@ -930,193 +920,6 @@ export function WriterStudio() {
   );
 }
 
-function CharacterTemplateLibrary({
-  templates,
-  query,
-  isLoading,
-  onQueryChange,
-  onCreate,
-  onEdit,
-  onDelete,
-}: {
-  templates: TemplateRecord[];
-  query: string;
-  isLoading: boolean;
-  onQueryChange: (query: string) => void;
-  onCreate: () => void;
-  onEdit: (template: TemplateRecord) => void;
-  onDelete: (template: TemplateRecord) => void;
-}) {
-  return (
-    <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">CHARACTER LIBRARY</p>
-          <h2 className="mt-1 text-xl font-semibold text-on-surface">Reusable starting points</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant">Library characters are profile input only. Adding one to a Story always creates a separate canonical character.</p>
-        </div>
-        <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary" type="button" onClick={onCreate}><Plus className="size-4" /> New library character</button>
-      </div>
-      <label className="mt-6 block max-w-md text-sm font-semibold text-on-surface">Search library
-        <input className="mt-2 h-10 w-full rounded-xl border border-white/10 bg-surface-dim px-3 text-on-surface outline-none focus:border-primary" value={query} onChange={(event) => onQueryChange(event.target.value)} />
-      </label>
-      <div className="mt-5 divide-y divide-white/[0.08] border-y border-white/[0.08]">
-        {templates.map((template) => (
-          <article key={template.id} className="flex flex-wrap items-start justify-between gap-4 px-1 py-4">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-on-surface">{template.name}</h3>
-              <p className="mt-1 text-sm leading-6 text-on-surface-variant">{typeof template.profile.personality === "object" && template.profile.personality && "summary" in template.profile.personality ? String((template.profile.personality as { summary?: unknown }).summary ?? "") : "Reusable character profile"}</p>
-            </div>
-            <div className="flex gap-3 text-sm font-semibold">
-              <button className="text-on-surface-variant hover:text-on-surface" type="button" onClick={() => onEdit(template)}>Edit</button>
-              <button className="text-rose-200 hover:text-rose-100 disabled:opacity-50" disabled={isLoading} type="button" onClick={() => onDelete(template)}>Delete</button>
-            </div>
-          </article>
-        ))}
-        {!templates.length ? <p className="px-1 py-6 text-sm leading-6 text-on-surface-variant">Create a reusable character profile here, then add independent copies to any Story.</p> : null}
-      </div>
-    </section>
-  );
-}
-
-function Dialog({
-  title,
-  children,
-  onClose,
-}: {
-  title: string;
-  children: React.ReactNode;
-  onClose: () => void;
-}) {
-  const titleId = useId();
-  return (
-    <ModalFrame
-      labelledBy={titleId}
-      onClose={onClose}
-      panelClassName="w-full max-w-lg rounded-2xl border border-white/10 bg-surface-container-low p-5 shadow-2xl"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-on-surface" id={titleId}>
-          {title}
-        </h2>
-        <button
-          aria-label="Close dialog"
-          className="grid size-10 place-items-center rounded-lg text-on-surface-variant transition hover:bg-white/[0.07] hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          type="button"
-          onClick={onClose}
-        >
-          <X className="size-4" />
-        </button>
-      </div>
-      <div className="mt-5">{children}</div>
-    </ModalFrame>
-  );
-}
-
-function ModalFrame({
-  children,
-  label,
-  labelledBy,
-  onClose,
-  panelClassName,
-}: {
-  children: React.ReactNode;
-  label?: string;
-  labelledBy?: string;
-  onClose: () => void;
-  panelClassName: string;
-}) {
-  const panelRef = useRef<HTMLElement>(null);
-  const closeRef = useRef(onClose);
-  const returnFocusRef = useRef<HTMLElement | null>(
-    typeof document !== "undefined" &&
-      document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null,
-  );
-
-  useEffect(() => {
-    closeRef.current = onClose;
-  }, [onClose]);
-
-  useEffect(() => {
-    const returnFocus = returnFocusRef.current;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const panel = panelRef.current;
-    const getFocusable = () =>
-      panel
-        ? Array.from(
-            panel.querySelectorAll<HTMLElement>(
-              "[autofocus], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])",
-            ),
-          ).filter((element) => !element.hasAttribute("aria-hidden"))
-        : [];
-
-    window.requestAnimationFrame(() => {
-      if (panel?.contains(document.activeElement)) return;
-      const preferred = panel?.querySelector<HTMLElement>(
-        "[autofocus], input:not([disabled]), textarea:not([disabled]), select:not([disabled])",
-      );
-      (preferred ?? getFocusable()[0] ?? panel)?.focus();
-    });
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeRef.current();
-        return;
-      }
-      if (event.key !== "Tab") return;
-
-      const focusable = getFocusable();
-      if (!focusable.length) {
-        event.preventDefault();
-        panel?.focus();
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      returnFocus?.focus();
-    };
-  }, []);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-end bg-black/70 p-4 backdrop-blur-sm sm:place-items-center"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) closeRef.current();
-      }}
-    >
-      <section
-        ref={panelRef}
-        aria-label={label}
-        aria-labelledby={labelledBy}
-        aria-modal="true"
-        className={panelClassName}
-        role="dialog"
-        tabIndex={-1}
-      >
-        {children}
-      </section>
-    </div>
-  );
-}
 function EmptyWorkspace({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="grid min-h-screen place-items-center p-6">

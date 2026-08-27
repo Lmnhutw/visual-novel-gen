@@ -32,7 +32,7 @@ export function SliderField({
         </button>
       </span>
       <input
-        className="w-full accent-[#DFD0B8]"
+        className="w-full accent-control"
         max={100}
         min={0}
         type="range"

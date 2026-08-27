@@ -13,6 +13,7 @@ import {
   RadioCardGroup,
   type RadioCardOption,
 } from "@/components/ui/radio-card-group";
+import selectStyles from "@/components/ui/select.module.css";
 import { SliderField } from "@/components/ui/slider-field";
 import { TagInput } from "@/components/ui/tag-input";
 import {
@@ -939,7 +940,7 @@ function SelectField<T extends string>({
         {required ? <span className="text-primary"> *</span> : null}
       </span>
       <select
-        className="studio-select h-10 w-full text-sm"
+        className={`${selectStyles["studio-select"]} h-10 w-full text-sm`}
         value={value}
         onChange={(event) => onChange(event.target.value as T)}
       >
@@ -1272,7 +1273,7 @@ export function CharacterForm({
                 <span>Add appearance details</span>
                 <input
                   checked={values.addAppearance}
-                  className="size-4 accent-[#DFD0B8]"
+                  className="size-4 accent-control"
                   type="checkbox"
                   onChange={(event) =>
                     setValues((current) => ({
@@ -1933,7 +1934,7 @@ export function CharacterForm({
             <span>Adult confirmation recorded</span>
             <input
               checked={values.ageConfirmed}
-              className="size-4 accent-[#DFD0B8]"
+              className="size-4 accent-control"
               type="checkbox"
               onChange={(event) =>
                 setValues((current) => ({

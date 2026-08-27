@@ -14,6 +14,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import styles from "./draft-review.module.css";
 import { titleCase } from "./api";
 import type { CanonProposal, GenerationJob } from "./types";
 
@@ -66,17 +67,17 @@ export function DraftReview({
 
   return (
     <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
-      <section className="min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-[#ece7dc] shadow-[0_24px_64px_rgba(0,0,0,0.24)]">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-300/80 bg-[#e5decf] px-5 py-3 sm:px-6">
+      <section className={styles["draft-review__paper"]}>
+        <div className={styles["draft-review__toolbar"]}>
           <div className="flex items-center gap-3">
-            <span className="grid size-8 place-items-center rounded-lg bg-stone-800 text-[#f5efe3]">
+            <span className={styles["draft-review__icon"]}>
               <FileText className="size-4" />
             </span>
             <div>
-              <p className="text-[11px] font-bold tracking-[0.14em] text-stone-500">
+              <p className={styles["draft-review__eyebrow"]}>
                 DRAFT VERSION
               </p>
-              <h2 className="text-sm font-semibold text-stone-900">
+              <h2 className={styles["draft-review__title"]}>
                 {draft
                   ? `v${draft.versionNumber} · ${draft.title ?? "Untitled draft"}`
                   : "No draft selected"}
@@ -85,7 +86,7 @@ export function DraftReview({
           </div>
           {draft ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-stone-500">
+              <span className={styles["draft-review__status"]}>
                 {isSaving
                   ? "Saving…"
                   : content === draft.content
@@ -93,7 +94,7 @@ export function DraftReview({
                     : "Unsaved"}
               </span>
               <button
-                className="inline-flex h-9 items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-700 transition hover:border-stone-400 disabled:opacity-50"
+                className={cn(styles["draft-review__action"], styles["draft-review__action--save"])}
                 disabled={isSaving || content === draft.content}
                 type="button"
                 onClick={() => {
@@ -106,7 +107,7 @@ export function DraftReview({
                 <Save className="size-3.5" /> Save
               </button>
               <button
-                className="inline-flex h-9 items-center gap-2 rounded-lg bg-stone-900 px-3 text-sm font-semibold text-white transition hover:bg-stone-700 disabled:opacity-50"
+                className={cn(styles["draft-review__action"], styles["draft-review__action--accept"])}
                 disabled={isAccepting || draft.status === "ACCEPTED"}
                 type="button"
                 onClick={() => {
@@ -125,21 +126,21 @@ export function DraftReview({
         {draft ? (
           <textarea
             aria-label="Draft editor"
-            className="min-h-[43rem] w-full resize-y bg-transparent px-7 py-8 font-story text-[17px] leading-8 text-stone-800 outline-none placeholder:text-stone-400 sm:px-10"
+            className={styles["draft-review__editor"]}
             placeholder="A generated draft will appear here."
             value={content}
             onChange={(event) => setContent(event.target.value)}
           />
         ) : (
-          <div className="grid min-h-[35rem] place-items-center p-8 text-center">
-            <div className="max-w-sm">
-              <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-stone-200 text-stone-500">
+          <div className={styles["draft-review__empty"]}>
+            <div className={styles["draft-review__empty-content"]}>
+              <span className={styles["draft-review__empty-icon"]}>
                 <Sparkles className="size-5" />
               </span>
-              <h3 className="mt-5 text-lg font-semibold text-stone-800">
+              <h3 className={styles["draft-review__empty-title"]}>
                 A draft waits for a scene brief
               </h3>
-              <p className="mt-2 text-sm leading-6 text-stone-500">
+              <p className={styles["draft-review__empty-copy"]}>
                 Start a generation run from Studio. The output will be versioned
                 here before it can become story truth.
               </p>

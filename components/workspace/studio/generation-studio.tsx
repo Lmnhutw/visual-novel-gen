@@ -130,7 +130,7 @@ export function GenerationStudio({
             </ol>
           </section>
         ) : null}
-        <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 shadow-[0_24px_64px_rgba(0,0,0,0.22)] sm:p-6">
+        <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 shadow-panel sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">MANUSCRIPT</p>
@@ -174,7 +174,7 @@ export function GenerationStudio({
             </div>
           )}
         </section>
-        <section className="overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low shadow-[0_24px_64px_rgba(0,0,0,0.22)]">
+        <section className="overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low shadow-panel">
           <div className="border-b border-white/10 px-5 py-4 sm:px-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>

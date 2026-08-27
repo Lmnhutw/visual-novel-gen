@@ -1,0 +1,34 @@
+.workspace {
+  min-height: 100vh;
+  color: rgb(var(--color-on-surface) / 1);
+  background: rgb(var(--color-background) / 1);
+}
+
+.workspace__feedback {
+  margin: 1rem 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgb(var(--color-on-surface) / 0.08);
+  border-radius: 0.75rem;
+  color: rgb(var(--color-on-surface-variant) / 1);
+  background: rgb(var(--color-on-surface) / 0.035);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.workspace__feedback--error {
+  border-color: rgb(var(--color-error) / 0.2);
+  color: rgb(var(--color-error) / 1);
+  background: rgb(var(--color-error) / 0.08);
+}
+
+@media (min-width: 640px) {
+  .workspace__feedback {
+    margin-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .workspace__feedback {
+    margin-inline: 2rem;
+  }
+}

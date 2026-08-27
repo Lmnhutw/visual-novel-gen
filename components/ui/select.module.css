@@ -1,0 +1,33 @@
+.studio-select {
+  min-height: 2.75rem;
+  padding: 0.625rem 0.875rem;
+  color: rgb(var(--color-on-surface) / 1);
+  background-color: rgb(var(--color-surface-container-low) / 1);
+  border: 1px solid rgb(var(--color-on-surface) / 0.1);
+  border-radius: 0.75rem;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.studio-select:hover:not(:disabled) {
+  border-color: rgb(var(--color-on-surface) / 0.24);
+  background-color: rgb(var(--color-surface-bright) / 1);
+}
+
+.studio-select:focus-visible {
+  border-color: rgb(var(--color-primary) / 0.72);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.14);
+}
+
+.studio-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.studio-select option {
+  color: rgb(var(--color-on-surface) / 1);
+  background: rgb(var(--color-surface-container-low) / 1);
+}
