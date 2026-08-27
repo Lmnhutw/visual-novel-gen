@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 
 import type {
-  ChapterRecord,
   CharacterRecord,
   ContinuityIssue,
   StoryDetail,
@@ -221,68 +220,6 @@ export function CastLedger({
           <Empty
             icon={<Users className="size-5" />}
             text="Build the cast before asking the model to hold its emotional stakes."
-          />
-        ) : null}
-      </div>
-    </section>
-  );
-}
-
-export function ChapterLedger({
-  chapters,
-  onAdd,
-}: {
-  chapters: ChapterRecord[];
-  onAdd: () => void;
-}) {
-  return (
-    <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">
-            CHAPTERS
-          </p>
-          <h2 className="mt-1 text-xl font-semibold text-on-surface">
-            Navigate the manuscript spine
-          </h2>
-        </div>
-        <button
-          className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary"
-          type="button"
-          onClick={onAdd}
-        >
-          <FilePlus2 className="size-4" /> Add chapter
-        </button>
-      </div>
-      <div className="mt-6 space-y-3">
-        {chapters.map((chapter) => (
-          <article
-            key={chapter.id}
-            className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-white/10 bg-surface-dim/60 p-4"
-          >
-            <div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-bold text-primary">
-                  {String(chapter.number).padStart(2, "0")}
-                </span>
-                <h3 className="font-semibold text-on-surface">
-                  {chapter.title}
-                </h3>
-              </div>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-on-surface-variant">
-                {chapter.summary ?? "No summary yet."}
-              </p>
-            </div>
-            <div className="flex gap-3 text-xs text-on-surface-variant">
-              <span>{chapter._count?.scenes ?? 0} scenes</span>
-              <span>{chapter._count?.events ?? 0} events</span>
-            </div>
-          </article>
-        ))}
-        {!chapters.length ? (
-          <Empty
-            icon={<BookOpen className="size-5" />}
-            text="Create an outline chapter to give scenes a clear narrative anchor."
           />
         ) : null}
       </div>

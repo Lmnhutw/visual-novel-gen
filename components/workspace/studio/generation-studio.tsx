@@ -87,7 +87,7 @@ export function GenerationStudio({
   const readiness = [
     { label: "Story workspace", detail: "A story is selected.", complete: true, action: "story" as const, actionLabel: "View story" },
     { label: "Cast", detail: "Add at least one character to ground the scene.", complete: characters.length > 0, action: "cast" as const, actionLabel: "Add character" },
-    { label: "Chapter", detail: "Add an outline chapter to anchor the draft.", complete: chapters.length > 0, action: "chapters" as const, actionLabel: "Add chapter" },
+    { label: "Chapter", detail: "Add an outline chapter to anchor the draft.", complete: chapters.length > 0, action: "chapter" as const, actionLabel: "Add chapter" },
     { label: "Scene brief", detail: "Describe a change or consequence in at least 10 characters.", complete: form.goal.trim().length >= 10, action: "studio" as const, actionLabel: "Write brief" },
   ];
   const incompleteReadiness = readiness.filter((item) => !item.complete);
@@ -103,7 +103,6 @@ export function GenerationStudio({
             </div>
             <div className="flex flex-wrap gap-2">
               <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onReadStory}><BookOpen className="size-4" /> Read</button>
-              <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onAddChapter}><Plus className="size-4" /> Chapter</button>
               <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onAddCharacter}><UserPlus className="size-4" /> Character</button>
             </div>
           </div>
@@ -125,12 +124,56 @@ export function GenerationStudio({
                     <p className="text-sm font-semibold text-on-surface">{item.label}</p>
                     <p className="mt-0.5 text-xs leading-5 text-on-surface-variant">{item.complete ? "Ready" : item.detail}</p>
                   </div>
-                  {!item.complete ? <button className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => item.action === "studio" ? document.getElementById("scene-brief")?.focus() : onNavigate(item.action)}>{item.actionLabel}</button> : <CheckCircle2 aria-label="Complete" className="size-4 shrink-0 text-emerald-200" />}
+                  {!item.complete ? <button className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => item.action === "studio" ? document.getElementById("scene-brief")?.focus() : item.action === "chapter" ? onAddChapter() : onNavigate(item.action)}>{item.actionLabel}</button> : <CheckCircle2 aria-label="Complete" className="size-4 shrink-0 text-emerald-200" />}
                 </li>
               ))}
             </ol>
           </section>
         ) : null}
+        <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 shadow-[0_24px_64px_rgba(0,0,0,0.22)] sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">MANUSCRIPT</p>
+              <h2 className="mt-1 text-xl font-semibold tracking-tight text-on-surface">Chapters in this story</h2>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-on-surface-variant">Keep the manuscript spine attached to “{story.title}”. Select a chapter to anchor the next scene.</p>
+            </div>
+            <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onAddChapter}><Plus className="size-4" /> Add chapter</button>
+          </div>
+          {chapters.length ? (
+            <div className="mt-5 divide-y divide-white/[0.08] overflow-hidden rounded-xl border border-white/[0.08] bg-surface-dim/45">
+              {chapters.map((chapter) => {
+                const selected = form.chapterId === chapter.id;
+                return (
+                  <button
+                    key={chapter.id}
+                    aria-pressed={selected}
+                    className={cn(
+                      "flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-primary",
+                      selected ? "bg-primary/[0.12]" : "hover:bg-white/[0.04]",
+                    )}
+                    type="button"
+                    onClick={() => onFormChange({ chapterId: chapter.id })}
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/15 text-xs font-bold text-primary">{String(chapter.number).padStart(2, "0")}</span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-on-surface">{chapter.title}</span>
+                        <span className="mt-0.5 block text-xs text-on-surface-variant">{titleCase(chapter.status)}</span>
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-xs text-on-surface-variant">{chapter._count?.scenes ?? 0} scenes · {chapter._count?.events ?? 0} events</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-5 rounded-xl border border-dashed border-white/15 bg-surface-dim/35 px-4 py-5">
+              <p className="text-sm font-semibold text-on-surface">No chapters in this story yet.</p>
+              <p className="mt-1 text-sm leading-6 text-on-surface-variant">Add the first outline chapter before generating a scene.</p>
+              <button className="mt-3 inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onAddChapter}><Plus className="size-3.5" /> Add first chapter</button>
+            </div>
+          )}
+        </section>
         <section className="overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low shadow-[0_24px_64px_rgba(0,0,0,0.22)]">
           <div className="border-b border-white/10 px-5 py-4 sm:px-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -180,21 +223,6 @@ export function GenerationStudio({
             </label>
 
             <div className="grid gap-5 md:grid-cols-2">
-              <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-on-surface">Chapter anchor</span>
-                <select
-                  className="studio-select h-11 w-full text-sm"
-                  value={form.chapterId}
-                  onChange={(event) => onFormChange({ chapterId: event.target.value })}
-                >
-                  <option value="">Unanchored draft</option>
-                  {chapters.map((chapter) => (
-                    <option key={chapter.id} value={chapter.id}>
-                      {chapter.number}. {chapter.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
               <div>
                 <span className="mb-2 block text-sm font-semibold text-on-surface">Safety and knowledge scope</span>
                 <div className="grid grid-cols-2 gap-2">

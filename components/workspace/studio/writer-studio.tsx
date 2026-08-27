@@ -29,7 +29,6 @@ import { GenerationStudio } from "./generation-studio";
 import {
   CanonLedger,
   CastLedger,
-  ChapterLedger,
   StoryLedger,
 } from "./story-ledgers";
 import type {
@@ -676,11 +675,6 @@ export function WriterStudio() {
       onSetPrimary={(character) => void setPrimaryProtagonist(character.id)}
       onClearPrimary={() => void setPrimaryProtagonist(null)}
       primaryProtagonistId={story.primaryProtagonistId}
-    />
-  ) : activeView === "chapters" ? (
-    <ChapterLedger
-      chapters={chapters}
-      onAdd={() => setIsChapterModalOpen(true)}
     />
   ) : (
     <CanonLedger issues={story.continuityIssues} view={activeView} />

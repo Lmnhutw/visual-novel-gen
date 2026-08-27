@@ -130,4 +130,4 @@ export type GenerationJob = {
   _count?: { proposals: number };
 };
 
-export type WorkspaceView = "studio" | "story" | "cast" | "templates" | "chapters" | "canon";
+export type WorkspaceView = "studio" | "story" | "cast" | "templates" | "canon";
