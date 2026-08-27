@@ -13,6 +13,7 @@ datasource db {
 model Story {
   id          String   @id @default(cuid())
   ownerId     String?  @map("owner_id")
+  primaryProtagonistId String? @unique @map("primary_protagonist_id")
   title       String
   description String?
   status      String   @default("ACTIVE")
@@ -22,6 +23,7 @@ model Story {
 
   settings         StorySettings?
   characters       Character[]
+  primaryProtagonist Character? @relation("StoryPrimaryProtagonist", fields: [primaryProtagonistId], references: [id], onDelete: SetNull)
   relationships    Relationship[]
   chapters         Chapter[]
   scenes           Scene[]
@@ -65,6 +67,7 @@ model StorySettings {
 model Character {
   id           String   @id @default(cuid())
   storyId      String   @map("story_id")
+  sourceTemplateId String? @map("source_template_id")
   name         String
   aliases      String[] @default([])
   role         String   @default("SUPPORTING")
@@ -82,6 +85,7 @@ model Character {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   story             Story               @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  primaryForStory   Story?              @relation("StoryPrimaryProtagonist")
   profile           CharacterProfile?
   states            CharacterState[]
   povScenes         Scene[]             @relation("ScenePovCharacter")
@@ -97,6 +101,27 @@ model Character {
   @@index([gender])
   @@index([age])
   @@map("characters")
+}
+
+model CharacterTemplate {
+  id           String   @id @default(cuid())
+  ownerId      String   @map("owner_id")
+  name         String
+  aliases      String[] @default([])
+  ageConfirmed Boolean  @default(false) @map("age_confirmed")
+  gender       String   @default("other")
+  age          Int      @default(18)
+  race         String?
+  species      String?
+  occupation   String?
+  archetypes   String[] @default([])
+  profile      Json     @default("{}")
+  metadata     String   @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([ownerId, name])
+  @@map("character_templates")
 }
 
 model CharacterProfile {

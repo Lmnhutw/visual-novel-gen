@@ -170,6 +170,7 @@ type CharacterFormValues = {
 type CharacterFormProps = {
   storyId: string;
   character?: CharacterFormRecord | null;
+  forceCreate?: boolean;
   isSubmitting?: boolean;
   onCancel: () => void;
   onSubmit: (
@@ -938,7 +939,7 @@ function SelectField<T extends string>({
         {required ? <span className="text-primary"> *</span> : null}
       </span>
       <select
-        className="h-10 rounded border border-outline-variant bg-surface-dim px-3 text-sm outline-none transition focus:border-primary"
+        className="studio-select h-10 w-full text-sm"
         value={value}
         onChange={(event) => onChange(event.target.value as T)}
       >
@@ -956,11 +957,12 @@ function SelectField<T extends string>({
 export function CharacterForm({
   storyId,
   character,
+  forceCreate = false,
   isSubmitting = false,
   onCancel,
   onSubmit,
 }: CharacterFormProps) {
-  const mode = character?.id ? "edit" : "create";
+  const mode = !forceCreate && character?.id ? "edit" : "create";
   const initialValues = useMemo(
     () => valuesFromCharacter(character),
     [character],

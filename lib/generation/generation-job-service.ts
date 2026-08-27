@@ -17,6 +17,7 @@ import {
 } from "@/lib/memory/memory-extractor";
 import { buildGenerationPrompt } from "@/lib/prompts/prompt-builder";
 import { retrieveContext } from "@/lib/retrieval/retrieval-service";
+import { resolveNarrativeFocus } from "@/lib/generation/narrative-focus";
 
 export type GenerationJobInput = {
   storyId: string;
@@ -31,6 +32,7 @@ export type GenerationJobInput = {
   contextTokenBudget?: number;
   idempotencyKey?: string;
   type?: "scene" | "chapter" | "revision";
+  primaryProtagonistIdUsed?: string;
 };
 
 function proposalTitle(type: string, value: Record<string, unknown>) {
@@ -266,11 +268,12 @@ function proposalsFromExtraction(extraction: MemoryExtractionResult) {
 }
 
 export async function createGenerationJob(input: GenerationJobInput) {
-  await assertPreflight(input);
+  const resolved = await resolveNarrativeFocus(input);
+  await assertPreflight(resolved);
 
-  if (input.idempotencyKey) {
+  if (resolved.idempotencyKey) {
     const existing = await prisma.generationJob.findFirst({
-      where: { storyId: input.storyId, idempotencyKey: input.idempotencyKey },
+      where: { storyId: resolved.storyId, idempotencyKey: resolved.idempotencyKey },
     });
     if (existing) {
       return { job: existing, reused: true };
@@ -281,21 +284,21 @@ export async function createGenerationJob(input: GenerationJobInput) {
   try {
     job = await prisma.generationJob.create({
       data: {
-        storyId: input.storyId,
-        chapterId: input.chapterId,
-        type: input.type ?? "scene",
-        idempotencyKey: input.idempotencyKey,
-        input: toJsonString(input),
+        storyId: resolved.storyId,
+        chapterId: resolved.chapterId,
+        type: resolved.type ?? "scene",
+        idempotencyKey: resolved.idempotencyKey,
+        input: toJsonString(resolved),
       },
     });
   } catch (error) {
     if (
-      input.idempotencyKey &&
+      resolved.idempotencyKey &&
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
       const existing = await prisma.generationJob.findFirst({
-        where: { storyId: input.storyId, idempotencyKey: input.idempotencyKey },
+        where: { storyId: resolved.storyId, idempotencyKey: resolved.idempotencyKey },
       });
       if (existing) {
         return { job: existing, reused: true };
@@ -306,7 +309,7 @@ export async function createGenerationJob(input: GenerationJobInput) {
 
   await prisma.auditLog.create({
     data: {
-      storyId: input.storyId,
+      storyId: resolved.storyId,
       action: "generation.job.created",
       entityType: "generation_job",
       entityId: job.id,
@@ -514,7 +517,8 @@ export async function executeGenerationJob(jobId: string) {
         generationRunId: run.id,
         query: input.goal,
         filters: toJsonString({
-          activeCharacterIds: input.activeCharacterIds ?? [],
+          activeCharacterIds: input.activeCharacterIds,
+          primaryProtagonistIdUsed: input.primaryProtagonistIdUsed,
           includeSecrets: input.includeSecrets ?? false,
         }),
         results: toJsonString({
@@ -522,7 +526,7 @@ export async function executeGenerationJob(jobId: string) {
           characterIds: context.characters.map((character) => character.id),
           memoryIds: context.memories.map((memory) => memory.id),
         }),
-        tokenBudget: context.budget?.maxTokens ?? input.contextTokenBudget ?? 0,
+      tokenBudget: context.budget?.maxTokens ?? input.contextTokenBudget ?? 0,
       },
     });
 

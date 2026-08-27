@@ -183,7 +183,7 @@ export function GenerationStudio({
               <label className="block">
                 <span className="mb-2 block text-sm font-semibold text-on-surface">Chapter anchor</span>
                 <select
-                  className="h-11 w-full rounded-xl border border-white/10 bg-surface-dim px-3 text-sm text-on-surface outline-none focus:border-primary/70 focus:ring-2 focus:ring-primary/15"
+                  className="studio-select h-11 w-full text-sm"
                   value={form.chapterId}
                   onChange={(event) => onFormChange({ chapterId: event.target.value })}
                 >

@@ -7,6 +7,7 @@ import { createMemory } from "@/lib/memory/memory-service";
 import { extractMemoriesFromDraft } from "@/lib/memory/memory-extractor";
 import { buildGenerationPrompt } from "@/lib/prompts/prompt-builder";
 import { retrieveContext } from "@/lib/retrieval/retrieval-service";
+import { resolveNarrativeFocus } from "@/lib/generation/narrative-focus";
 
 export type GenerateSceneInput = {
   storyId: string;
@@ -22,21 +23,22 @@ export type GenerateSceneInput = {
 };
 
 export async function generateScene(input: GenerateSceneInput) {
+  const resolved = await resolveNarrativeFocus(input);
   const modelConfig = getModelConfig();
   const context = await retrieveContext({
-    storyId: input.storyId,
-    query: input.goal,
-    activeCharacterIds: input.activeCharacterIds,
+    storyId: resolved.storyId,
+    query: resolved.goal,
+    activeCharacterIds: resolved.activeCharacterIds,
     includeSecrets: true,
   });
 
   const prompt = buildGenerationPrompt({
     context,
-    goal: input.goal,
-    sceneGoal: input.sceneGoal,
-    mode: input.mode ?? "scene",
-    povCharacterId: input.povCharacterId,
-    maturityMode: input.maturityMode,
+    goal: resolved.goal,
+    sceneGoal: resolved.sceneGoal,
+    mode: resolved.mode ?? "scene",
+    povCharacterId: resolved.povCharacterId,
+    maturityMode: resolved.maturityMode,
   });
 
   if (input.previewOnly) {
@@ -51,10 +53,10 @@ export async function generateScene(input: GenerateSceneInput) {
 
   const run = await prisma.generationRun.create({
     data: {
-      storyId: input.storyId,
-      type: input.mode ?? "scene",
+      storyId: resolved.storyId,
+      type: resolved.mode ?? "scene",
       status: "RUNNING",
-      input: toJsonString(input),
+      input: toJsonString(resolved),
       prompt,
       model: modelConfig.generationModel,
     },
@@ -68,12 +70,12 @@ export async function generateScene(input: GenerateSceneInput) {
     const draft = generation.text;
 
     const continuityWarnings = await checkContinuity({
-      storyId: input.storyId,
+      storyId: resolved.storyId,
       context,
       draft,
-      chapterId: input.chapterId,
+      chapterId: resolved.chapterId,
       generationRunId: run.id,
-      maturityMode: input.maturityMode,
+      maturityMode: resolved.maturityMode,
     });
 
     await prisma.generationRun.update({
@@ -99,7 +101,7 @@ export async function generateScene(input: GenerateSceneInput) {
 
       for (const memory of extraction.memories.slice(0, 12)) {
         await createMemory({
-          storyId: input.storyId,
+          storyId: resolved.storyId,
           sourceType: "generation_run",
           sourceId: run.id,
           memoryType: memory.memoryType,

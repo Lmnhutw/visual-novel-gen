@@ -44,6 +44,29 @@ import { WorkspaceNavigation } from "./workspace-navigation";
 const defaultGoal =
   "Write the next scene with a choice that shifts the relationship and creates a new consequence for the story.";
 
+type TemplateRecord = {
+  id: string;
+  name: string;
+  aliases: string[];
+  ageConfirmed: boolean;
+  gender: string;
+  age: number;
+  race: string | null;
+  species: string | null;
+  occupation: string | null;
+  archetypes: string[];
+  profile: Record<string, unknown>;
+};
+
+function templateFormRecord(template: TemplateRecord): CharacterFormRecord {
+  return {
+    ...template,
+    role: "SUPPORTING",
+    status: "ACTIVE",
+    profile: template.profile,
+  } as unknown as CharacterFormRecord;
+}
+
 export function WriterStudio() {
   const [activeView, setActiveView] = useState<WorkspaceView>("studio");
   const [stories, setStories] = useState<StorySummary[]>([]);
@@ -67,6 +90,13 @@ export function WriterStudio() {
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
   const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
   const [storyToDelete, setStoryToDelete] = useState<StorySummary | null>(null);
+  const [templates, setTemplates] = useState<TemplateRecord[]>([]);
+  const [templateQuery, setTemplateQuery] = useState("");
+  const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
+  const [templateRole, setTemplateRole] = useState("SUPPORTING");
+  const [editingCharacter, setEditingCharacter] = useState<CharacterFormRecord | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<TemplateRecord | null>(null);
+  const [isTemplateForm, setIsTemplateForm] = useState(false);
   const [newStoryTitle, setNewStoryTitle] = useState("");
   const [newStoryDescription, setNewStoryDescription] = useState("");
   const [newChapterTitle, setNewChapterTitle] = useState("");
@@ -95,6 +125,12 @@ export function WriterStudio() {
         : (payload.jobs[0]?.id ?? ""),
     );
     return payload.jobs;
+  }, []);
+
+  const loadTemplates = useCallback(async (query = "") => {
+    const suffix = query.trim() ? `?query=${encodeURIComponent(query.trim())}` : "";
+    const payload = await requestJson<{ templates: TemplateRecord[] }>(`/api/character-templates${suffix}`);
+    setTemplates(payload.templates);
   }, []);
 
   const loadWorkspace = useCallback(
@@ -150,6 +186,14 @@ export function WriterStudio() {
         setMessage("");
       });
   }, [loadWorkspace, storyId]);
+
+  useEffect(() => {
+    if (activeView === "templates" || isTemplatePickerOpen) {
+      void loadTemplates(templateQuery).catch((loadError: unknown) =>
+        setError(formatRequestError(loadError, "Could not load Character Library.")),
+      );
+    }
+  }, [activeView, isTemplatePickerOpen, loadTemplates, templateQuery]);
 
   const runningJob = jobs.some(
     (job) => job.status === "QUEUED" || job.status === "RUNNING",
@@ -254,21 +298,118 @@ export function WriterStudio() {
     payload: CreateCharacterInput | UpdateCharacterInput,
     mode: "create" | "edit",
   ) {
-    if (!storyId) return;
-    void mode;
+    if (!storyId && !isTemplateForm) return;
     setIsLoading(true);
     try {
-      await requestJson("/api/characters", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      if (isTemplateForm) {
+        const templateInput = Object.fromEntries(
+          Object.entries(payload as CreateCharacterInput).filter(([key]) =>
+            !["storyId", "role", "status", "currentState"].includes(key),
+          ),
+        );
+        await requestJson(editingTemplate ? `/api/character-templates/${editingTemplate.id}` : "/api/character-templates", {
+          method: editingTemplate ? "PATCH" : "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(templateInput),
+        });
+        setMessage(editingTemplate ? "Character Library item updated." : "Character saved to the Library.");
+        await loadTemplates(templateQuery);
+      } else {
+        await requestJson(mode === "edit" && editingCharacter?.id ? `/api/characters/${editingCharacter.id}` : "/api/characters", {
+          method: mode === "edit" && editingCharacter?.id ? "PATCH" : "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        setMessage(mode === "edit" ? "Character canon updated." : "Character canon created.");
+        await refreshCurrentWorkspace();
+      }
+      setEditingCharacter(null);
+      setEditingTemplate(null);
+      setIsTemplateForm(false);
       setIsCharacterModalOpen(false);
-      setMessage("Character canon created.");
-      await refreshCurrentWorkspace();
     } catch (requestError) {
       setError(formatRequestError(requestError, "Could not save character."));
       throw requestError;
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function openCreateCharacter() {
+    setEditingCharacter(null);
+    setEditingTemplate(null);
+    setIsTemplateForm(false);
+    setIsCharacterModalOpen(true);
+  }
+
+  function openTemplateForm(template?: TemplateRecord) {
+    setEditingCharacter(null);
+    setEditingTemplate(template ?? null);
+    setIsTemplateForm(true);
+    setIsCharacterModalOpen(true);
+  }
+
+  async function duplicateCharacter(character: CharacterFormRecord) {
+    if (!character.id) return;
+    setIsLoading(true);
+    try {
+      const payload = await requestJson<{ character: CreateCharacterInput }>(`/api/characters/${character.id}/duplicate`, { method: "POST" });
+      setEditingCharacter(payload.character as unknown as CharacterFormRecord);
+      setEditingTemplate(null);
+      setIsTemplateForm(false);
+      setIsCharacterModalOpen(true);
+    } catch (requestError) {
+      setError(formatRequestError(requestError, "Could not duplicate character."));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function addTemplateToStory(templateId: string) {
+    if (!storyId) return;
+    setIsLoading(true);
+    try {
+      await requestJson(`/api/stories/${storyId}/characters/from-template`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ templateId, role: templateRole }),
+      });
+      setIsTemplatePickerOpen(false);
+      setMessage("An independent Story character was created from the Library item.");
+      await refreshCurrentWorkspace();
+    } catch (requestError) {
+      setError(formatRequestError(requestError, "Could not add this Library character."));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function deleteTemplate(template: TemplateRecord) {
+    setIsLoading(true);
+    try {
+      await requestJson(`/api/character-templates/${template.id}`, { method: "DELETE" });
+      setMessage("Character Library item deleted. Existing Story copies are unchanged.");
+      await loadTemplates(templateQuery);
+    } catch (requestError) {
+      setError(formatRequestError(requestError, "Could not delete this Library character."));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function setPrimaryProtagonist(primaryProtagonistId: string | null) {
+    if (!storyId) return;
+    setIsLoading(true);
+    try {
+      await requestJson(`/api/stories/${storyId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ primaryProtagonistId }),
+      });
+      setMessage(primaryProtagonistId ? "Primary protagonist selected." : "Primary protagonist cleared.");
+      await refreshCurrentWorkspace();
+    } catch (requestError) {
+      setError(formatRequestError(requestError, "Could not update the primary protagonist."));
     } finally {
       setIsLoading(false);
     }
@@ -434,10 +575,25 @@ export function WriterStudio() {
     [loadJobs, storyId],
   );
 
-  const body = !story ? (
+  const body = activeView === "templates" ? (
+    <CharacterTemplateLibrary
+      isLoading={isLoading}
+      query={templateQuery}
+      templates={templates}
+      onQueryChange={setTemplateQuery}
+      onCreate={() => openTemplateForm()}
+      onEdit={openTemplateForm}
+      onDelete={deleteTemplate}
+    />
+  ) : !story ? (
     <EmptyWorkspace onCreate={() => setIsStoryModalOpen(true)} />
   ) : activeView === "studio" ? (
     <div className="space-y-5">
+      {!story.primaryProtagonistId ? (
+        <p className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-3 text-sm leading-6 text-amber-100">
+          No primary protagonist selected. The AI can continue, but Story-level narrative focus may be less consistent.
+        </p>
+      ) : null}
       <GenerationStudio
         form={{
           goal,
@@ -473,7 +629,7 @@ export function WriterStudio() {
         story={story}
         onReadStory={() => window.location.assign(`/library/story?story=${encodeURIComponent(story.id)}&view=detail`)}
         onAddChapter={() => setIsChapterModalOpen(true)}
-        onAddCharacter={() => setIsCharacterModalOpen(true)}
+        onAddCharacter={openCreateCharacter}
       />
       <DraftReview
         job={selectedJob}
@@ -501,14 +657,25 @@ export function WriterStudio() {
       }}
       onAddCharacter={(selectedStory) => {
         setStoryId(selectedStory.id);
-        setIsCharacterModalOpen(true);
+        openCreateCharacter();
       }}
       onDeleteStory={setStoryToDelete}
     />
   ) : activeView === "cast" ? (
     <CastLedger
       characters={story.characters}
-      onAdd={() => setIsCharacterModalOpen(true)}
+      onAdd={openCreateCharacter}
+      onAddFromLibrary={() => setIsTemplatePickerOpen(true)}
+      onEdit={(character) => {
+        setEditingCharacter(character as unknown as CharacterFormRecord);
+        setEditingTemplate(null);
+        setIsTemplateForm(false);
+        setIsCharacterModalOpen(true);
+      }}
+      onDuplicate={(character) => void duplicateCharacter(character as unknown as CharacterFormRecord)}
+      onSetPrimary={(character) => void setPrimaryProtagonist(character.id)}
+      onClearPrimary={() => void setPrimaryProtagonist(null)}
+      primaryProtagonistId={story.primaryProtagonistId}
     />
   ) : activeView === "chapters" ? (
     <ChapterLedger
@@ -564,7 +731,7 @@ export function WriterStudio() {
                 <div className="min-w-0">
                   <select
                     aria-label="Select story"
-                    className="block w-[min(34rem,calc(100vw-10rem))] appearance-auto truncate rounded-lg bg-surface-dim/70 px-3 py-1.5 text-lg font-semibold tracking-tight text-on-surface outline-none transition hover:bg-surface-container focus-visible:ring-2 focus-visible:ring-primary/60"
+                    className="studio-select block w-[min(34rem,calc(100vw-10rem))] truncate bg-surface-dim/70 px-3 py-1.5 text-lg font-semibold tracking-tight"
                     value={storyId}
                     onChange={(event) => setStoryId(event.target.value)}
                   >
@@ -672,18 +839,53 @@ export function WriterStudio() {
       )}
       {isCharacterModalOpen && (
         <ModalFrame
-          label="Create character bible"
-          onClose={() => setIsCharacterModalOpen(false)}
+          label={isTemplateForm ? "Character Library" : "Character bible"}
+          onClose={() => {
+            setIsCharacterModalOpen(false);
+            setEditingCharacter(null);
+            setEditingTemplate(null);
+            setIsTemplateForm(false);
+          }}
           panelClassName="w-full max-w-6xl"
         >
           <CharacterForm
-            character={null as CharacterFormRecord | null}
+            character={isTemplateForm && editingTemplate ? templateFormRecord(editingTemplate) : editingCharacter}
+            forceCreate={isTemplateForm}
             isSubmitting={isLoading}
-            storyId={storyId}
-            onCancel={() => setIsCharacterModalOpen(false)}
+            storyId={storyId || "template"}
+            onCancel={() => {
+              setIsCharacterModalOpen(false);
+              setEditingCharacter(null);
+              setEditingTemplate(null);
+              setIsTemplateForm(false);
+            }}
             onSubmit={saveCharacter}
           />
         </ModalFrame>
+      )}
+      {isTemplatePickerOpen && (
+        <Dialog title="Add from Character Library" onClose={() => setIsTemplatePickerOpen(false)}>
+          <p className="text-sm leading-6 text-on-surface-variant">Adding this character creates an independent copy for this story. Future changes will not sync automatically.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="text-sm font-semibold text-on-surface">Search
+              <input autoFocus className="mt-2 h-10 w-full rounded-xl border border-white/10 bg-surface-dim px-3 text-on-surface outline-none focus:border-primary" value={templateQuery} onChange={(event) => setTemplateQuery(event.target.value)} />
+            </label>
+            <label className="text-sm font-semibold text-on-surface">Story role
+              <select className="studio-select mt-2 h-10 w-full text-sm" value={templateRole} onChange={(event) => setTemplateRole(event.target.value)}>
+                <option value="SUPPORTING">Supporting</option><option value="PROTAGONIST">Protagonist</option><option value="ANTAGONIST">Antagonist</option><option value="BACKGROUND">Background</option>
+              </select>
+            </label>
+          </div>
+          <div className="mt-5 max-h-80 divide-y divide-white/[0.08] overflow-y-auto border-y border-white/[0.08]">
+            {templates.map((template) => (
+              <button key={template.id} className="block w-full px-1 py-4 text-left transition hover:bg-white/[0.04]" type="button" disabled={isLoading} onClick={() => void addTemplateToStory(template.id)}>
+                <span className="block font-semibold text-on-surface">{template.name}</span>
+                <span className="mt-1 block text-sm text-on-surface-variant">{typeof template.profile.personality === "object" && template.profile.personality && "summary" in template.profile.personality ? String((template.profile.personality as { summary?: unknown }).summary ?? "") : "Reusable character profile"}</span>
+              </button>
+            ))}
+            {!templates.length ? <p className="px-1 py-5 text-sm text-on-surface-variant">No matching Library characters yet.</p> : null}
+          </div>
+        </Dialog>
       )}
       {storyToDelete && (
         <Dialog title="Delete this story?" onClose={() => setStoryToDelete(null)}>
@@ -697,6 +899,55 @@ export function WriterStudio() {
         </Dialog>
       )}
     </main>
+  );
+}
+
+function CharacterTemplateLibrary({
+  templates,
+  query,
+  isLoading,
+  onQueryChange,
+  onCreate,
+  onEdit,
+  onDelete,
+}: {
+  templates: TemplateRecord[];
+  query: string;
+  isLoading: boolean;
+  onQueryChange: (query: string) => void;
+  onCreate: () => void;
+  onEdit: (template: TemplateRecord) => void;
+  onDelete: (template: TemplateRecord) => void;
+}) {
+  return (
+    <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">CHARACTER LIBRARY</p>
+          <h2 className="mt-1 text-xl font-semibold text-on-surface">Reusable starting points</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant">Library characters are profile input only. Adding one to a Story always creates a separate canonical character.</p>
+        </div>
+        <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary" type="button" onClick={onCreate}><Plus className="size-4" /> New library character</button>
+      </div>
+      <label className="mt-6 block max-w-md text-sm font-semibold text-on-surface">Search library
+        <input className="mt-2 h-10 w-full rounded-xl border border-white/10 bg-surface-dim px-3 text-on-surface outline-none focus:border-primary" value={query} onChange={(event) => onQueryChange(event.target.value)} />
+      </label>
+      <div className="mt-5 divide-y divide-white/[0.08] border-y border-white/[0.08]">
+        {templates.map((template) => (
+          <article key={template.id} className="flex flex-wrap items-start justify-between gap-4 px-1 py-4">
+            <div className="min-w-0">
+              <h3 className="font-semibold text-on-surface">{template.name}</h3>
+              <p className="mt-1 text-sm leading-6 text-on-surface-variant">{typeof template.profile.personality === "object" && template.profile.personality && "summary" in template.profile.personality ? String((template.profile.personality as { summary?: unknown }).summary ?? "") : "Reusable character profile"}</p>
+            </div>
+            <div className="flex gap-3 text-sm font-semibold">
+              <button className="text-on-surface-variant hover:text-on-surface" type="button" onClick={() => onEdit(template)}>Edit</button>
+              <button className="text-rose-200 hover:text-rose-100 disabled:opacity-50" disabled={isLoading} type="button" onClick={() => onDelete(template)}>Delete</button>
+            </div>
+          </article>
+        ))}
+        {!templates.length ? <p className="px-1 py-6 text-sm leading-6 text-on-surface-variant">Create a reusable character profile here, then add independent copies to any Story.</p> : null}
+      </div>
+    </section>
   );
 }
 

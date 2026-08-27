@@ -150,3 +150,18 @@ Routes accept a Supabase bearer token and scope every story-bound request to
 `stories.owner_id`. Set `REQUIRE_AUTH=true` outside local development to reject
 anonymous requests. Public tables retain deny-by-default RLS; application data
 is accessed through server-side Prisma routes.
+
+## Character Library and primary protagonist
+
+`character_templates` stores owned reusable profiles. Adding one to a Story
+copies reusable identity and profile fields into an independent `characters`
+record; it never copies memories, relationships, secrets, scene history, or
+canon. `source_template_id` is lineage metadata only, so deleting a Library
+item leaves existing Story characters intact.
+
+A Story may have multiple protagonists and an optional primary protagonist.
+The primary must be a `PROTAGONIST` in the same Story; deletion clears the
+reference and a role demotion is rejected until the primary designation is
+cleared or moved. It is only a generation fallback: explicit POV and active
+character selections always win, while an explicit empty active-character list
+remains empty.

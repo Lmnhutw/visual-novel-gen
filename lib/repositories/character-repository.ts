@@ -1,6 +1,8 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
+type DbClient = typeof prisma | Prisma.TransactionClient;
+
 const characterInclude = {
   profile: true,
   states: {
@@ -108,8 +110,9 @@ export async function insertCharacter(
 export async function updateCharacterById(
   characterId: string,
   input: UpdateCharacterPersistenceInput,
+  db: DbClient = prisma,
 ): Promise<CharacterRecord> {
-  return prisma.character.update({
+  return db.character.update({
     where: { id: characterId },
     data: {
       name: input.name,
@@ -131,8 +134,9 @@ export async function updateCharacterById(
 
 export async function findCharacterById(
   characterId: string,
+  db: DbClient = prisma,
 ): Promise<CharacterRecord | null> {
-  return prisma.character.findUnique({
+  return db.character.findUnique({
     where: { id: characterId },
     include: characterInclude,
   });

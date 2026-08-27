@@ -1,6 +1,8 @@
 import { ZodError, type ZodIssue } from "zod";
 import type { Prisma } from "@prisma/client";
 import { parseJsonString, toJsonString } from "@/lib/db/json";
+import { prisma } from "@/lib/db/prisma";
+import { WorkflowError } from "@/lib/http/api-response";
 import {
   deleteCharacterById,
   findCharacterById,
@@ -234,53 +236,61 @@ export async function updateCharacter(
   input: UpdateCharacterInput,
 ) {
   const parsed = updateCharacterSchema.parse(input);
-  const existing = await findCharacterById(characterId);
+  return prisma.$transaction(async (tx) => {
+    const existing = await findCharacterById(characterId, tx);
+    if (!existing) throw new Error("Character not found.");
 
-  if (!existing) {
-    throw new Error("Character not found.");
-  }
+    if (parsed.role && parsed.role !== "PROTAGONIST") {
+      const story = await tx.story.findFirst({
+        where: { id: existing.storyId, primaryProtagonistId: characterId },
+        select: { id: true },
+      });
+      if (story) {
+        throw new WorkflowError(
+          "PRIMARY_PROTAGONIST_ROLE_CONFLICT",
+          "Clear or replace this story's primary protagonist before changing their role.",
+          409,
+        );
+      }
+    }
 
-  const current = toCharacterDomain(existing);
-  const gender = parsed.gender ?? current.gender;
-  const personality = mergeProfile(current.personality, parsed.personality);
-  const appearance = mergeProfile(current.appearance, parsed.appearance);
-  const talents = mergeProfile(current.talents, parsed.talents);
-  const speech = mergeProfile(current.speech, parsed.speech);
-  const relationshipPreference = mergeProfile(
-    current.relationshipPreference,
-    parsed.relationshipPreference,
-  );
-  const background = mergeProfile(current.background, parsed.background);
-  const currentState = mergeProfile(current.currentState, parsed.currentState);
-  const characterArc = mergeProfile(current.characterArc, parsed.characterArc);
+    const current = toCharacterDomain(existing);
+    const gender = parsed.gender ?? current.gender;
+    const personality = mergeProfile(current.personality, parsed.personality);
+    const appearance = mergeProfile(current.appearance, parsed.appearance);
+    const talents = mergeProfile(current.talents, parsed.talents);
+    const speech = mergeProfile(current.speech, parsed.speech);
+    const relationshipPreference = mergeProfile(current.relationshipPreference, parsed.relationshipPreference);
+    const background = mergeProfile(current.background, parsed.background);
+    const currentState = mergeProfile(current.currentState, parsed.currentState);
+    const characterArc = mergeProfile(current.characterArc, parsed.characterArc);
+    assertGenderedBody(gender, appearance);
 
-  assertGenderedBody(gender, appearance);
-
-  const record = await updateCharacterById(characterId, {
-    name: parsed.name,
-    aliases: parsed.aliases,
-    role: parsed.role,
-    status: parsed.status,
-    ageConfirmed: parsed.ageConfirmed,
-    gender: parsed.gender,
-    age: parsed.age,
-    race: parsed.race,
-    species: parsed.species,
-    occupation: parsed.occupation,
-    archetypes: parsed.archetypes,
-    profile: profilePersistence({
-      personality: normalizePersonality(personality),
-      appearance,
-      talents,
-      speech,
-      relationshipPreference,
-      background,
-      currentState,
-      characterArc,
-    }),
+    const record = await updateCharacterById(characterId, {
+      name: parsed.name,
+      aliases: parsed.aliases,
+      role: parsed.role,
+      status: parsed.status,
+      ageConfirmed: parsed.ageConfirmed,
+      gender: parsed.gender,
+      age: parsed.age,
+      race: parsed.race,
+      species: parsed.species,
+      occupation: parsed.occupation,
+      archetypes: parsed.archetypes,
+      profile: profilePersistence({
+        personality: normalizePersonality(personality),
+        appearance,
+        talents,
+        speech,
+        relationshipPreference,
+        background,
+        currentState,
+        characterArc,
+      }),
+    }, tx);
+    return toCharacterDomain(record);
   });
-
-  return toCharacterDomain(record);
 }
 
 export async function getCharacterById(characterId: string) {

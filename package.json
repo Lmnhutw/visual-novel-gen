@@ -19,7 +19,7 @@
     "db:migrate-characters": "tsx scripts/migrate-character-system.ts",
     "db:seed": "tsx scripts/seed-dev-data.ts",
     "generation:worker": "tsx scripts/run-generation-worker.ts",
-    "test": "tsx --test tests/**/*.test.ts",
+    "test": "tsx --test tests/**/*.test.ts lib/**/*.test.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

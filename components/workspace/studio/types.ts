@@ -25,6 +25,7 @@ export type StorySummary = {
 
 export type CharacterRecord = {
   id: string;
+  storyId?: string;
   name: string;
   aliases: string[];
   role: string;
@@ -32,10 +33,19 @@ export type CharacterRecord = {
   ageConfirmed: boolean;
   gender: string;
   age: number;
+  race?: string | null;
+  species?: string | null;
+  occupation?: string | null;
   archetypes: string[];
   profile?: {
     personality?: { summary?: string; traits?: string[] } | null;
+    talents?: unknown;
+    appearance?: unknown;
+    speech?: unknown;
+    relationshipPreference?: unknown;
+    background?: unknown;
     currentState?: { emotionalState?: string; currentGoals?: string[] } | null;
+    characterArc?: unknown;
   } | null;
 };
 
@@ -59,6 +69,7 @@ export type ContinuityIssue = {
 };
 
 export type StoryDetail = StorySummary & {
+  primaryProtagonistId?: string | null;
   characters: CharacterRecord[];
   chapters: ChapterRecord[];
   relationships: Array<{
@@ -119,4 +130,4 @@ export type GenerationJob = {
   _count?: { proposals: number };
 };
 
-export type WorkspaceView = "studio" | "story" | "cast" | "chapters" | "canon";
+export type WorkspaceView = "studio" | "story" | "cast" | "templates" | "chapters" | "canon";

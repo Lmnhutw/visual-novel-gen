@@ -32,7 +32,12 @@ export const createStorySchema = z.object({
 
 export const updateStorySchema = createStorySchema
   .partial()
-  .extend({ status: storyStatusSchema.optional() });
+  .extend({
+    status: storyStatusSchema.optional(),
+    primaryProtagonistId: uuidSchema.nullable().optional(),
+  });
+
+export { createCharacterTemplateSchema } from "@/lib/validators/character.schema";
 
 export const updateCharacterStateSchema = z.object({
   characterId: uuidSchema.optional(),
@@ -73,7 +78,7 @@ export const generateSceneSchema = z.object({
   goal: z.string().min(10),
   sceneGoal: z.string().optional(),
   povCharacterId: uuidSchema.optional(),
-  activeCharacterIds: z.array(uuidSchema).default([]),
+  activeCharacterIds: z.array(uuidSchema).optional(),
   maturityMode: z.enum(["safe", "mature"]).default("safe"),
   maxTokens: z.number().int().min(500).max(12000).default(2500),
   previewOnly: z.boolean().default(false),
@@ -106,7 +111,7 @@ export const createChapterSchema = z.object({
 export const retrieveContextSchema = z.object({
   storyId: uuidSchema,
   query: z.string().optional(),
-  activeCharacterIds: z.array(uuidSchema).default([]),
+  activeCharacterIds: z.array(uuidSchema).optional(),
   memoryTypes: z.array(z.string()).optional(),
   maxMemories: z.number().int().min(1).max(50).default(12),
   includeSecrets: z.boolean().default(true),

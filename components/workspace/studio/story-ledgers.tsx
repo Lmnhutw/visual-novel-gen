@@ -149,9 +149,21 @@ function MenuAction({ icon, label, danger, onClick }: { icon: React.ReactNode; l
 export function CastLedger({
   characters,
   onAdd,
+  onAddFromLibrary,
+  onEdit,
+  onDuplicate,
+  onSetPrimary,
+  onClearPrimary,
+  primaryProtagonistId,
 }: {
   characters: CharacterRecord[];
   onAdd: () => void;
+  onAddFromLibrary: () => void;
+  onEdit: (character: CharacterRecord) => void;
+  onDuplicate: (character: CharacterRecord) => void;
+  onSetPrimary: (character: CharacterRecord) => void;
+  onClearPrimary: () => void;
+  primaryProtagonistId?: string | null;
 }) {
   return (
     <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
@@ -164,13 +176,15 @@ export function CastLedger({
             Characters who carry the story
           </h2>
         </div>
-        <button
-          className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary"
-          type="button"
-          onClick={onAdd}
-        >
-          <UserPlus className="size-4" /> Add character
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary" type="button" onClick={onAdd}>
+            <UserPlus className="size-4" /> Create character
+          </button>
+          <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface" type="button" onClick={onAddFromLibrary}>
+            <BookOpen className="size-4" /> Add from library
+          </button>
+          {primaryProtagonistId ? <button className="inline-flex h-10 rounded-xl px-3 text-sm font-semibold text-on-surface-variant hover:bg-white/[0.06]" type="button" onClick={onClearPrimary}>Clear primary</button> : null}
+        </div>
       </div>
       <div className="mt-6 grid gap-3 lg:grid-cols-2">
         {characters.map((character) => (
@@ -189,11 +203,17 @@ export function CastLedger({
                 <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">
                   {character.role}
                 </span>
+                {character.id === primaryProtagonistId ? <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">Primary</span> : null}
               </div>
               <p className="mt-2 line-clamp-2 text-sm leading-6 text-on-surface-variant">
                 {character.profile?.personality?.summary ??
                   "No character voice has been recorded."}
               </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
+                <button className="text-on-surface-variant hover:text-on-surface" type="button" onClick={() => onEdit(character)}>Edit</button>
+                <button className="text-on-surface-variant hover:text-on-surface" type="button" onClick={() => onDuplicate(character)}>Duplicate & Edit</button>
+                {character.role === "PROTAGONIST" && character.id !== primaryProtagonistId ? <button className="text-primary hover:brightness-125" type="button" onClick={() => onSetPrimary(character)}>Make primary</button> : null}
+              </div>
             </div>
           </article>
         ))}

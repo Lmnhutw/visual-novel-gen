@@ -336,6 +336,10 @@ export const createCharacterSchema = createCharacterBaseSchema.superRefine(
   (value, ctx) => validateGenderedBody(value.gender, value.appearance, ctx),
 );
 
+export const createCharacterTemplateSchema = createCharacterBaseSchema
+  .omit({ storyId: true, role: true, status: true, currentState: true })
+  .superRefine((value, ctx) => validateGenderedBody(value.gender, value.appearance, ctx));
+
 export const updateCharacterSchema = z
   .object({
     name: requiredText.optional(),
@@ -373,4 +377,5 @@ export const characterResponseSchema = createCharacterBaseSchema
   });
 
 export type CreateCharacterInput = z.input<typeof createCharacterSchema>;
+export type CreateCharacterTemplateInput = z.input<typeof createCharacterTemplateSchema>;
 export type UpdateCharacterInput = z.input<typeof updateCharacterSchema>;

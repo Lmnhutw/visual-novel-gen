@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Feather, Library, Users } from "lucide-react";
+import { BookOpen, Feather, Library, Users, UserRoundPlus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const items = [
   { id: "studio", label: "Studio", icon: Feather },
   { id: "story", label: "Library", icon: Library },
   { id: "cast", label: "Cast", icon: Users },
+  { id: "templates", label: "Character Library", icon: UserRoundPlus },
   { id: "chapters", label: "Chapters", icon: BookOpen },
   { id: "canon", label: "Canon review", icon: Library },
 ] as const;

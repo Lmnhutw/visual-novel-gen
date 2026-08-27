@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { optionalJsonString, toJsonString } from "@/lib/db/json";
+import { WorkflowError } from "@/lib/http/api-response";
 
 export type CreateStoryInput = {
   ownerId?: string;
@@ -44,6 +45,7 @@ export async function listStories(ownerId?: string | null) {
     orderBy: { updatedAt: "desc" },
     include: {
       settings: true,
+      primaryProtagonist: true,
       _count: {
         select: {
           characters: true,
@@ -131,37 +133,64 @@ export async function updateStory(
   storyId: string,
   input: Partial<CreateStoryInput> & {
     status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
+    primaryProtagonistId?: string | null;
   },
   ownerId?: string | null,
 ) {
-  await getStory(storyId, ownerId);
-  return prisma.story.update({
-    where: { id: storyId },
-    data: {
-      title: input.title,
-      description: input.description,
-      status: input.status,
-      settings: {
-        upsert: {
-          create: {
-            genre: toJsonString(input.genre ?? []),
-            tone: input.tone,
-            pov: input.pov,
-            tense: input.tense,
-            styleGuide: input.styleGuide,
-            nsfwPolicy: toJsonString(input.nsfwPolicy),
-          },
-          update: {
-            genre: optionalJsonString(input.genre),
-            tone: input.tone,
-            pov: input.pov,
-            tense: input.tense,
-            styleGuide: input.styleGuide,
-            nsfwPolicy: optionalJsonString(input.nsfwPolicy),
+  return prisma.$transaction(async (tx) => {
+    const story = await tx.story.findFirst({
+      where: { id: storyId, ownerId: ownerId ?? undefined },
+      select: { id: true },
+    });
+    if (!story) throw new Error("Story not found.");
+
+    if (input.primaryProtagonistId) {
+      const primary = await tx.character.findFirst({
+        where: {
+          id: input.primaryProtagonistId,
+          storyId,
+          role: "PROTAGONIST",
+        },
+        select: { id: true },
+      });
+      if (!primary) {
+        throw new WorkflowError(
+          "INVALID_PRIMARY_PROTAGONIST",
+          "The primary protagonist must be a protagonist in this story.",
+          409,
+        );
+      }
+    }
+
+    return tx.story.update({
+      where: { id: storyId },
+      data: {
+        title: input.title,
+        description: input.description,
+        status: input.status,
+        primaryProtagonistId: input.primaryProtagonistId,
+        settings: {
+          upsert: {
+            create: {
+              genre: toJsonString(input.genre ?? []),
+              tone: input.tone,
+              pov: input.pov,
+              tense: input.tense,
+              styleGuide: input.styleGuide,
+              nsfwPolicy: toJsonString(input.nsfwPolicy),
+            },
+            update: {
+              genre: optionalJsonString(input.genre),
+              tone: input.tone,
+              pov: input.pov,
+              tense: input.tense,
+              styleGuide: input.styleGuide,
+              nsfwPolicy: optionalJsonString(input.nsfwPolicy),
+            },
           },
         },
       },
-    },
-    include: { settings: true },
+      include: { settings: true, primaryProtagonist: true },
+    });
   });
 }
