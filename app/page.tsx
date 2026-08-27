@@ -1,6 +1,6 @@
-import { WriterStudio } from "@/components/workspace/studio/writer-studio";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <WriterStudio />;
+  redirect("/library");
 }
 

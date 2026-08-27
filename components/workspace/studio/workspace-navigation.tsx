@@ -1,6 +1,6 @@
 "use client";
 
-import { Feather, Library, Users, UserRoundPlus } from "lucide-react";
+import { Feather, Library, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -9,8 +9,7 @@ import type { WorkspaceView } from "./types";
 const items = [
   { id: "story", label: "Library", icon: Library },
   { id: "studio", label: "Studio", icon: Feather },
-  { id: "cast", label: "Cast", icon: Users },
-  { id: "templates", label: "Character Library", icon: UserRoundPlus },
+  { id: "cast", label: "Characters", icon: Users },
   { id: "canon", label: "Canon review", icon: Library },
 ] as const;
 

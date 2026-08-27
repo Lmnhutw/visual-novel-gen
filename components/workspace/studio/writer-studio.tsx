@@ -15,6 +15,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { CharacterForm, type CharacterFormRecord } from "./character-form";
 import type { GenerationContext } from "@/lib/retrieval/types";
@@ -67,9 +68,11 @@ function templateFormRecord(template: TemplateRecord): CharacterFormRecord {
 }
 
 export function WriterStudio() {
-  const [activeView, setActiveView] = useState<WorkspaceView>("story");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const storyId = searchParams.get("story") ?? "";
+  const [activeView, setActiveView] = useState<WorkspaceView>(() => storyId ? "studio" : "story");
   const [stories, setStories] = useState<StorySummary[]>([]);
-  const [storyId, setStoryId] = useState("");
   const [story, setStory] = useState<StoryDetail | null>(null);
   const [chapters, setChapters] = useState<StoryDetail["chapters"]>([]);
   const [jobs, setJobs] = useState<GenerationJob[]>([]);
@@ -82,6 +85,7 @@ export function WriterStudio() {
   const [contextPreview, setContextPreview] =
     useState<GenerationContext | null>(null);
   const [isContextPreviewLoading, setIsContextPreviewLoading] = useState(false);
+  const [isWorkspaceLoading, setIsWorkspaceLoading] = useState(Boolean(storyId));
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -100,15 +104,28 @@ export function WriterStudio() {
   const [newStoryDescription, setNewStoryDescription] = useState("");
   const [newChapterTitle, setNewChapterTitle] = useState("");
 
-  const loadStories = useCallback(async (preferredId?: string) => {
+  const selectStory = useCallback((nextStoryId: string, nextView: WorkspaceView = nextStoryId ? "studio" : "story") => {
+    setActiveView(nextView);
+    if (nextStoryId === storyId) return;
+
+    setContextPreview(null);
+    setStory(null);
+    setChapters([]);
+    setJobs([]);
+    setIsWorkspaceLoading(Boolean(nextStoryId));
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (nextStoryId) nextParams.set("story", nextStoryId);
+    else nextParams.delete("story");
+    const query = nextParams.toString();
+    router.push(query ? `/library?${query}` : "/library");
+  }, [router, searchParams, storyId]);
+
+  const loadStories = useCallback(async () => {
     const payload = await requestJson<{ stories: StorySummary[] }>(
       "/api/stories",
     );
     setStories(payload.stories);
-    setStoryId((current) => {
-      const next = preferredId ?? current;
-      return next && payload.stories.some((entry) => entry.id === next) ? next : "";
-    });
   }, []);
 
   const loadJobs = useCallback(async (selectedStoryId: string) => {
@@ -166,14 +183,23 @@ export function WriterStudio() {
   }, [loadStories]);
 
   useEffect(() => {
+    if (!storyId) setActiveView("story");
+  }, [storyId]);
+
+  useEffect(() => {
     if (!storyId) {
       setStory(null);
       setChapters([]);
       setJobs([]);
+      setIsWorkspaceLoading(false);
       return;
     }
     setMessage("");
     setError("");
+    setStory(null);
+    setChapters([]);
+    setJobs([]);
+    setIsWorkspaceLoading(true);
     void loadWorkspace(storyId)
       .then(() => setMessage(""))
       .catch((loadError: unknown) => {
@@ -181,11 +207,12 @@ export function WriterStudio() {
           formatRequestError(loadError, "Could not load the workspace."),
         );
         setMessage("");
-      });
+      })
+      .finally(() => setIsWorkspaceLoading(false));
   }, [loadWorkspace, storyId]);
 
   useEffect(() => {
-    if (activeView === "templates" || isTemplatePickerOpen) {
+    if (activeView === "cast" || isTemplatePickerOpen) {
       void loadTemplates(templateQuery).catch((loadError: unknown) =>
         setError(formatRequestError(loadError, "Could not load Character Library.")),
       );
@@ -210,7 +237,7 @@ export function WriterStudio() {
 
   async function refreshCurrentWorkspace() {
     if (!storyId) return;
-    await Promise.all([loadStories(storyId), loadWorkspace(storyId)]);
+    await Promise.all([loadStories(), loadWorkspace(storyId)]);
   }
 
   async function createStory() {
@@ -242,7 +269,8 @@ export function WriterStudio() {
       setNewStoryDescription("");
       setIsStoryModalOpen(false);
       setMessage("Story workspace created.");
-      await loadStories(payload.story.id);
+      await loadStories();
+      selectStory(payload.story.id);
     } catch (requestError) {
       setError(formatRequestError(requestError, "Could not create story."));
     } finally {
@@ -284,6 +312,7 @@ export function WriterStudio() {
       setMessage(`Deleted ${storyToDelete.title}.`);
       setStoryToDelete(null);
       await loadStories();
+      if (storyToDelete.id === storyId) selectStory("");
     } catch (requestError) {
       setError(formatRequestError(requestError, "Could not delete story."));
     } finally {
@@ -572,36 +601,27 @@ export function WriterStudio() {
     [loadJobs, storyId],
   );
 
-  const body = activeView === "templates" ? (
-    <CharacterTemplateLibrary
-      isLoading={isLoading}
-      query={templateQuery}
-      templates={templates}
-      onQueryChange={setTemplateQuery}
-      onCreate={() => openTemplateForm()}
-      onEdit={openTemplateForm}
-      onDelete={deleteTemplate}
-    />
-  ) : activeView === "story" ? (
+  const body = activeView === "story" ? (
     <StoryLedger
       story={story}
       stories={stories}
       onSelectStory={(selectedStoryId) => {
-        setStoryId(selectedStoryId);
-        setActiveView("studio");
+        selectStory(selectedStoryId);
       }}
       onNewStory={() => setIsStoryModalOpen(true)}
       onReadStory={(selectedStory) => window.location.assign(`/library/story?story=${encodeURIComponent(selectedStory.id)}&view=detail`)}
       onAddChapter={(selectedStory) => {
-        setStoryId(selectedStory.id);
+        selectStory(selectedStory.id);
         setIsChapterModalOpen(true);
       }}
       onAddCharacter={(selectedStory) => {
-        setStoryId(selectedStory.id);
+        selectStory(selectedStory.id);
         openCreateCharacter();
       }}
       onDeleteStory={setStoryToDelete}
     />
+  ) : isWorkspaceLoading ? (
+    <WorkspaceSkeleton />
   ) : !story ? (
     <EmptyWorkspace onCreate={() => setIsStoryModalOpen(true)} />
   ) : activeView === "studio" ? (
@@ -659,21 +679,32 @@ export function WriterStudio() {
       />
     </div>
   ) : activeView === "cast" ? (
-    <CastLedger
-      characters={story.characters}
-      onAdd={openCreateCharacter}
-      onAddFromLibrary={() => setIsTemplatePickerOpen(true)}
-      onEdit={(character) => {
-        setEditingCharacter(character as unknown as CharacterFormRecord);
-        setEditingTemplate(null);
-        setIsTemplateForm(false);
-        setIsCharacterModalOpen(true);
-      }}
-      onDuplicate={(character) => void duplicateCharacter(character as unknown as CharacterFormRecord)}
-      onSetPrimary={(character) => void setPrimaryProtagonist(character.id)}
-      onClearPrimary={() => void setPrimaryProtagonist(null)}
-      primaryProtagonistId={story.primaryProtagonistId}
-    />
+    <div className="space-y-5">
+      <CastLedger
+        characters={story.characters}
+        onAdd={openCreateCharacter}
+        onAddFromLibrary={() => setIsTemplatePickerOpen(true)}
+        onEdit={(character) => {
+          setEditingCharacter(character as unknown as CharacterFormRecord);
+          setEditingTemplate(null);
+          setIsTemplateForm(false);
+          setIsCharacterModalOpen(true);
+        }}
+        onDuplicate={(character) => void duplicateCharacter(character as unknown as CharacterFormRecord)}
+        onSetPrimary={(character) => void setPrimaryProtagonist(character.id)}
+        onClearPrimary={() => void setPrimaryProtagonist(null)}
+        primaryProtagonistId={story.primaryProtagonistId}
+      />
+      <CharacterTemplateLibrary
+        isLoading={isLoading}
+        query={templateQuery}
+        templates={templates}
+        onQueryChange={setTemplateQuery}
+        onCreate={() => openTemplateForm()}
+        onEdit={openTemplateForm}
+        onDelete={deleteTemplate}
+      />
+    </div>
   ) : (
     <CanonLedger issues={story.continuityIssues} view={activeView} />
   );
@@ -728,11 +759,7 @@ export function WriterStudio() {
                     aria-label="Select story"
                     className="studio-select block w-[min(34rem,calc(100vw-10rem))] truncate bg-surface-dim/70 px-3 py-1.5 text-lg font-semibold tracking-tight"
                     value={storyId}
-                    onChange={(event) => {
-                      const nextStoryId = event.target.value;
-                      setStoryId(nextStoryId);
-                      setActiveView(nextStoryId ? "studio" : "story");
-                    }}
+                    onChange={(event) => selectStory(event.target.value)}
                   >
                     <option value="">Please select a story</option>
                     {stories.map((entry) => (
@@ -1113,5 +1140,36 @@ function EmptyWorkspace({ onCreate }: { onCreate: () => void }) {
         </button>
       </div>
     </div>
+  );
+}
+
+function WorkspaceSkeleton() {
+  return (
+    <section aria-busy="true" aria-label="Loading story workspace" className="animate-pulse space-y-5">
+      <div className="border-b border-white/[0.08] pb-5">
+        <div className="h-3 w-24 rounded bg-white/[0.08]" />
+        <div className="mt-3 h-8 w-72 max-w-full rounded bg-white/[0.1]" />
+        <div className="mt-3 h-4 w-full max-w-2xl rounded bg-white/[0.06]" />
+      </div>
+      <div className="rounded-2xl border border-white/[0.08] bg-surface-container-low p-5 sm:p-6">
+        <div className="h-5 w-40 rounded bg-white/[0.1]" />
+        <div className="mt-3 h-4 w-96 max-w-full rounded bg-white/[0.06]" />
+        <div className="mt-6 divide-y divide-white/[0.08] overflow-hidden rounded-xl border border-white/[0.08]">
+          {[0, 1, 2].map((index) => (
+            <div className="flex items-center justify-between gap-4 px-4 py-4" key={index}>
+              <div className="flex items-center gap-3">
+                <span className="size-8 rounded-lg bg-white/[0.08]" />
+                <span className="h-4 w-44 max-w-[40vw] rounded bg-white/[0.08]" />
+              </div>
+              <span className="h-3 w-24 rounded bg-white/[0.06]" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-2xl border border-white/[0.08] bg-surface-container-low p-5 sm:p-6">
+        <div className="h-5 w-36 rounded bg-white/[0.1]" />
+        <div className="mt-5 h-44 rounded-xl bg-white/[0.05]" />
+      </div>
+    </section>
   );
 }
