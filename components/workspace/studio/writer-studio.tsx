@@ -7,6 +7,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import Image from "next/image";
 import {
   useCallback,
   useEffect,
@@ -704,8 +705,14 @@ export function WriterStudio() {
       <div className="mx-auto flex min-h-screen max-w-[1760px]">
         <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.08] bg-surface-dim/65 px-4 py-5 lg:flex">
           <div className="flex items-center gap-3 px-2">
-            <span className="grid size-9 place-items-center rounded-xl bg-primary text-on-primary shadow-lg shadow-primary/10">
-              <Sparkles className="size-4" />
+            <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-[#f4f1eb] shadow-lg shadow-black/15">
+              <Image
+                alt="Narrative Studio"
+                className="size-full scale-[1.55] object-contain"
+                height={36}
+                src="/icon.png"
+                width={36}
+              />
             </span>
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-on-surface">
@@ -736,7 +743,17 @@ export function WriterStudio() {
         <section className="min-w-0 flex-1">
           <header className="sticky top-0 z-30 border-b border-white/[0.08] bg-background/90 backdrop-blur-xl">
             <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-              <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-lg bg-[#f4f1eb] shadow-md shadow-black/15 lg:hidden">
+                  <Image
+                    alt="Narrative Studio"
+                    className="size-full scale-[1.55] object-contain"
+                    height={32}
+                    src="/icon.png"
+                    width={32}
+                  />
+                </span>
+                <div className="min-w-0">
                 <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">
                   {activeView === "studio"
                     ? "DRAFTING"
@@ -762,6 +779,7 @@ export function WriterStudio() {
                       </option>
                     ))}
                   </select>
+                </div>
                 </div>
               </div>
               <button
