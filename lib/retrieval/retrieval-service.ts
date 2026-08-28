@@ -165,7 +165,6 @@ export async function retrieveContext(
       gender: character.gender,
       age: character.age,
       race: character.race,
-      species: character.species,
       occupation: character.occupation,
       archetypes: character.archetypes,
       profile: character.profile

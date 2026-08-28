@@ -76,7 +76,6 @@ model Character {
   gender       String   @default("other")
   age          Int      @default(18)
   race         String?
-  species      String?
   occupation   String?
   archetypes   String[] @default([])
   visibility   String   @default("canon")
@@ -112,7 +111,6 @@ model CharacterTemplate {
   gender       String   @default("other")
   age          Int      @default(18)
   race         String?
-  species      String?
   occupation   String?
   archetypes   String[] @default([])
   profile      Json     @default("{}")

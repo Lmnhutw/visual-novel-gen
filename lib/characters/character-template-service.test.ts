@@ -47,7 +47,6 @@ test("the same Library template creates isolated Story copies", async () => {
     gender: "female",
     age: 24,
     race: null,
-    species: null,
     occupation: "Detective",
     archetypes: ["intellectual"],
     profile: { personality: { summary: "Observant and guarded." } },
@@ -88,7 +87,7 @@ test("the same Library template creates isolated Story copies", async () => {
 test("copy rejects name conflicts and unauthorized Story or Library access", async () => {
   const template = {
     id: "template-1", ownerId: "owner-1", name: "Mira", aliases: [], ageConfirmed: false,
-    gender: "female", age: 24, race: null, species: null, occupation: null, archetypes: [], profile: {},
+    gender: "female", age: 24, race: null, occupation: null, archetypes: [], profile: {},
   };
   const conflictTransaction = {
     story: { findFirst: async () => ({ id: "story-1" }) },
@@ -136,7 +135,6 @@ test("Duplicate & Edit keeps reusable profile data and clears Story history", as
     gender: "female",
     age: 24,
     race: "human",
-    species: "human",
     occupation: "Detective",
     archetypes: ["intellectual"],
     profile: {

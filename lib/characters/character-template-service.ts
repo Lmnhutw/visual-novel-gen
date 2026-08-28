@@ -65,7 +65,6 @@ function characterDataFromTemplate(input: {
   gender: string;
   age: number;
   race: string | null;
-  species: string | null;
   occupation: string | null;
   archetypes: string[];
   profile: TemplateProfile;
@@ -82,7 +81,6 @@ function characterDataFromTemplate(input: {
     gender: input.gender,
     age: input.age,
     race: input.race,
-    species: input.species,
     occupation: input.occupation,
     archetypes: input.archetypes,
     profile: { create: profileForStory(input.profile) },
@@ -148,7 +146,6 @@ export async function createCharacterTemplate(
       gender: parsed.gender,
       age: parsed.age,
       race: parsed.race,
-      species: parsed.species,
       occupation: parsed.occupation,
       archetypes: parsed.archetypes,
       profile: profileForTemplate(parsed) as Prisma.InputJsonValue,
@@ -173,7 +170,6 @@ export async function updateCharacterTemplate(
         gender: parsed.gender,
         age: parsed.age,
         race: parsed.race,
-        species: parsed.species,
         occupation: parsed.occupation,
         archetypes: parsed.archetypes,
         profile: profileForTemplate(parsed) as Prisma.InputJsonValue,
@@ -223,7 +219,6 @@ export async function copyCharacterTemplateToStory(input: {
         gender: template.gender,
         age: template.age,
         race: template.race,
-        species: template.species,
         occupation: template.occupation,
         archetypes: template.archetypes,
         profile: template.profile as TemplateProfile,
@@ -270,7 +265,6 @@ export async function duplicateCharacterForEdit(
       gender: character.gender as CreateCharacterInput["gender"],
       age: character.age,
       race: character.race ?? undefined,
-      species: character.species ?? undefined,
       occupation: character.occupation ?? undefined,
       archetypes: character.archetypes as CreateCharacterInput["archetypes"],
       personality: profile.personality as CreateCharacterInput["personality"],

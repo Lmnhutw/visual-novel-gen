@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
 type DbClient = typeof prisma | Prisma.TransactionClient;
@@ -17,12 +17,12 @@ export type CharacterRecord = Prisma.CharacterGetPayload<{
 
 export type CharacterProfilePersistence = {
   personality: Prisma.InputJsonValue;
-  appearance?: Prisma.InputJsonValue;
+  appearance?: Prisma.InputJsonValue | null;
   boundaries?: Prisma.InputJsonValue;
   motivations?: Prisma.InputJsonValue;
   talents?: Prisma.InputJsonValue;
   speech?: Prisma.InputJsonValue;
-  relationshipPreference?: Prisma.InputJsonValue;
+  relationshipPreference?: Prisma.InputJsonValue | null;
   background?: Prisma.InputJsonValue;
   currentState?: Prisma.InputJsonValue;
   characterArc?: Prisma.InputJsonValue;
@@ -40,7 +40,6 @@ export type CreateCharacterPersistenceInput = {
   gender: string;
   age: number;
   race?: string;
-  species?: string;
   occupation?: string;
   archetypes: string[];
   profile: CharacterProfilePersistence;
@@ -57,12 +56,16 @@ function profileCreateData(
 ): Prisma.CharacterProfileCreateWithoutCharacterInput {
   return {
     personality: profile.personality,
-    appearance: profile.appearance,
+    appearance:
+      profile.appearance === null ? Prisma.DbNull : profile.appearance,
     boundaries: profile.boundaries,
     motivations: profile.motivations,
     talents: profile.talents,
     speech: profile.speech,
-    relationshipPreference: profile.relationshipPreference,
+    relationshipPreference:
+      profile.relationshipPreference === null
+        ? Prisma.DbNull
+        : profile.relationshipPreference,
     background: profile.background,
     currentState: profile.currentState,
     characterArc: profile.characterArc,
@@ -96,7 +99,6 @@ export async function insertCharacter(
       gender: input.gender,
       age: input.age,
       race: input.race,
-      species: input.species,
       occupation: input.occupation,
       archetypes: input.archetypes,
       profile: {
@@ -123,7 +125,6 @@ export async function updateCharacterById(
       gender: input.gender,
       age: input.age,
       race: input.race,
-      species: input.species,
       occupation: input.occupation,
       archetypes: input.archetypes,
       profile: input.profile ? profileUpdateData(input.profile) : undefined,

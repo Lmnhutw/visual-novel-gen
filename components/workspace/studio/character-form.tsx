@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Save, X } from "lucide-react";
+import { Save, Sparkles, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ZodError } from "zod";
 
@@ -16,6 +16,11 @@ import {
 import selectStyles from "@/components/ui/select.module.css";
 import { SliderField } from "@/components/ui/slider-field";
 import { TagInput } from "@/components/ui/tag-input";
+import {
+  ApiRequestError,
+  formatRequestError,
+  requestJson,
+} from "@/components/workspace/studio/api";
 import {
   archetypes,
   bodyScales,
@@ -37,6 +42,8 @@ import {
 } from "@/lib/types/character";
 import {
   createCharacterSchema,
+  type RandomizableCharacterSection,
+  type RandomizedCharacterSection,
   updateCharacterSchema,
   type CreateCharacterInput,
   type UpdateCharacterInput,
@@ -81,7 +88,6 @@ type CharacterFormValues = {
   gender: Gender | "";
   age: NumericField;
   race: string;
-  species: string;
   occupation: string;
   personality: {
     summary: string;
@@ -102,6 +108,7 @@ type CharacterFormValues = {
     limitations: string[];
   };
   addAppearance: boolean;
+  addRelationshipPreference: boolean;
   appearance: {
     heightCm: NumericField;
     weightKg: NumericField;
@@ -361,7 +368,6 @@ function emptyValues(): CharacterFormValues {
     gender: "",
     age: "",
     race: "",
-    species: "",
     occupation: "",
     personality: {
       summary: "",
@@ -382,6 +388,7 @@ function emptyValues(): CharacterFormValues {
       limitations: [],
     },
     addAppearance: false,
+    addRelationshipPreference: false,
     appearance: {
       heightCm: "",
       weightKg: "",
@@ -522,7 +529,6 @@ function valuesFromCharacter(
     gender: enumValue(character.gender, genders, ""),
     age: numericValue(character.age),
     race: stringValue(character.race),
-    species: stringValue(character.species),
     occupation: stringValue(character.occupation),
     personality: {
       summary: stringValue((personality as { summary?: unknown }).summary),
@@ -556,6 +562,9 @@ function valuesFromCharacter(
     },
     addAppearance:
       Object.keys(appearance as Record<string, unknown>).length > 0,
+    addRelationshipPreference:
+      Object.keys(relationshipPreference as Record<string, unknown>).length >
+      0,
     appearance: {
       heightCm: numericValue((appearance as { heightCm?: unknown }).heightCm),
       weightKg: numericValue((appearance as { weightKg?: unknown }).weightKg),
@@ -744,7 +753,9 @@ function normalizeValues(
         femaleBody,
         maleBody,
       })
-    : undefined;
+    : mode === "edit"
+      ? null
+      : undefined;
   const talents = compactObject({
     giftednessLevel:
       values.talents.giftednessLevel === "none" &&
@@ -762,7 +773,8 @@ function normalizeValues(
     catchphrases: cleanArray(values.speech.catchphrases),
     dialogueNotes: cleanText(values.speech.dialogueNotes),
   });
-  const relationshipPreference = compactObject({
+  const relationshipPreference = values.addRelationshipPreference
+    ? compactObject({
     attractedToGenders: values.relationshipPreference.attractedToGenders.length
       ? values.relationshipPreference.attractedToGenders
       : undefined,
@@ -782,8 +794,11 @@ function normalizeValues(
       values.relationshipPreference.possessiveness === ""
         ? undefined
         : values.relationshipPreference.possessiveness,
-    notes: cleanText(values.relationshipPreference.notes),
-  });
+        notes: cleanText(values.relationshipPreference.notes),
+      })
+    : mode === "edit"
+      ? null
+      : undefined;
   const background = compactObject({
     birthplace: cleanText(values.background.birthplace),
     family: cleanText(values.background.family),
@@ -819,7 +834,6 @@ function normalizeValues(
     gender: values.gender || undefined,
     age: Number.isInteger(age) ? age : undefined,
     race: cleanText(values.race),
-    species: cleanText(values.species),
     occupation: cleanText(values.occupation),
     archetypes: values.archetypes,
     personality: {
@@ -846,16 +860,39 @@ function normalizeValues(
   return payload ?? {};
 }
 
-function formError(error: unknown) {
+type FieldErrors = Record<string, string>;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function validationErrors(error: unknown): FieldErrors {
   if (error instanceof ZodError) {
-    return error.issues
-      .map((issue) => `${issue.path.join(".") || "form"}: ${issue.message}`)
-      .join(" ");
+    return error.issues.reduce<FieldErrors>((errors, issue) => {
+      const field = issue.path.join(".");
+      if (field && !errors[field]) errors[field] = issue.message;
+      return errors;
+    }, {});
   }
 
-  return error instanceof Error
-    ? error.message
-    : "Character validation failed.";
+  if (!(error instanceof ApiRequestError) || !isRecord(error.details)) {
+    return {};
+  }
+
+  if (typeof error.details.field === "string") {
+    return { [error.details.field]: error.message };
+  }
+
+  const fieldErrors = error.details.fieldErrors;
+  if (!isRecord(fieldErrors)) return {};
+
+  return Object.fromEntries(
+    Object.entries(fieldErrors).flatMap(([field, messages]) =>
+      Array.isArray(messages) && typeof messages[0] === "string"
+        ? [[field, messages[0]]]
+        : [],
+    ),
+  );
 }
 
 function TextField({
@@ -865,6 +902,8 @@ function TextField({
   required,
   type = "text",
   placeholder,
+  id,
+  error,
 }: {
   label: string;
   value: string | number;
@@ -872,6 +911,8 @@ function TextField({
   required?: boolean;
   type?: "text" | "number";
   placeholder?: string;
+  id?: string;
+  error?: string;
 }) {
   return (
     <label className="flex flex-col gap-1.5">
@@ -880,13 +921,21 @@ function TextField({
         {required ? <span className="text-primary"> *</span> : null}
       </span>
       <input
-        className="h-10 rounded border border-outline-variant bg-surface-dim px-3 text-sm outline-none transition focus:border-primary"
+        aria-describedby={error && id ? `${id}-error` : undefined}
+        aria-invalid={Boolean(error)}
+        className={`h-10 rounded-none border bg-surface-dim px-3 text-sm outline-none transition focus:border-primary ${error ? "border-error-container" : "border-outline-variant"}`}
+        id={id}
         min={type === "number" ? 1 : undefined}
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
       />
+      {error && id ? (
+        <span className="text-xs leading-5 text-error" id={`${id}-error`}>
+          {error}
+        </span>
+      ) : null}
     </label>
   );
 }
@@ -897,12 +946,16 @@ function TextAreaField({
   onChange,
   required,
   placeholder,
+  id,
+  error,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
   placeholder?: string;
+  id?: string;
+  error?: string;
 }) {
   return (
     <label className="flex flex-col gap-1.5">
@@ -911,11 +964,19 @@ function TextAreaField({
         {required ? <span className="text-primary"> *</span> : null}
       </span>
       <textarea
-        className="min-h-24 rounded border border-outline-variant bg-surface-dim px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary"
+        aria-describedby={error && id ? `${id}-error` : undefined}
+        aria-invalid={Boolean(error)}
+        className={`min-h-24 rounded-none border bg-surface-dim px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary ${error ? "border-error-container" : "border-outline-variant"}`}
+        id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
       />
+      {error && id ? (
+        <span className="text-xs leading-5 text-error" id={`${id}-error`}>
+          {error}
+        </span>
+      ) : null}
     </label>
   );
 }
@@ -926,12 +987,16 @@ function SelectField<T extends string>({
   options,
   onChange,
   required,
+  id,
+  error,
 }: {
   label: string;
   value: T | "";
   options: readonly T[];
   onChange: (value: T) => void;
   required?: boolean;
+  id?: string;
+  error?: string;
 }) {
   return (
     <label className="flex flex-col gap-1.5">
@@ -940,7 +1005,10 @@ function SelectField<T extends string>({
         {required ? <span className="text-primary"> *</span> : null}
       </span>
       <select
-        className={`${selectStyles["studio-select"]} h-10 w-full text-sm`}
+        aria-describedby={error && id ? `${id}-error` : undefined}
+        aria-invalid={Boolean(error)}
+        className={`${selectStyles["studio-select"]} ${error ? "border-error-container" : ""} h-10 w-full text-sm`}
+        id={id}
         value={value}
         onChange={(event) => onChange(event.target.value as T)}
       >
@@ -951,8 +1019,150 @@ function SelectField<T extends string>({
           </option>
         ))}
       </select>
+      {error && id ? (
+        <span className="text-xs leading-5 text-error" id={`${id}-error`}>
+          {error}
+        </span>
+      ) : null}
     </label>
   );
+}
+
+function SectionRandomizer({
+  section,
+  onRandomize,
+  isLoading,
+  error,
+  disabled = false,
+}: {
+  section: RandomizableCharacterSection;
+  onRandomize: (section: RandomizableCharacterSection) => void;
+  isLoading: boolean;
+  error?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-3">
+      {error ? <span className="text-xs text-error">{error}</span> : null}
+      <button
+        className="inline-flex items-center gap-2 rounded-none border border-outline-variant bg-surface-dim px-3 py-2 text-xs font-semibold text-primary transition hover:border-primary hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={disabled || isLoading}
+        type="button"
+        onClick={() => onRandomize(section)}
+      >
+        <Sparkles className="size-3.5" />
+        {isLoading ? "Randomizing..." : "Randomize section"}
+      </button>
+    </div>
+  );
+}
+
+function withRandomizedSection(
+  values: CharacterFormValues,
+  candidate: RandomizedCharacterSection,
+): CharacterFormValues {
+  switch (candidate.section) {
+    case "personality":
+      return { ...values, personality: candidate.personality };
+    case "archetypes":
+      return { ...values, archetypes: candidate.archetypes };
+    case "talents":
+      return { ...values, talents: candidate.talents };
+    case "appearance": {
+      const appearance = candidate.appearance;
+      return {
+        ...values,
+        addAppearance: true,
+        appearance: {
+          heightCm: numericValue(appearance.heightCm),
+          weightKg: numericValue(appearance.weightKg),
+          bodyType: appearance.bodyType ?? "",
+          faceDescription: appearance.faceDescription ?? "",
+          hairColor: appearance.hairColor ?? "",
+          hairStyle: appearance.hairStyle ?? "",
+          eyeColor: appearance.eyeColor ?? "",
+          skinTone: appearance.skinTone ?? "",
+          clothingStyle: appearance.clothingStyle ?? "",
+          distinctiveFeatures: appearance.distinctiveFeatures,
+          femaleBody: {
+            chestSize: appearance.femaleBody?.chestSize ?? "",
+            waistSize: appearance.femaleBody?.waistSize ?? "",
+            hipSize: appearance.femaleBody?.hipSize ?? "",
+          },
+          maleBody: {
+            shoulderWidth: appearance.maleBody?.shoulderWidth ?? "",
+            muscleMass: appearance.maleBody?.muscleMass ?? "",
+          },
+        },
+      };
+    }
+    case "speech":
+      return {
+        ...values,
+        speech: {
+          speakingStyle: candidate.speech.speakingStyle ?? "",
+          vocabularyLevel: candidate.speech.vocabularyLevel ?? "",
+          profanityLevel: candidate.speech.profanityLevel ?? "",
+          catchphrases: candidate.speech.catchphrases,
+          dialogueNotes: candidate.speech.dialogueNotes ?? "",
+        },
+      };
+    case "relationshipPreference":
+      return {
+        ...values,
+        addRelationshipPreference: true,
+        relationshipPreference: {
+          attractedToGenders:
+            candidate.relationshipPreference.attractedToGenders ?? [],
+          self: candidate.relationshipPreference.self ?? "",
+          partner: candidate.relationshipPreference.partner ?? "",
+          loveLanguages: candidate.relationshipPreference.loveLanguages ?? [],
+          preferredTraits: candidate.relationshipPreference.preferredTraits,
+          turnOns: candidate.relationshipPreference.turnOns,
+          turnOffs: candidate.relationshipPreference.turnOffs,
+          jealousyTolerance:
+            candidate.relationshipPreference.jealousyTolerance ?? "",
+          possessiveness: candidate.relationshipPreference.possessiveness ?? "",
+          notes: candidate.relationshipPreference.notes ?? "",
+        },
+      };
+    case "background":
+      return {
+        ...values,
+        background: {
+          birthplace: candidate.background.birthplace ?? "",
+          family: candidate.background.family ?? "",
+          education: candidate.background.education ?? "",
+          socialClass: candidate.background.socialClass ?? "",
+          majorLifeEvents: candidate.background.majorLifeEvents,
+          trauma: candidate.background.trauma,
+          secrets: candidate.background.secrets,
+        },
+      };
+    case "currentState":
+      return {
+        ...values,
+        currentState: {
+          physicalState: candidate.currentState.physicalState ?? "",
+          emotionalState: candidate.currentState.emotionalState ?? "",
+          mentalState: candidate.currentState.mentalState ?? "",
+          currentGoals: candidate.currentState.currentGoals,
+          currentConflicts: candidate.currentState.currentConflicts,
+          currentLocation: candidate.currentState.currentLocation ?? "",
+        },
+      };
+    case "characterArc":
+      return {
+        ...values,
+        characterArc: {
+          initialState: candidate.characterArc.initialState ?? "",
+          desiredGrowth: candidate.characterArc.desiredGrowth ?? "",
+          internalConflict: candidate.characterArc.internalConflict ?? "",
+          externalConflict: candidate.characterArc.externalConflict ?? "",
+          completedMilestones: candidate.characterArc.completedMilestones,
+        },
+      };
+  }
 }
 
 export function CharacterForm({
@@ -969,13 +1179,14 @@ export function CharacterForm({
     [character],
   );
   const [values, setValues] = useState<CharacterFormValues>(initialValues);
-  const [validationError, setValidationError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [submissionError, setSubmissionError] = useState("");
+  const [randomizingSection, setRandomizingSection] = useState<
+    RandomizableCharacterSection | null
+  >(null);
+  const [randomizeError, setRandomizeError] = useState("");
 
-  const hasRelationshipData =
-    values.relationshipPreference.attractedToGenders.length > 0 ||
-    values.relationshipPreference.self ||
-    values.relationshipPreference.partner ||
-    values.relationshipPreference.loveLanguages.length > 0;
+  const hasRelationshipData = values.addRelationshipPreference;
   const hasSpeechData =
     values.speech.speakingStyle ||
     values.speech.vocabularyLevel ||
@@ -995,19 +1206,85 @@ export function CharacterForm({
     values.characterArc.desiredGrowth ||
     values.characterArc.completedMilestones.length > 0;
 
-  async function handleSubmit() {
-    setValidationError("");
+  function clearFieldError(field: string) {
+    setFieldErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  }
+
+  function focusFirstFieldError(errors: FieldErrors) {
+    const field = Object.keys(errors)[0];
+    if (!field) return;
+    requestAnimationFrame(() => {
+      document.getElementById(`character-field-${field}`)?.focus();
+    });
+  }
+
+  async function handleRandomize(section: RandomizableCharacterSection) {
+    setRandomizingSection(section);
+    setRandomizeError("");
 
     try {
-      const normalized = normalizeValues(values, storyId, mode);
-      const payload =
-        mode === "create"
-          ? createCharacterSchema.parse(normalized)
-          : updateCharacterSchema.parse(normalized);
-
-      await onSubmit(payload, mode);
+      const response = await requestJson<{ section: RandomizedCharacterSection }>(
+        "/api/characters/randomize-section",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            storyId: storyId === "template" ? undefined : storyId,
+            section,
+            character: {
+              name: values.name.trim() || undefined,
+              gender: values.gender || undefined,
+              age: typeof values.age === "number" ? values.age : undefined,
+              race: values.race.trim() || undefined,
+              occupation: values.occupation.trim() || undefined,
+              personalitySummary:
+                values.personality.summary.trim() || undefined,
+            },
+          }),
+        },
+      );
+      setValues((current) => withRandomizedSection(current, response.section));
     } catch (error) {
-      setValidationError(formError(error));
+      setRandomizeError(
+        formatRequestError(error, "Could not randomize this section."),
+      );
+    } finally {
+      setRandomizingSection(null);
+    }
+  }
+
+  async function handleSubmit() {
+    setFieldErrors({});
+    setSubmissionError("");
+
+    const normalized = normalizeValues(values, storyId, mode);
+    const result =
+      mode === "create"
+        ? createCharacterSchema.safeParse(normalized)
+        : updateCharacterSchema.safeParse(normalized);
+
+    if (!result.success) {
+      const errors = validationErrors(result.error);
+      setFieldErrors(errors);
+      focusFirstFieldError(errors);
+      return;
+    }
+
+    try {
+      await onSubmit(result.data, mode);
+    } catch (error) {
+      const errors = validationErrors(error);
+      if (Object.keys(errors).length) {
+        setFieldErrors(errors);
+        focusFirstFieldError(errors);
+        return;
+      }
+      setSubmissionError(formatRequestError(error, "Could not save character."));
     }
   }
 
@@ -1037,13 +1314,6 @@ export function CharacterForm({
 
       <div className="grid gap-5 overflow-y-auto p-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:p-6">
         <div className="flex flex-col gap-3">
-          {validationError ? (
-            <div className="flex gap-2 rounded border border-error-container bg-error-container/20 p-3 text-sm leading-6 text-error">
-              <AlertCircle className="mt-0.5 size-4 shrink-0" />
-              <p>{validationError}</p>
-            </div>
-          ) : null}
-
           <CollapsibleSection
             defaultOpen
             required
@@ -1053,33 +1323,42 @@ export function CharacterForm({
             <div className="grid gap-4 md:grid-cols-2">
               <TextField
                 required
+                error={fieldErrors.name}
+                id="character-field-name"
                 label="Name"
                 value={values.name}
-                onChange={(name) =>
-                  setValues((current) => ({ ...current, name }))
-                }
+                onChange={(name) => {
+                  clearFieldError("name");
+                  setValues((current) => ({ ...current, name }));
+                }}
                 placeholder="Mira Vale"
               />
               <TextField
                 required
+                error={fieldErrors.age}
+                id="character-field-age"
                 label="Age"
                 type="number"
                 value={values.age}
-                onChange={(age) =>
+                onChange={(age) => {
+                  clearFieldError("age");
                   setValues((current) => ({
                     ...current,
                     age: age ? Number(age) : "",
-                  }))
-                }
+                  }));
+                }}
               />
               <SelectField
                 required
+                error={fieldErrors.gender}
+                id="character-field-gender"
                 label="Gender"
                 options={genders}
                 value={values.gender}
-                onChange={(gender) =>
-                  setValues((current) => ({ ...current, gender }))
-                }
+                onChange={(gender) => {
+                  clearFieldError("gender");
+                  setValues((current) => ({ ...current, gender }));
+                }}
               />
               <SelectField
                 label="Role"
@@ -1111,13 +1390,6 @@ export function CharacterForm({
                   setValues((current) => ({ ...current, race }))
                 }
               />
-              <TextField
-                label="Species"
-                value={values.species}
-                onChange={(species) =>
-                  setValues((current) => ({ ...current, species }))
-                }
-              />
               <TagInput
                 className="md:col-span-2"
                 label="Aliases"
@@ -1136,16 +1408,25 @@ export function CharacterForm({
             description="The minimum useful profile for long-form character consistency."
           >
             <div className="grid gap-4">
+              <SectionRandomizer
+                error={randomizingSection === "personality" ? randomizeError : undefined}
+                isLoading={randomizingSection === "personality"}
+                onRandomize={handleRandomize}
+                section="personality"
+              />
               <TextAreaField
                 required
+                error={fieldErrors["personality.summary"]}
+                id="character-field-personality.summary"
                 label="Personality Summary"
                 value={values.personality.summary}
-                onChange={(summary) =>
+                onChange={(summary) => {
+                  clearFieldError("personality.summary");
                   setValues((current) => ({
                     ...current,
                     personality: { ...current.personality, summary },
-                  }))
-                }
+                  }));
+                }}
                 placeholder="Guarded, observant, and loyal once trust is earned."
               />
               <div className="grid gap-4 md:grid-cols-2">
@@ -1184,6 +1465,12 @@ export function CharacterForm({
             description="Select multiple traits; flawed archetypes are separate so conflict is intentional."
           >
             <div className="grid gap-5">
+              <SectionRandomizer
+                error={randomizingSection === "archetypes" ? randomizeError : undefined}
+                isLoading={randomizingSection === "archetypes"}
+                onRandomize={handleRandomize}
+                section="archetypes"
+              />
               <MultiSelectChips
                 label="Positive / Neutral"
                 options={toOptions(positiveArchetypes)}
@@ -1228,6 +1515,14 @@ export function CharacterForm({
             description="Optional giftedness and limits."
           >
             <div className="grid gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <SectionRandomizer
+                  error={randomizingSection === "talents" ? randomizeError : undefined}
+                  isLoading={randomizingSection === "talents"}
+                  onRandomize={handleRandomize}
+                  section="talents"
+                />
+              </div>
               <SelectField
                 label="Giftedness Level"
                 options={giftednessOptions}
@@ -1283,6 +1578,13 @@ export function CharacterForm({
                   }
                 />
               </label>
+              <SectionRandomizer
+                disabled={!values.addAppearance}
+                error={randomizingSection === "appearance" ? randomizeError : undefined}
+                isLoading={randomizingSection === "appearance"}
+                onRandomize={handleRandomize}
+                section="appearance"
+              />
               {values.addAppearance ? (
                 <div className="grid gap-4 md:grid-cols-2">
                   <TextField
@@ -1461,6 +1763,14 @@ export function CharacterForm({
             description="Dialogue rules, catchphrases, vocabulary, and profanity range."
           >
             <div className="grid gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <SectionRandomizer
+                  error={randomizingSection === "speech" ? randomizeError : undefined}
+                  isLoading={randomizingSection === "speech"}
+                  onRandomize={handleRandomize}
+                  section="speech"
+                />
+              </div>
               <TextField
                 label="Speaking Style"
                 value={values.speech.speakingStyle}
@@ -1522,6 +1832,33 @@ export function CharacterForm({
             description="Self and partner preferences are independent."
           >
             <div className="grid gap-5">
+              <label className="flex items-center justify-between gap-3 rounded border border-outline-variant bg-surface-dim p-3 text-sm text-on-surface-variant">
+                <span>Add relationship preferences</span>
+                <input
+                  checked={values.addRelationshipPreference}
+                  className="size-4 accent-control"
+                  type="checkbox"
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      addRelationshipPreference: event.target.checked,
+                    }))
+                  }
+                />
+              </label>
+              <SectionRandomizer
+                disabled={!values.addRelationshipPreference}
+                error={
+                  randomizingSection === "relationshipPreference"
+                    ? randomizeError
+                    : undefined
+                }
+                isLoading={randomizingSection === "relationshipPreference"}
+                onRandomize={handleRandomize}
+                section="relationshipPreference"
+              />
+              {values.addRelationshipPreference ? (
+                <>
               <div className="rounded border border-outline-variant bg-surface-dim p-3 text-xs leading-5 text-on-surface-variant">
                 <p>These settings are independent.</p>
                 <p className="mt-2">
@@ -1680,6 +2017,8 @@ export function CharacterForm({
                   }
                 />
               </div>
+                </>
+              ) : null}
             </div>
           </CollapsibleSection>
 
@@ -1689,6 +2028,14 @@ export function CharacterForm({
             description="History, secrets, and life events that may affect continuity."
           >
             <div className="grid gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <SectionRandomizer
+                  error={randomizingSection === "background" ? randomizeError : undefined}
+                  isLoading={randomizingSection === "background"}
+                  onRandomize={handleRandomize}
+                  section="background"
+                />
+              </div>
               <TextField
                 label="Birthplace"
                 value={values.background.birthplace}
@@ -1770,6 +2117,14 @@ export function CharacterForm({
             description="Present-tense state used by scene generation."
           >
             <div className="grid gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <SectionRandomizer
+                  error={randomizingSection === "currentState" ? randomizeError : undefined}
+                  isLoading={randomizingSection === "currentState"}
+                  onRandomize={handleRandomize}
+                  section="currentState"
+                />
+              </div>
               <TextField
                 label="Physical State"
                 value={values.currentState.physicalState}
@@ -1839,6 +2194,14 @@ export function CharacterForm({
             description="Arc constraints for long-form growth and milestone tracking."
           >
             <div className="grid gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <SectionRandomizer
+                  error={randomizingSection === "characterArc" ? randomizeError : undefined}
+                  isLoading={randomizingSection === "characterArc"}
+                  onRandomize={handleRandomize}
+                  section="characterArc"
+                />
+              </div>
               <TextAreaField
                 label="Initial State"
                 value={values.characterArc.initialState}
@@ -1920,7 +2283,7 @@ export function CharacterForm({
                 {
                   [
                     values.addAppearance,
-                    Boolean(hasRelationshipData),
+                    hasRelationshipData,
                     Boolean(hasSpeechData),
                     Boolean(hasBackgroundData),
                     Boolean(hasCurrentStateData),
@@ -1946,7 +2309,8 @@ export function CharacterForm({
           </label>
           <div className="rounded border border-outline-variant bg-surface-dim p-3">
             <p className="text-xs leading-5 text-on-surface-variant">
-              Empty optional profiles are omitted from the API payload.
+              Disabled appearance and relationship profiles are removed when
+              saved.
               Gender-specific body fields are submitted only for the matching
               gender.
             </p>
@@ -1955,6 +2319,11 @@ export function CharacterForm({
       </div>
 
       <div className="flex flex-wrap justify-end gap-3 border-t border-outline-variant px-6 py-4">
+        {submissionError ? (
+          <p className="mr-auto self-center text-sm text-error">
+            {submissionError}
+          </p>
+        ) : null}
         <button
           className="rounded border border-outline-variant px-4 py-2 text-sm font-semibold text-primary transition hover:bg-surface-container-high"
           type="button"

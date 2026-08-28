@@ -1,10 +1,19 @@
 .studio-select {
   min-height: 2.75rem;
-  padding: 0.625rem 0.875rem;
+  padding: 0.625rem 2.75rem 0.625rem 0.875rem;
   color: rgb(var(--color-on-surface) / 1);
   background-color: rgb(var(--color-surface-container-low) / 1);
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgb(var(--color-primary) / 0.9) 50%),
+    linear-gradient(135deg, rgb(var(--color-primary) / 0.9) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.1rem) 50%,
+    calc(100% - 0.8rem) 50%;
+  background-repeat: no-repeat;
+  background-size: 0.35rem 0.35rem;
   border: 1px solid rgb(var(--color-on-surface) / 0.1);
-  border-radius: 0.75rem;
+  border-radius: 0;
+  appearance: none;
   transition:
     border-color 160ms ease,
     background-color 160ms ease,

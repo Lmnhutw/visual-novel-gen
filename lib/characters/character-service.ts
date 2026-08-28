@@ -1,5 +1,5 @@
 import { ZodError, type ZodIssue } from "zod";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { parseJsonString, toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
 import { WorkflowError } from "@/lib/http/api-response";
@@ -98,7 +98,10 @@ function mergeProfile<T>(
   } as T;
 }
 
-function assertGenderedBody(gender: Gender, appearance?: AppearanceProfile) {
+function assertGenderedBody(
+  gender: Gender,
+  appearance?: AppearanceProfile | null,
+) {
   const issues: ZodIssue[] = [];
 
   if (appearance?.femaleBody !== undefined && gender !== "female") {
@@ -134,29 +137,49 @@ function toArchetypes(values: string[]): Archetype[] {
 
 function profilePersistence(input: {
   personality: PersonalityProfile;
-  appearance?: AppearanceProfile;
+  appearance?: AppearanceProfile | null;
   talents?: TalentProfile;
   speech?: SpeechProfile;
-  relationshipPreference?: RelationshipPreferenceProfile;
+  relationshipPreference?: RelationshipPreferenceProfile | null;
   background?: BackgroundProfile;
   currentState?: CharacterState;
   characterArc?: CharacterArc;
 }): CharacterProfilePersistence {
-  const json = (value: unknown): Prisma.InputJsonValue | undefined =>
-    value === undefined
-      ? undefined
-      : (value as unknown as Prisma.InputJsonValue);
+  const json = (value: unknown): Prisma.InputJsonValue | undefined => {
+    if (value === undefined || value === null) return undefined;
+    return value as Prisma.InputJsonValue;
+  };
+  const nullableJson = (
+    value: unknown,
+  ): Prisma.InputJsonValue | null | undefined =>
+    value === null ? null : json(value);
 
   return {
     personality: json(input.personality) ?? {},
-    appearance: json(input.appearance),
+    appearance: nullableJson(input.appearance),
     talents: json(input.talents),
     speech: json(input.speech),
-    relationshipPreference: json(input.relationshipPreference),
+    relationshipPreference: nullableJson(input.relationshipPreference),
     background: json(input.background),
     currentState: json(input.currentState),
     characterArc: json(input.characterArc),
   };
+}
+
+function rethrowCharacterPersistenceError(error: unknown): never {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  ) {
+    throw new WorkflowError(
+      "CHARACTER_NAME_CONFLICT",
+      "A character with this name already exists in this story.",
+      409,
+      { field: "name" },
+    );
+  }
+
+  throw error;
 }
 
 export function toCharacterDomain(record: CharacterRecord): Character {
@@ -173,7 +196,6 @@ export function toCharacterDomain(record: CharacterRecord): Character {
     gender: toGender(record.gender),
     age: record.age,
     race: record.race ?? undefined,
-    species: record.species ?? undefined,
     occupation: record.occupation ?? undefined,
     personality,
     archetypes: toArchetypes(record.archetypes),
@@ -203,32 +225,35 @@ export async function createCharacter(input: CreateCharacterInput) {
   const parsed = createCharacterSchema.parse(input);
   assertGenderedBody(parsed.gender, parsed.appearance);
 
-  const record = await insertCharacter({
-    storyId: parsed.storyId,
-    name: parsed.name,
-    aliases: parsed.aliases,
-    role: parsed.role,
-    status: parsed.status,
-    ageConfirmed: parsed.ageConfirmed,
-    gender: parsed.gender,
-    age: parsed.age,
-    race: parsed.race,
-    species: parsed.species,
-    occupation: parsed.occupation,
-    archetypes: parsed.archetypes,
-    profile: profilePersistence({
-      personality: parsed.personality,
-      appearance: parsed.appearance,
-      talents: parsed.talents,
-      speech: parsed.speech,
-      relationshipPreference: parsed.relationshipPreference,
-      background: parsed.background,
-      currentState: parsed.currentState,
-      characterArc: parsed.characterArc,
-    }),
-  });
+  try {
+    const record = await insertCharacter({
+      storyId: parsed.storyId,
+      name: parsed.name,
+      aliases: parsed.aliases,
+      role: parsed.role,
+      status: parsed.status,
+      ageConfirmed: parsed.ageConfirmed,
+      gender: parsed.gender,
+      age: parsed.age,
+      race: parsed.race,
+      occupation: parsed.occupation,
+      archetypes: parsed.archetypes,
+      profile: profilePersistence({
+        personality: parsed.personality,
+        appearance: parsed.appearance,
+        talents: parsed.talents,
+        speech: parsed.speech,
+        relationshipPreference: parsed.relationshipPreference,
+        background: parsed.background,
+        currentState: parsed.currentState,
+        characterArc: parsed.characterArc,
+      }),
+    });
 
-  return toCharacterDomain(record);
+    return toCharacterDomain(record);
+  } catch (error) {
+    return rethrowCharacterPersistenceError(error);
+  }
 }
 
 export async function updateCharacter(
@@ -236,7 +261,8 @@ export async function updateCharacter(
   input: UpdateCharacterInput,
 ) {
   const parsed = updateCharacterSchema.parse(input);
-  return prisma.$transaction(async (tx) => {
+  try {
+    return await prisma.$transaction(async (tx) => {
     const existing = await findCharacterById(characterId, tx);
     if (!existing) throw new Error("Character not found.");
 
@@ -257,10 +283,19 @@ export async function updateCharacter(
     const current = toCharacterDomain(existing);
     const gender = parsed.gender ?? current.gender;
     const personality = mergeProfile(current.personality, parsed.personality);
-    const appearance = mergeProfile(current.appearance, parsed.appearance);
+    const appearance =
+      parsed.appearance === null
+        ? null
+        : mergeProfile(current.appearance, parsed.appearance);
     const talents = mergeProfile(current.talents, parsed.talents);
     const speech = mergeProfile(current.speech, parsed.speech);
-    const relationshipPreference = mergeProfile(current.relationshipPreference, parsed.relationshipPreference);
+    const relationshipPreference =
+      parsed.relationshipPreference === null
+        ? null
+        : mergeProfile(
+            current.relationshipPreference,
+            parsed.relationshipPreference,
+          );
     const background = mergeProfile(current.background, parsed.background);
     const currentState = mergeProfile(current.currentState, parsed.currentState);
     const characterArc = mergeProfile(current.characterArc, parsed.characterArc);
@@ -275,7 +310,6 @@ export async function updateCharacter(
       gender: parsed.gender,
       age: parsed.age,
       race: parsed.race,
-      species: parsed.species,
       occupation: parsed.occupation,
       archetypes: parsed.archetypes,
       profile: profilePersistence({
@@ -289,8 +323,11 @@ export async function updateCharacter(
         characterArc,
       }),
     }, tx);
-    return toCharacterDomain(record);
-  });
+      return toCharacterDomain(record);
+    });
+  } catch (error) {
+    return rethrowCharacterPersistenceError(error);
+  }
 }
 
 export async function getCharacterById(characterId: string) {

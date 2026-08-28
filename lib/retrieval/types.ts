@@ -34,7 +34,6 @@ export type GenerationContext = {
     gender: string;
     age: number;
     race?: string | null;
-    species?: string | null;
     occupation?: string | null;
     archetypes: string[];
     profile?: {

@@ -283,7 +283,10 @@ const updateCharacterArcSchema = z
 
 function validateGenderedBody(
   gender: z.infer<typeof genderSchema> | undefined,
-  appearance: { femaleBody?: unknown; maleBody?: unknown } | undefined,
+  appearance:
+    | { femaleBody?: unknown; maleBody?: unknown }
+    | null
+    | undefined,
   ctx: z.RefinementCtx,
 ) {
   if (!appearance || !gender) {
@@ -316,9 +319,8 @@ const createCharacterBaseSchema = z
     status: characterStatusSchema.optional(),
     ageConfirmed: z.boolean().optional(),
     gender: genderSchema,
-    age: z.number().int().positive().max(150),
+    age: z.number().int().positive().max(10_000),
     race: optionalText,
-    species: optionalText,
     occupation: optionalText,
     archetypes: archetypesSchema,
     personality: createPersonalitySchema,
@@ -348,16 +350,15 @@ export const updateCharacterSchema = z
     status: characterStatusSchema.optional(),
     ageConfirmed: z.boolean().optional(),
     gender: genderSchema.optional(),
-    age: z.number().int().positive().max(150).optional(),
+    age: z.number().int().positive().max(10_000).optional(),
     race: optionalText,
-    species: optionalText,
     occupation: optionalText,
     archetypes: updateArchetypesSchema,
     personality: updatePersonalitySchema.optional(),
     talents: updateTalentSchema.optional(),
-    appearance: updateAppearanceSchema.optional(),
+    appearance: updateAppearanceSchema.nullable().optional(),
     speech: updateSpeechSchema.optional(),
-    relationshipPreference: updateRelationshipPreferenceSchema.optional(),
+    relationshipPreference: updateRelationshipPreferenceSchema.nullable().optional(),
     background: updateBackgroundSchema.optional(),
     currentState: updateCharacterStateProfileSchema.optional(),
     characterArc: updateCharacterArcSchema.optional(),
@@ -379,3 +380,59 @@ export const characterResponseSchema = createCharacterBaseSchema
 export type CreateCharacterInput = z.input<typeof createCharacterSchema>;
 export type CreateCharacterTemplateInput = z.input<typeof createCharacterTemplateSchema>;
 export type UpdateCharacterInput = z.input<typeof updateCharacterSchema>;
+
+export const randomizableCharacterSections = [
+  "personality",
+  "archetypes",
+  "talents",
+  "appearance",
+  "speech",
+  "relationshipPreference",
+  "background",
+  "currentState",
+  "characterArc",
+] as const;
+
+export type RandomizableCharacterSection =
+  (typeof randomizableCharacterSections)[number];
+
+const randomizationContextSchema = z
+  .object({
+    name: z.string().trim().max(120).optional(),
+    gender: genderSchema.optional(),
+    age: z.number().int().positive().max(10_000).optional(),
+    race: z.string().trim().max(120).optional(),
+    occupation: z.string().trim().max(160).optional(),
+    personalitySummary: z.string().trim().max(1_000).optional(),
+  })
+  .strict();
+
+export const randomizeCharacterSectionSchema = z
+  .object({
+    storyId: z.string().min(1).optional(),
+    section: z.enum(randomizableCharacterSections),
+    character: randomizationContextSchema,
+  })
+  .strict();
+
+export const randomizedCharacterSectionSchema = z.discriminatedUnion(
+  "section",
+  [
+    z.object({ section: z.literal("personality"), personality: createPersonalitySchema }).strict(),
+    z.object({ section: z.literal("archetypes"), archetypes: archetypesSchema }).strict(),
+    z.object({ section: z.literal("talents"), talents: talentSchema }).strict(),
+    z.object({ section: z.literal("appearance"), appearance: appearanceSchema }).strict(),
+    z.object({ section: z.literal("speech"), speech: speechSchema }).strict(),
+    z.object({ section: z.literal("relationshipPreference"), relationshipPreference: relationshipPreferenceSchema }).strict(),
+    z.object({ section: z.literal("background"), background: backgroundSchema }).strict(),
+    z.object({ section: z.literal("currentState"), currentState: characterStateSchema }).strict(),
+    z.object({ section: z.literal("characterArc"), characterArc: characterArcSchema }).strict(),
+  ],
+);
+
+export type RandomizeCharacterSectionInput = z.input<
+  typeof randomizeCharacterSectionSchema
+>;
+export type RandomizedCharacterSection = z.output<
+  typeof randomizedCharacterSectionSchema
+>;

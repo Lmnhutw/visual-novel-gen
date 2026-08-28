@@ -185,7 +185,6 @@ export interface Character {
   gender: Gender;
   age: number;
   race?: string;
-  species?: string;
   occupation?: string;
   personality: PersonalityProfile;
   archetypes: Archetype[];

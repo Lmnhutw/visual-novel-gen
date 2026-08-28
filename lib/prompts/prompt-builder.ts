@@ -50,15 +50,26 @@ function stringValue(value: unknown): string | undefined {
 function compactAppearance(value: unknown): string | undefined {
   const appearance = asRecord(value);
   const distinctiveFeatures = stringArray(appearance.distinctiveFeatures);
+  const femaleBody = asRecord(appearance.femaleBody);
+  const maleBody = asRecord(appearance.maleBody);
   const parts = [
+    appearance.heightCm ? `height: ${appearance.heightCm} cm` : undefined,
+    appearance.weightKg ? `weight: ${appearance.weightKg} kg` : undefined,
     stringValue(appearance.faceDescription),
     stringValue(appearance.bodyType),
     stringValue(appearance.hairColor),
     stringValue(appearance.hairStyle),
     stringValue(appearance.eyeColor),
+    stringValue(appearance.skinTone),
     stringValue(appearance.clothingStyle),
     distinctiveFeatures.length
       ? `distinctive features: ${distinctiveFeatures.join(", ")}`
+      : undefined,
+    Object.keys(femaleBody).length
+      ? `female body details: ${JSON.stringify(femaleBody)}`
+      : undefined,
+    Object.keys(maleBody).length
+      ? `male body details: ${JSON.stringify(maleBody)}`
       : undefined,
   ].filter(Boolean);
 
@@ -74,6 +85,9 @@ function compactRelationshipPreference(
     partner: preference.partner,
     attractedToGenders: preference.attractedToGenders,
     loveLanguages: preference.loveLanguages,
+    preferredTraits: preference.preferredTraits,
+    turnOns: preference.turnOns,
+    turnOffs: preference.turnOffs,
     jealousyTolerance: preference.jealousyTolerance,
     possessiveness: preference.possessiveness,
     notes: preference.notes,
@@ -92,6 +106,7 @@ export function formatCharacterPromptContext(
     const profile = character.profile;
     const personality = asRecord(profile?.personality);
     const currentState = asRecord(profile?.currentState);
+    const background = asRecord(profile?.background);
     const latestState = character.latestState ?? {};
 
     return {
@@ -100,18 +115,43 @@ export function formatCharacterPromptContext(
       aliases: character.aliases,
       gender: character.gender,
       age: character.age,
+      race: character.race,
+      occupation: character.occupation,
       role: character.role,
       status: character.status,
       archetypes: character.archetypes,
       personalitySummary: personality.summary,
       keyTraits: stringArray(personality.traits),
+      personality: {
+        strengths: stringArray(personality.strengths),
+        weaknesses: stringArray(personality.weaknesses),
+        fears: stringArray(personality.fears),
+        desires: stringArray(personality.desires),
+        goals: stringArray(personality.goals),
+        values: stringArray(personality.values),
+        habits: stringArray(personality.habits),
+        quirks: stringArray(personality.quirks),
+      },
+      talents: profile?.talents,
       appearanceSummary: compactAppearance(profile?.appearance),
       speech: profile?.speech,
-      currentEmotionalState:
-        currentState.emotionalState ?? latestState.emotionalState,
-      currentGoals: currentState.currentGoals ?? latestState.goals,
-      currentLocation: latestState.location,
-      currentPhysicalState: latestState.physicalState,
+      background: {
+        birthplace: background.birthplace,
+        family: background.family,
+        education: background.education,
+        socialClass: background.socialClass,
+        majorLifeEvents: background.majorLifeEvents,
+        trauma: background.trauma,
+      },
+      currentState: {
+        emotionalState:
+          currentState.emotionalState ?? latestState.emotionalState,
+        physicalState: currentState.physicalState ?? latestState.physicalState,
+        mentalState: currentState.mentalState,
+        currentGoals: currentState.currentGoals ?? latestState.goals,
+        currentConflicts: currentState.currentConflicts,
+        currentLocation: currentState.currentLocation ?? latestState.location,
+      },
       motivations: profile?.motivations,
       voiceRules: profile?.voiceRules,
       boundaries: profile?.boundaries,

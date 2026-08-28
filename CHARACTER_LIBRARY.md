@@ -28,7 +28,7 @@ Library list/search query.
 
 Adding from the Library creates a new `Character` and `CharacterProfile` for
 the selected Story. It snapshots reusable identity/profile fields only:
-identity, aliases, age, race/species, occupation, archetypes, personality,
+identity, aliases, age, race, occupation, archetypes, personality,
 appearance, speech, talents, relationship preferences, background, and generic
 arc setup. Completed arc milestones are reset.
 

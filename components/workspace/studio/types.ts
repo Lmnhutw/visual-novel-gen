@@ -31,7 +31,6 @@ export type TemplateRecord = {
   gender: string;
   age: number;
   race: string | null;
-  species: string | null;
   occupation: string | null;
   archetypes: string[];
   profile: Record<string, unknown>;
@@ -48,7 +47,6 @@ export type CharacterRecord = {
   gender: string;
   age: number;
   race?: string | null;
-  species?: string | null;
   occupation?: string | null;
   archetypes: string[];
   profile?: {
