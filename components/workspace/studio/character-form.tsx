@@ -729,7 +729,7 @@ function TextField({
       <input
         aria-describedby={error && id ? `${id}-error` : undefined}
         aria-invalid={Boolean(error)}
-        className={`h-10 rounded-none border bg-surface-dim px-3 text-sm outline-none transition focus:border-primary ${error ? "border-error-container" : "border-outline-variant"}`}
+        className={`h-10 rounded-xl border bg-surface-dim px-3 text-sm outline-none transition focus:border-primary ${error ? "border-error-container" : "border-outline-variant"}`}
         id={id}
         min={type === "number" ? 1 : undefined}
         type={type}
@@ -772,7 +772,7 @@ function TextAreaField({
       <textarea
         aria-describedby={error && id ? `${id}-error` : undefined}
         aria-invalid={Boolean(error)}
-        className={`min-h-24 rounded-none border bg-surface-dim px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary ${error ? "border-error-container" : "border-outline-variant"}`}
+        className={`min-h-24 rounded-xl border bg-surface-dim px-3 py-2 text-sm leading-6 outline-none transition focus:border-primary ${error ? "border-error-container" : "border-outline-variant"}`}
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -857,7 +857,7 @@ function SectionRandomizer({
     <div className="flex justify-end">
       <button
         aria-label={`Randomize ${randomizableSectionLabels[section]} section`}
-        className="inline-flex items-center gap-2 rounded-none border border-outline-variant bg-surface-dim px-3 py-2 text-xs font-semibold text-primary transition hover:border-primary hover:bg-surface-container-high"
+        className="inline-flex items-center gap-2 rounded-xl border border-outline-variant bg-surface-dim px-3 py-2 text-xs font-semibold text-primary transition hover:border-primary hover:bg-surface-container-high"
         type="button"
         onClick={() => onRandomize(section)}
       >

@@ -12,12 +12,13 @@
   background-repeat: no-repeat;
   background-size: 0.35rem 0.35rem;
   border: 1px solid rgb(var(--color-on-surface) / 0.1);
-  border-radius: 0;
+  border-radius: 0.75rem;
   appearance: none;
   transition:
     border-color 160ms ease,
     background-color 160ms ease,
-    box-shadow 160ms ease;
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 .studio-select:hover:not(:disabled) {
@@ -29,6 +30,7 @@
   border-color: rgb(var(--color-primary) / 0.72);
   outline: none;
   box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.14);
+  animation: studio-select-focus 180ms ease-out;
 }
 
 .studio-select:disabled {
@@ -39,4 +41,17 @@
 .studio-select option {
   color: rgb(var(--color-on-surface) / 1);
   background: rgb(var(--color-surface-container-low) / 1);
+  padding: 0.625rem 0.75rem;
+}
+
+@keyframes studio-select-focus {
+  from {
+    transform: scale(0.995);
+    box-shadow: 0 0 0 0 rgb(var(--color-primary) / 0);
+  }
+
+  to {
+    transform: scale(1);
+    box-shadow: 0 0 0 3px rgb(var(--color-primary) / 0.14);
+  }
 }

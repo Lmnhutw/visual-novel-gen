@@ -52,7 +52,7 @@ export function TagInput({
       <span className="text-xs font-semibold uppercase text-on-surface-variant">
         {label}
       </span>
-      <div className="min-h-10 rounded border border-outline-variant bg-surface-dim px-2 py-1.5 transition focus-within:border-primary">
+      <div className="min-h-10 rounded-xl border border-outline-variant bg-surface-dim px-2 py-1.5 transition focus-within:border-primary">
         <div className="flex flex-wrap items-center gap-1.5">
           {value.map((tag) => (
             <button
