@@ -13,7 +13,7 @@ import {
   RadioCardGroup,
   type RadioCardOption,
 } from "@/components/ui/radio-card-group";
-import selectStyles from "@/components/ui/select.module.css";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { SliderField } from "@/components/ui/slider-field";
 import { TagInput } from "@/components/ui/tag-input";
 import {
@@ -810,21 +810,18 @@ function SelectField<T extends string>({
         {label}
         {required ? <span className="text-primary"> *</span> : null}
       </span>
-      <select
-        aria-describedby={error && id ? `${id}-error` : undefined}
-        aria-invalid={Boolean(error)}
-        className={`${selectStyles["studio-select"]} ${error ? "border-error-container" : ""} h-10 w-full text-sm`}
-        id={id}
+      <SelectMenu
+        ariaDescribedBy={error && id ? `${id}-error` : undefined}
+        ariaLabel={label}
+        invalid={Boolean(error)}
+        options={options.map((option) => ({
+          label: labelFromValue(option),
+          value: option,
+        }))}
+        placeholder={`Select ${label.toLowerCase()}`}
         value={value}
-        onChange={(event) => onChange(event.target.value as T)}
-      >
-        <option value="">Select {label.toLowerCase()}</option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {labelFromValue(option)}
-          </option>
-        ))}
-      </select>
+        onChange={(nextValue) => onChange(nextValue as T)}
+      />
       {error && id ? (
         <span className="text-xs leading-5 text-error" id={`${id}-error`}>
           {error}

@@ -16,7 +16,7 @@ import {
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import selectStyles from "@/components/ui/select.module.css";
+import { SelectMenu } from "@/components/ui/select-menu";
 import studioStyles from "./studio.module.css";
 
 import { CharacterForm, type CharacterFormRecord } from "./character-form";
@@ -46,6 +46,7 @@ import type {
 } from "./types";
 import { CharacterTemplateLibrary } from "./character-template-library";
 import { WorkspaceNavigation } from "./workspace-navigation";
+import { StoryPicker } from "./story-picker";
 
 const defaultGoal =
   "Write the next scene with a choice that shifts the relationship and creates a new consequence for the story.";
@@ -731,16 +732,8 @@ export function WriterStudio() {
               storySelected={Boolean(story)}
             />
           </div>
-          <div className="mt-auto rounded-xl border border-white/[0.08] bg-white/[0.035] p-3">
-            <p className="text-xs font-semibold text-on-surface">
-              Drafts are provisional
-            </p>
-            <p className="mt-1 text-xs leading-5 text-on-surface-variant">
-              Review canon proposals before they become part of the story.
-            </p>
-          </div>
         </aside>
-        <section className="min-w-0 flex-1">
+        <section className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 border-b border-white/[0.08] bg-background/90 backdrop-blur-xl">
             <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
               <div className="flex min-w-0 items-center gap-3">
@@ -754,31 +747,19 @@ export function WriterStudio() {
                   />
                 </span>
                 <div className="min-w-0">
-                <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">
+                <p className="pb-1.5 text-xs font-semibold tracking-[0.14em] text-on-surface-variant">
                   {activeView === "studio"
                     ? "DRAFTING"
                     : activeView === "story"
                       ? "LIBRARY"
                       : activeView.toUpperCase()}
                 </p>
-                <div className="min-w-0">
-                  <select
-                    aria-label="Select story"
-                    className={`${selectStyles["studio-select"]} block w-[min(34rem,calc(100vw-10rem))] truncate bg-surface-dim/70 px-3 py-1.5 text-lg font-semibold tracking-tight`}
+                <div className="w-[min(34rem,calc(100vw-10rem))] min-w-0">
+                  <StoryPicker
+                    stories={stories}
                     value={storyId}
-                    onChange={(event) => selectStory(event.target.value)}
-                  >
-                    <option value="">Please select a story</option>
-                    {stories.map((entry) => (
-                      <option
-                        className="bg-surface-dim"
-                        key={entry.id}
-                        value={entry.id}
-                      >
-                        {entry.title}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={selectStory}
+                  />
                 </div>
                 </div>
               </div>
@@ -809,7 +790,15 @@ export function WriterStudio() {
               {error || message}
             </div>
           )}
-          <div className="p-4 sm:p-6 lg:p-8">{body}</div>
+          <div className="flex-1 p-4 sm:p-6 lg:p-8">
+            <div className="mx-auto w-full max-w-[1440px]">{body}</div>
+          </div>
+          <footer className="border-t border-white/[0.08] px-4 py-4 sm:px-6 lg:px-8">
+            <div className="mx-auto flex w-full max-w-[1440px] flex-wrap items-center justify-between gap-2 text-xs text-on-surface-variant">
+              <span>Narrative Studio</span>
+              <span>Local-first editorial workspace</span>
+            </div>
+          </footer>
         </section>
       </div>
       {isStoryModalOpen && (
@@ -907,9 +896,20 @@ export function WriterStudio() {
               <input autoFocus className="mt-2 h-10 w-full rounded-xl border border-white/10 bg-surface-dim px-3 text-on-surface outline-none focus:border-primary" value={templateQuery} onChange={(event) => setTemplateQuery(event.target.value)} />
             </label>
             <label className="text-sm font-semibold text-on-surface">Story role
-              <select className={`${selectStyles["studio-select"]} mt-2 h-10 w-full text-sm`} value={templateRole} onChange={(event) => setTemplateRole(event.target.value)}>
-                <option value="SUPPORTING">Supporting</option><option value="PROTAGONIST">Protagonist</option><option value="ANTAGONIST">Antagonist</option><option value="BACKGROUND">Background</option>
-              </select>
+              <div className="mt-2">
+                <SelectMenu
+                  ariaLabel="Story role"
+                  options={[
+                    { value: "SUPPORTING", label: "Supporting" },
+                    { value: "PROTAGONIST", label: "Protagonist" },
+                    { value: "ANTAGONIST", label: "Antagonist" },
+                    { value: "BACKGROUND", label: "Background" },
+                  ]}
+                  placeholder="Select story role"
+                  value={templateRole}
+                  onChange={setTemplateRole}
+                />
+              </div>
             </label>
           </div>
           <div className="mt-5 max-h-80 divide-y divide-white/[0.08] overflow-y-auto border-y border-white/[0.08]">
