@@ -396,25 +396,6 @@ export const randomizableCharacterSections = [
 export type RandomizableCharacterSection =
   (typeof randomizableCharacterSections)[number];
 
-const randomizationContextSchema = z
-  .object({
-    name: z.string().trim().max(120).optional(),
-    gender: genderSchema.optional(),
-    age: z.number().int().positive().max(10_000).optional(),
-    race: z.string().trim().max(120).optional(),
-    occupation: z.string().trim().max(160).optional(),
-    personalitySummary: z.string().trim().max(1_000).optional(),
-  })
-  .strict();
-
-export const randomizeCharacterSectionSchema = z
-  .object({
-    storyId: z.string().min(1).optional(),
-    section: z.enum(randomizableCharacterSections),
-    character: randomizationContextSchema,
-  })
-  .strict();
-
 export const randomizedCharacterSectionSchema = z.discriminatedUnion(
   "section",
   [
@@ -430,9 +411,6 @@ export const randomizedCharacterSectionSchema = z.discriminatedUnion(
   ],
 );
 
-export type RandomizeCharacterSectionInput = z.input<
-  typeof randomizeCharacterSectionSchema
->;
 export type RandomizedCharacterSection = z.output<
   typeof randomizedCharacterSectionSchema
 >;

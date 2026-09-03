@@ -4,7 +4,6 @@ import test from "node:test";
 import {
   createCharacterSchema,
   randomizedCharacterSectionSchema,
-  randomizeCharacterSectionSchema,
   updateCharacterSchema,
 } from "@/lib/validators/character.schema";
 
@@ -35,13 +34,7 @@ test("optional appearance and relationship profiles can be explicitly cleared", 
   assert.equal(parsed.relationshipPreference, null);
 });
 
-test("random section contracts accept only the requested structured profile", () => {
-  const request = randomizeCharacterSectionSchema.parse({
-    section: "speech",
-    character: { name: "Mira", gender: "female", age: 24 },
-  });
-  assert.equal(request.section, "speech");
-
+test("random section results accept only the requested structured profile", () => {
   const candidate = randomizedCharacterSectionSchema.parse({
     section: "speech",
     speech: {

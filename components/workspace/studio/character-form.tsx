@@ -17,10 +17,16 @@ import selectStyles from "@/components/ui/select.module.css";
 import { SliderField } from "@/components/ui/slider-field";
 import { TagInput } from "@/components/ui/tag-input";
 import {
-  ApiRequestError,
-  formatRequestError,
-  requestJson,
-} from "@/components/workspace/studio/api";
+  emptyCharacterFormValues,
+  withRandomizedSection,
+  type CharacterFormValues,
+  type NumericField,
+} from "@/components/workspace/studio/character-form-randomization";
+import { ApiRequestError, formatRequestError } from "@/components/workspace/studio/api";
+import {
+  randomizeSection,
+  type CharacterGenerationContext,
+} from "@/lib/character-generation";
 import {
   archetypes,
   bodyScales,
@@ -31,10 +37,7 @@ import {
   relationshipPartnerPreferences,
   relationshipSelfPreferences,
   type Archetype,
-  type BodyScale,
-  type BodyType,
   type Character,
-  type FemaleBodyScale,
   type Gender,
   type LoveLanguage,
   type RelationshipPartnerPreference,
@@ -43,7 +46,6 @@ import {
 import {
   createCharacterSchema,
   type RandomizableCharacterSection,
-  type RandomizedCharacterSection,
   updateCharacterSchema,
   type CreateCharacterInput,
   type UpdateCharacterInput,
@@ -57,8 +59,6 @@ type CharacterStatus =
   | "UNCONSCIOUS"
   | "DEAD"
   | "UNKNOWN";
-
-type NumericField = number | "";
 
 export type CharacterFormRecord = Partial<Character> & {
   id?: string;
@@ -77,102 +77,6 @@ export type CharacterFormRecord = Partial<Character> & {
     voiceRules?: string | null;
     backstory?: string | null;
   } | null;
-};
-
-type CharacterFormValues = {
-  name: string;
-  aliases: string[];
-  role: CharacterRole;
-  status: CharacterStatus;
-  ageConfirmed: boolean;
-  gender: Gender | "";
-  age: NumericField;
-  race: string;
-  occupation: string;
-  personality: {
-    summary: string;
-    traits: string[];
-    strengths: string[];
-    weaknesses: string[];
-    fears: string[];
-    desires: string[];
-    goals: string[];
-    values: string[];
-    habits: string[];
-    quirks: string[];
-  };
-  archetypes: Archetype[];
-  talents: {
-    giftednessLevel: "none" | "talented" | "gifted" | "genius" | "prodigy";
-    talents: string[];
-    limitations: string[];
-  };
-  addAppearance: boolean;
-  addRelationshipPreference: boolean;
-  appearance: {
-    heightCm: NumericField;
-    weightKg: NumericField;
-    bodyType: BodyType | "";
-    faceDescription: string;
-    hairColor: string;
-    hairStyle: string;
-    eyeColor: string;
-    skinTone: string;
-    clothingStyle: string;
-    distinctiveFeatures: string[];
-    femaleBody: {
-      chestSize: FemaleBodyScale | "";
-      waistSize: FemaleBodyScale | "";
-      hipSize: FemaleBodyScale | "";
-    };
-    maleBody: {
-      shoulderWidth: BodyScale | "";
-      muscleMass: BodyScale | "";
-    };
-  };
-  speech: {
-    speakingStyle: string;
-    vocabularyLevel: "simple" | "normal" | "educated" | "academic" | "";
-    profanityLevel: "none" | "light" | "medium" | "heavy" | "";
-    catchphrases: string[];
-    dialogueNotes: string;
-  };
-  relationshipPreference: {
-    attractedToGenders: Gender[];
-    self: RelationshipSelfPreference | "";
-    partner: RelationshipPartnerPreference | "";
-    loveLanguages: LoveLanguage[];
-    preferredTraits: string[];
-    turnOns: string[];
-    turnOffs: string[];
-    jealousyTolerance: NumericField;
-    possessiveness: NumericField;
-    notes: string;
-  };
-  background: {
-    birthplace: string;
-    family: string;
-    education: string;
-    socialClass: string;
-    majorLifeEvents: string[];
-    trauma: string[];
-    secrets: string[];
-  };
-  currentState: {
-    physicalState: string;
-    emotionalState: string;
-    mentalState: string;
-    currentGoals: string[];
-    currentConflicts: string[];
-    currentLocation: string;
-  };
-  characterArc: {
-    initialState: string;
-    desiredGrowth: string;
-    internalConflict: string;
-    externalConflict: string;
-    completedMilestones: string[];
-  };
 };
 
 type CharacterFormProps = {
@@ -358,108 +262,10 @@ function compactObject<T extends Record<string, unknown>>(value: T) {
   return Object.keys(compacted).length ? compacted : undefined;
 }
 
-function emptyValues(): CharacterFormValues {
-  return {
-    name: "",
-    aliases: [],
-    role: "SUPPORTING",
-    status: "ACTIVE",
-    ageConfirmed: true,
-    gender: "",
-    age: "",
-    race: "",
-    occupation: "",
-    personality: {
-      summary: "",
-      traits: [],
-      strengths: [],
-      weaknesses: [],
-      fears: [],
-      desires: [],
-      goals: [],
-      values: [],
-      habits: [],
-      quirks: [],
-    },
-    archetypes: [],
-    talents: {
-      giftednessLevel: "none",
-      talents: [],
-      limitations: [],
-    },
-    addAppearance: false,
-    addRelationshipPreference: false,
-    appearance: {
-      heightCm: "",
-      weightKg: "",
-      bodyType: "",
-      faceDescription: "",
-      hairColor: "",
-      hairStyle: "",
-      eyeColor: "",
-      skinTone: "",
-      clothingStyle: "",
-      distinctiveFeatures: [],
-      femaleBody: {
-        chestSize: "",
-        waistSize: "",
-        hipSize: "",
-      },
-      maleBody: {
-        shoulderWidth: "",
-        muscleMass: "",
-      },
-    },
-    speech: {
-      speakingStyle: "",
-      vocabularyLevel: "",
-      profanityLevel: "",
-      catchphrases: [],
-      dialogueNotes: "",
-    },
-    relationshipPreference: {
-      attractedToGenders: [],
-      self: "",
-      partner: "",
-      loveLanguages: [],
-      preferredTraits: [],
-      turnOns: [],
-      turnOffs: [],
-      jealousyTolerance: "",
-      possessiveness: "",
-      notes: "",
-    },
-    background: {
-      birthplace: "",
-      family: "",
-      education: "",
-      socialClass: "",
-      majorLifeEvents: [],
-      trauma: [],
-      secrets: [],
-    },
-    currentState: {
-      physicalState: "",
-      emotionalState: "",
-      mentalState: "",
-      currentGoals: [],
-      currentConflicts: [],
-      currentLocation: "",
-    },
-    characterArc: {
-      initialState: "",
-      desiredGrowth: "",
-      internalConflict: "",
-      externalConflict: "",
-      completedMilestones: [],
-    },
-  };
-}
-
 function valuesFromCharacter(
   character?: CharacterFormRecord | null,
 ): CharacterFormValues {
-  const values = emptyValues();
+  const values = emptyCharacterFormValues();
 
   if (!character) {
     return values;
@@ -1028,141 +834,74 @@ function SelectField<T extends string>({
   );
 }
 
+const randomizableSectionLabels: Record<RandomizableCharacterSection, string> = {
+  personality: "Personality",
+  archetypes: "Archetypes",
+  talents: "Talents",
+  appearance: "Appearance",
+  speech: "Speech",
+  relationshipPreference: "Relationship Preferences",
+  background: "Background",
+  currentState: "Current State",
+  characterArc: "Character Arc",
+};
+
 function SectionRandomizer({
   section,
   onRandomize,
-  isLoading,
-  error,
-  disabled = false,
 }: {
   section: RandomizableCharacterSection;
   onRandomize: (section: RandomizableCharacterSection) => void;
-  isLoading: boolean;
-  error?: string;
-  disabled?: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-end gap-3">
-      {error ? <span className="text-xs text-error">{error}</span> : null}
+    <div className="flex justify-end">
       <button
-        className="inline-flex items-center gap-2 rounded-none border border-outline-variant bg-surface-dim px-3 py-2 text-xs font-semibold text-primary transition hover:border-primary hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={disabled || isLoading}
+        aria-label={`Randomize ${randomizableSectionLabels[section]} section`}
+        className="inline-flex items-center gap-2 rounded-none border border-outline-variant bg-surface-dim px-3 py-2 text-xs font-semibold text-primary transition hover:border-primary hover:bg-surface-container-high"
         type="button"
         onClick={() => onRandomize(section)}
       >
         <Sparkles className="size-3.5" />
-        {isLoading ? "Randomizing..." : "Randomize section"}
+        Randomize section
       </button>
     </div>
   );
 }
 
-function withRandomizedSection(
+function generationContext(
   values: CharacterFormValues,
-  candidate: RandomizedCharacterSection,
-): CharacterFormValues {
-  switch (candidate.section) {
-    case "personality":
-      return { ...values, personality: candidate.personality };
-    case "archetypes":
-      return { ...values, archetypes: candidate.archetypes };
-    case "talents":
-      return { ...values, talents: candidate.talents };
-    case "appearance": {
-      const appearance = candidate.appearance;
-      return {
-        ...values,
-        addAppearance: true,
-        appearance: {
-          heightCm: numericValue(appearance.heightCm),
-          weightKg: numericValue(appearance.weightKg),
-          bodyType: appearance.bodyType ?? "",
-          faceDescription: appearance.faceDescription ?? "",
-          hairColor: appearance.hairColor ?? "",
-          hairStyle: appearance.hairStyle ?? "",
-          eyeColor: appearance.eyeColor ?? "",
-          skinTone: appearance.skinTone ?? "",
-          clothingStyle: appearance.clothingStyle ?? "",
-          distinctiveFeatures: appearance.distinctiveFeatures,
-          femaleBody: {
-            chestSize: appearance.femaleBody?.chestSize ?? "",
-            waistSize: appearance.femaleBody?.waistSize ?? "",
-            hipSize: appearance.femaleBody?.hipSize ?? "",
-          },
-          maleBody: {
-            shoulderWidth: appearance.maleBody?.shoulderWidth ?? "",
-            muscleMass: appearance.maleBody?.muscleMass ?? "",
-          },
-        },
-      };
-    }
-    case "speech":
-      return {
-        ...values,
-        speech: {
-          speakingStyle: candidate.speech.speakingStyle ?? "",
-          vocabularyLevel: candidate.speech.vocabularyLevel ?? "",
-          profanityLevel: candidate.speech.profanityLevel ?? "",
-          catchphrases: candidate.speech.catchphrases,
-          dialogueNotes: candidate.speech.dialogueNotes ?? "",
-        },
-      };
-    case "relationshipPreference":
-      return {
-        ...values,
-        addRelationshipPreference: true,
-        relationshipPreference: {
-          attractedToGenders:
-            candidate.relationshipPreference.attractedToGenders ?? [],
-          self: candidate.relationshipPreference.self ?? "",
-          partner: candidate.relationshipPreference.partner ?? "",
-          loveLanguages: candidate.relationshipPreference.loveLanguages ?? [],
-          preferredTraits: candidate.relationshipPreference.preferredTraits,
-          turnOns: candidate.relationshipPreference.turnOns,
-          turnOffs: candidate.relationshipPreference.turnOffs,
-          jealousyTolerance:
-            candidate.relationshipPreference.jealousyTolerance ?? "",
-          possessiveness: candidate.relationshipPreference.possessiveness ?? "",
-          notes: candidate.relationshipPreference.notes ?? "",
-        },
-      };
-    case "background":
-      return {
-        ...values,
-        background: {
-          birthplace: candidate.background.birthplace ?? "",
-          family: candidate.background.family ?? "",
-          education: candidate.background.education ?? "",
-          socialClass: candidate.background.socialClass ?? "",
-          majorLifeEvents: candidate.background.majorLifeEvents,
-          trauma: candidate.background.trauma,
-          secrets: candidate.background.secrets,
-        },
-      };
-    case "currentState":
-      return {
-        ...values,
-        currentState: {
-          physicalState: candidate.currentState.physicalState ?? "",
-          emotionalState: candidate.currentState.emotionalState ?? "",
-          mentalState: candidate.currentState.mentalState ?? "",
-          currentGoals: candidate.currentState.currentGoals,
-          currentConflicts: candidate.currentState.currentConflicts,
-          currentLocation: candidate.currentState.currentLocation ?? "",
-        },
-      };
-    case "characterArc":
-      return {
-        ...values,
-        characterArc: {
-          initialState: candidate.characterArc.initialState ?? "",
-          desiredGrowth: candidate.characterArc.desiredGrowth ?? "",
-          internalConflict: candidate.characterArc.internalConflict ?? "",
-          externalConflict: candidate.characterArc.externalConflict ?? "",
-          completedMilestones: candidate.characterArc.completedMilestones,
-        },
-      };
-  }
+): CharacterGenerationContext {
+  return {
+    name: values.name.trim() || undefined,
+    gender: values.gender || undefined,
+    age: typeof values.age === "number" ? values.age : undefined,
+    race: values.race.trim() || undefined,
+    occupation: values.occupation.trim() || undefined,
+    archetypes: values.archetypes,
+    personality: values.personality,
+    talents: values.talents,
+    speech: {
+      ...values.speech,
+      vocabularyLevel: values.speech.vocabularyLevel || undefined,
+      profanityLevel: values.speech.profanityLevel || undefined,
+    },
+    relationshipPreference: {
+      ...values.relationshipPreference,
+      self: values.relationshipPreference.self || undefined,
+      partner: values.relationshipPreference.partner || undefined,
+      jealousyTolerance:
+        values.relationshipPreference.jealousyTolerance === ""
+          ? undefined
+          : values.relationshipPreference.jealousyTolerance,
+      possessiveness:
+        values.relationshipPreference.possessiveness === ""
+          ? undefined
+          : values.relationshipPreference.possessiveness,
+    },
+    background: values.background,
+    currentState: values.currentState,
+    characterArc: values.characterArc,
+  };
 }
 
 export function CharacterForm({
@@ -1181,10 +920,6 @@ export function CharacterForm({
   const [values, setValues] = useState<CharacterFormValues>(initialValues);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [submissionError, setSubmissionError] = useState("");
-  const [randomizingSection, setRandomizingSection] = useState<
-    RandomizableCharacterSection | null
-  >(null);
-  const [randomizeError, setRandomizeError] = useState("");
 
   const hasRelationshipData = values.addRelationshipPreference;
   const hasSpeechData =
@@ -1223,39 +958,13 @@ export function CharacterForm({
     });
   }
 
-  async function handleRandomize(section: RandomizableCharacterSection) {
-    setRandomizingSection(section);
-    setRandomizeError("");
-
-    try {
-      const response = await requestJson<{ section: RandomizedCharacterSection }>(
-        "/api/characters/randomize-section",
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            storyId: storyId === "template" ? undefined : storyId,
-            section,
-            character: {
-              name: values.name.trim() || undefined,
-              gender: values.gender || undefined,
-              age: typeof values.age === "number" ? values.age : undefined,
-              race: values.race.trim() || undefined,
-              occupation: values.occupation.trim() || undefined,
-              personalitySummary:
-                values.personality.summary.trim() || undefined,
-            },
-          }),
-        },
-      );
-      setValues((current) => withRandomizedSection(current, response.section));
-    } catch (error) {
-      setRandomizeError(
-        formatRequestError(error, "Could not randomize this section."),
-      );
-    } finally {
-      setRandomizingSection(null);
-    }
+  function handleRandomize(section: RandomizableCharacterSection) {
+    setValues((current) =>
+      withRandomizedSection(
+        current,
+        randomizeSection(section, generationContext(current)),
+      ),
+    );
   }
 
   async function handleSubmit() {
@@ -1409,8 +1118,6 @@ export function CharacterForm({
           >
             <div className="grid gap-4">
               <SectionRandomizer
-                error={randomizingSection === "personality" ? randomizeError : undefined}
-                isLoading={randomizingSection === "personality"}
                 onRandomize={handleRandomize}
                 section="personality"
               />
@@ -1466,8 +1173,6 @@ export function CharacterForm({
           >
             <div className="grid gap-5">
               <SectionRandomizer
-                error={randomizingSection === "archetypes" ? randomizeError : undefined}
-                isLoading={randomizingSection === "archetypes"}
                 onRandomize={handleRandomize}
                 section="archetypes"
               />
@@ -1517,8 +1222,6 @@ export function CharacterForm({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
                 <SectionRandomizer
-                  error={randomizingSection === "talents" ? randomizeError : undefined}
-                  isLoading={randomizingSection === "talents"}
                   onRandomize={handleRandomize}
                   section="talents"
                 />
@@ -1579,9 +1282,6 @@ export function CharacterForm({
                 />
               </label>
               <SectionRandomizer
-                disabled={!values.addAppearance}
-                error={randomizingSection === "appearance" ? randomizeError : undefined}
-                isLoading={randomizingSection === "appearance"}
                 onRandomize={handleRandomize}
                 section="appearance"
               />
@@ -1765,8 +1465,6 @@ export function CharacterForm({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
                 <SectionRandomizer
-                  error={randomizingSection === "speech" ? randomizeError : undefined}
-                  isLoading={randomizingSection === "speech"}
                   onRandomize={handleRandomize}
                   section="speech"
                 />
@@ -1847,13 +1545,6 @@ export function CharacterForm({
                 />
               </label>
               <SectionRandomizer
-                disabled={!values.addRelationshipPreference}
-                error={
-                  randomizingSection === "relationshipPreference"
-                    ? randomizeError
-                    : undefined
-                }
-                isLoading={randomizingSection === "relationshipPreference"}
                 onRandomize={handleRandomize}
                 section="relationshipPreference"
               />
@@ -2030,8 +1721,6 @@ export function CharacterForm({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
                 <SectionRandomizer
-                  error={randomizingSection === "background" ? randomizeError : undefined}
-                  isLoading={randomizingSection === "background"}
                   onRandomize={handleRandomize}
                   section="background"
                 />
@@ -2119,8 +1808,6 @@ export function CharacterForm({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
                 <SectionRandomizer
-                  error={randomizingSection === "currentState" ? randomizeError : undefined}
-                  isLoading={randomizingSection === "currentState"}
                   onRandomize={handleRandomize}
                   section="currentState"
                 />
@@ -2196,8 +1883,6 @@ export function CharacterForm({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="md:col-span-2">
                 <SectionRandomizer
-                  error={randomizingSection === "characterArc" ? randomizeError : undefined}
-                  isLoading={randomizingSection === "characterArc"}
                   onRandomize={handleRandomize}
                   section="characterArc"
                 />
