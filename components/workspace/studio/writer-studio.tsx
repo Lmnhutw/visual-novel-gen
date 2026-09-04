@@ -213,7 +213,11 @@ export function WriterStudio() {
   }, [activeView, isTemplatePickerOpen, loadTemplates, templateQuery]);
 
   const runningJob = jobs.some(
-    (job) => job.status === "QUEUED" || job.status === "RUNNING",
+    (job) =>
+      job.status === "QUEUED" ||
+      job.status === "RUNNING" ||
+      job.status === "RETRYING" ||
+      job.status === "AWAITING_FALLBACK_CONFIRMATION",
   );
   useEffect(() => {
     if (!storyId || !runningJob) return;
@@ -554,6 +558,16 @@ export function WriterStudio() {
     }
   }
 
+  async function decideFallback(jobId: string, decision: "approve" | "decline") {
+    setIsLoading(true);
+    try {
+      const result = await requestJson<{ job: GenerationJob }>(`/api/generation/jobs/${jobId}/fallback`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ decision }) });
+      setJobs((current) => current.map((job) => job.id === jobId ? result.job : job));
+      if (decision === "approve") void requestJson(`/api/generation/jobs/${jobId}/run`, { method: "POST" }).then(() => refreshCurrentWorkspace());
+    } catch (requestError) { setError(formatRequestError(requestError, "Could not update fallback decision.")); }
+    finally { setIsLoading(false); }
+  }
+
   const saveDraft = useCallback(
     async (draftVersionId: string, content: string) => {
       await requestJson(`/api/draft-versions/${draftVersionId}`, {
@@ -656,6 +670,7 @@ export function WriterStudio() {
         onNavigate={setActiveView}
         onCancel={cancelGeneration}
         onRetry={retryGeneration}
+        onFallback={decideFallback}
         story={story}
         onReadStory={() => window.location.assign(`/library/story?story=${encodeURIComponent(story.id)}&view=detail`)}
         onAddChapter={() => setIsChapterModalOpen(true)}

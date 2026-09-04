@@ -58,13 +58,13 @@ export async function generateScene(input: GenerateSceneInput) {
       status: "RUNNING",
       input: toJsonString(resolved),
       prompt,
-      model: modelConfig.generationModel,
+      model: modelConfig.freeGenerationModel,
     },
   });
 
   try {
     const generation = await generateText(prompt, {
-      model: modelConfig.generationModel,
+      model: modelConfig.freeGenerationModel,
       maxTokens: input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
     });
     const draft = generation.text;

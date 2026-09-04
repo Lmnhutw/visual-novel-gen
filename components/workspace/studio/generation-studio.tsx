@@ -52,6 +52,7 @@ export function GenerationStudio({
   onNavigate,
   onCancel,
   onRetry,
+  onFallback,
   story,
   onReadStory,
   onAddChapter,
@@ -72,6 +73,7 @@ export function GenerationStudio({
   onNavigate: (view: WorkspaceView) => void;
   onCancel: (jobId: string) => void;
   onRetry: (jobId: string) => void;
+  onFallback?: (jobId: string, decision: "approve" | "decline") => void;
   story: StoryDetail;
   onReadStory: () => void;
   onAddChapter: () => void;
@@ -83,6 +85,7 @@ export function GenerationStudio({
     activeJob?.status === "QUEUED" ||
     activeJob?.status === "RETRYING";
   const isRetryable = activeJob ? isRetryableGenerationStatus(activeJob.status) : false;
+  const awaitingFallback = activeJob?.status === "AWAITING_FALLBACK_CONFIRMATION";
   const activeRunDuration = activeJob ? formatRunDuration(activeJob) : null;
   const readiness = [
     { label: "Story workspace", detail: "A story is selected.", complete: true, action: "story" as const, actionLabel: "View story" },
@@ -329,7 +332,13 @@ export function GenerationStudio({
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-on-surface-variant">
               <span>{activeJob.progress}% complete</span>
-              {isRunning ? (
+              {awaitingFallback ? (
+                <div className="w-full rounded-xl border border-amber-300/25 bg-amber-300/[0.08] p-4 text-sm leading-6 text-amber-50">
+                  <p className="font-semibold">The free model failed and generation is paused.</p>
+                  <p className="mt-1">Continue with {activeJob.fallbackModel ?? "qwen/qwen-2.5-72b-instruct"} may consume OpenRouter credits. No paid request is sent without confirmation; this job cancels automatically after the deadline.</p>
+                  <div className="mt-3 flex flex-wrap gap-2"><button disabled={isSubmitting} onClick={() => onFallback?.(activeJob.id, "approve")} className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary">Continue with Qwen</button><button disabled={isSubmitting} onClick={() => onFallback?.(activeJob.id, "decline")} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-on-surface">Stop generation</button></div>
+                </div>
+              ) : isRunning ? (
                 <button
                   className="inline-flex items-center gap-1.5 text-rose-200 transition hover:text-rose-100"
                   type="button"

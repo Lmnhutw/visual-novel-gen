@@ -127,6 +127,8 @@ export type GenerationJob = {
   progress: number;
   error: string | null;
   errorCode: string | null;
+  fallbackModel?: string | null;
+  fallbackExpiresAt?: string | null;
   createdAt: string;
   startedAt: string | null;
   completedAt: string | null;

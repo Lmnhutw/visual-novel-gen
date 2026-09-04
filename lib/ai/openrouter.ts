@@ -18,6 +18,18 @@ type OpenRouterChatResponse = {
   error?: { message?: string };
 };
 
+export class OpenRouterRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly httpStatus?: number,
+    public readonly fallbackEligible = false,
+  ) { super(message); this.name = "OpenRouterRequestError"; }
+}
+
+function isFallbackEligible(status?: number) {
+  return status === 408 || status === 429 || (status !== undefined && status >= 500);
+}
+
 function buildUrl(path: string): string {
   const config = getModelConfig();
   return `${config.openRouterBaseUrl.replace(/\/$/, "")}${path}`;
@@ -88,14 +100,16 @@ export class OpenRouterProvider implements AIProvider {
           .catch(() => ({}))) as OpenRouterChatResponse;
 
         if (!response.ok || data.error) {
-          throw new Error(
+          throw new OpenRouterRequestError(
             data.error?.message ?? `OpenRouter generation failed: ${response.status}`,
+            response.status,
+            isFallbackEligible(response.status),
           );
         }
 
         const text = data.choices?.[0]?.message?.content;
         if (!text) {
-          throw new Error("OpenRouter generation returned an empty response.");
+          throw new OpenRouterRequestError("OpenRouter generation returned an empty response.", undefined, true);
         }
 
         return {
@@ -122,6 +136,22 @@ export class OpenRouterProvider implements AIProvider {
       }
     }
 
+    if (lastError instanceof OpenRouterRequestError) throw lastError;
+    if (lastError instanceof DOMException && lastError.name === "AbortError") {
+      throw lastError;
+    }
+    if (
+      lastError instanceof TypeError ||
+      (lastError instanceof DOMException && lastError.name === "TimeoutError")
+    ) {
+      throw new OpenRouterRequestError(
+        lastError instanceof DOMException
+          ? "OpenRouter request timed out."
+          : "OpenRouter connection failed.",
+        undefined,
+        true,
+      );
+    }
     throw lastError instanceof Error
       ? lastError
       : new Error("OpenRouter generation failed.");

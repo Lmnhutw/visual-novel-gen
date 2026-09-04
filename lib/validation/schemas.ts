@@ -95,6 +95,10 @@ export const reviewCanonChangeProposalSchema = z.object({
   decision: z.enum(["accept", "reject"]),
 });
 
+export const fallbackDecisionSchema = z.object({
+  decision: z.enum(["approve", "decline"]),
+});
+
 export const reviseChapterSchema = generateSceneSchema.extend({
   previousDraft: z.string().min(1),
 });

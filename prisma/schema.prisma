@@ -539,6 +539,8 @@ model GenerationJob {
   prompt           String?
   errorCode        String?  @map("error_code")
   error            String?
+  fallbackModel    String?  @map("fallback_model")
+  fallbackExpiresAt DateTime? @map("fallback_expires_at")
   attemptCount     Int      @default(0) @map("attempt_count")
   createdAt        DateTime @default(now()) @map("created_at")
   startedAt        DateTime? @map("started_at")

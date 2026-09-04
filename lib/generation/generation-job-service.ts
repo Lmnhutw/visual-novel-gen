@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 import { getModelConfig } from "@/lib/ai/model-config";
+import { OpenRouterRequestError } from "@/lib/ai/openrouter";
 import { generateText } from "@/lib/ai/provider";
 import { checkContinuity } from "@/lib/continuity/continuity-service";
 import { parseJsonString, toJsonString } from "@/lib/db/json";
@@ -403,6 +404,8 @@ export async function retryGenerationJob(jobId: string) {
         draftVersionId: null,
         startedAt: null,
         completedAt: null,
+        fallbackModel: null,
+        fallbackExpiresAt: null,
       },
     });
     if (reset.count === 0) {
@@ -439,8 +442,27 @@ export async function retryGenerationJob(jobId: string) {
 }
 
 export async function executeGenerationJob(jobId: string) {
+  const initialJob = await getGenerationJob(jobId);
+  const modelConfig = getModelConfig();
+  const paidAttempt =
+    initialJob.status === "RETRYING" &&
+    initialJob.stage === "FALLBACK_CONFIRMED" &&
+    initialJob.fallbackModel === modelConfig.paidFallbackModel;
   const claim = await prisma.generationJob.updateMany({
-    where: { id: jobId, status: { in: ["QUEUED", "RETRYING"] } },
+    where: paidAttempt
+      ? {
+          id: jobId,
+          status: "RETRYING",
+          stage: "FALLBACK_CONFIRMED",
+          fallbackModel: modelConfig.paidFallbackModel,
+        }
+      : {
+          id: jobId,
+          OR: [
+            { status: "QUEUED" },
+            { status: "RETRYING", stage: { not: "FALLBACK_CONFIRMED" } },
+          ],
+        },
     data: {
       status: "RUNNING",
       stage: "RETRIEVING_CONTEXT",
@@ -459,7 +481,9 @@ export async function executeGenerationJob(jobId: string) {
     job.input,
     {} as GenerationJobInput,
   );
-  const modelConfig = getModelConfig();
+  const generationModel = paidAttempt
+    ? modelConfig.paidFallbackModel
+    : modelConfig.freeGenerationModel;
 
   try {
     await ensureNotCancelled(jobId);
@@ -490,7 +514,7 @@ export async function executeGenerationJob(jobId: string) {
           status: "RUNNING",
           input: toJsonString(input),
           prompt,
-          model: modelConfig.generationModel,
+          model: generationModel,
         },
       });
       const staged = await tx.generationJob.updateMany({
@@ -532,7 +556,7 @@ export async function executeGenerationJob(jobId: string) {
 
     await ensureNotCancelled(jobId);
     const generation = await generateTextForJob(jobId, prompt, {
-      model: modelConfig.generationModel,
+      model: generationModel,
       maxTokens: input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
     });
     const draft = generation.text;
@@ -717,6 +741,16 @@ export async function executeGenerationJob(jobId: string) {
       return getGenerationJob(jobId);
     }
 
+    if (!paidAttempt && error instanceof OpenRouterRequestError && error.fallbackEligible) {
+      const failedRun = await prisma.generationJob.findUnique({ where: { id: jobId }, select: { generationRunId: true } });
+      if (failedRun?.generationRunId) await prisma.generationRun.update({ where: { id: failedRun.generationRunId }, data: { status: "FAILED", error: error.message } });
+      await prisma.generationJob.updateMany({ where: { id: jobId, status: "RUNNING" }, data: {
+        status: "AWAITING_FALLBACK_CONFIRMATION", stage: "FALLBACK_CONFIRMATION_REQUIRED", fallbackModel: modelConfig.paidFallbackModel,
+        fallbackExpiresAt: new Date(Date.now() + 5 * 60 * 1000), errorCode: "FREE_MODEL_FAILED",
+        error: "The free model failed. Generation is paused; paid fallback requires your confirmation.",
+      }});
+      return getGenerationJob(jobId);
+    }
     const failed = await prisma.generationJob.updateMany({
       where: { id: jobId, status: "RUNNING" },
       data: {
@@ -749,6 +783,7 @@ export async function executeGenerationJob(jobId: string) {
 }
 
 export async function executeQueuedGenerationJobs(limit = 1) {
+  await prisma.generationJob.updateMany({ where: { status: "AWAITING_FALLBACK_CONFIRMATION", fallbackExpiresAt: { lt: new Date() } }, data: { status: "CANCELLED", stage: "FALLBACK_CONFIRMATION_EXPIRED", completedAt: new Date(), error: "Fallback confirmation expired." } });
   const jobs = await prisma.generationJob.findMany({
     where: { status: { in: ["QUEUED", "RETRYING"] } },
     select: { id: true },
@@ -763,6 +798,16 @@ export async function executeQueuedGenerationJobs(limit = 1) {
     attempted: jobs.length,
     failed: results.filter((result) => result.status === "rejected").length,
   };
+}
+
+export async function decideFallback(jobId: string, decision: "approve" | "decline") {
+  const now = new Date();
+  const job = await getGenerationJob(jobId);
+  if (job.status !== "AWAITING_FALLBACK_CONFIRMATION") throw new WorkflowError("FALLBACK_NOT_AVAILABLE", "Fallback confirmation is no longer available.", 409);
+  if (decision === "approve" && (!job.fallbackExpiresAt || job.fallbackExpiresAt <= now)) throw new WorkflowError("FALLBACK_EXPIRED", "Fallback confirmation has expired.", 409);
+  const updated = await prisma.generationJob.updateMany({ where: { id: jobId, status: "AWAITING_FALLBACK_CONFIRMATION", ...(decision === "approve" ? { fallbackExpiresAt: { gt: now } } : {}) }, data: decision === "approve" ? { status: "RETRYING", stage: "FALLBACK_CONFIRMED", generationRunId: null, error: null, errorCode: null } : { status: "CANCELLED", stage: "FALLBACK_DECLINED", completedAt: now, error: "Generation stopped by the user." } });
+  if (!updated.count) throw new WorkflowError("FALLBACK_STATE_CHANGED", "Fallback confirmation was already handled.", 409);
+  return getGenerationJob(jobId);
 }
 
 export async function reviewCanonChangeProposal(
