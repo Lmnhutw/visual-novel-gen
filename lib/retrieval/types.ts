@@ -1,3 +1,5 @@
+import type { WritingHarnessConfig } from "@/lib/writing-harness/config";
+
 export type RetrievedMemory = {
   id: string;
   memoryType: string;
@@ -21,6 +23,7 @@ export type GenerationContext = {
     pov?: string | null;
     tense?: string | null;
     styleGuide?: string | null;
+    writingHarness?: WritingHarnessConfig;
     nsfwPolicy?: unknown;
     modelConfig?: unknown;
   } | null;

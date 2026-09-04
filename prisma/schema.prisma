@@ -56,6 +56,7 @@ model StorySettings {
   nsfwPolicy  String   @default("{}") @map("nsfw_policy")
   styleGuide  String?  @map("style_guide")
   modelConfig String   @default("{}") @map("model_config")
+  writingHarness String @default("{}") @map("writing_harness")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

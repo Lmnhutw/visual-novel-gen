@@ -89,7 +89,8 @@
 
 .draft-review__editor {
   width: 100%;
-  min-height: 43rem;
+  min-height: 18rem;
+  overflow: hidden;
   padding: 2rem 1.75rem;
   color: rgb(var(--color-manuscript-ink) / 1);
   font-family: "Merriweather", Georgia, serif;

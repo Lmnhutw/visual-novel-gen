@@ -5,9 +5,19 @@ import { AlertTriangle, BookOpen, CheckCircle2, Eye, Loader2, Plus, RefreshCw, S
 import { cn } from "@/lib/utils";
 import type { GenerationContext } from "@/lib/retrieval/types";
 import { isRetryableGenerationStatus } from "@/lib/generation/job-state";
+import {
+  getDefaultWritingHarness,
+  type WritingHarnessConfig,
+} from "@/lib/writing-harness/config";
+import {
+  parseWritingHarnessAuditMetadata,
+  type WritingHarnessAudit,
+} from "@/lib/writing-harness/evaluation";
+import { compileWritingHarness } from "@/lib/writing-harness/prompt";
 
 import { formatRelativeDate, titleCase } from "./api";
 import type { CharacterRecord, ChapterRecord, GenerationJob, StoryDetail, WorkspaceView } from "./types";
+import { WritingHarnessEditor } from "./writing-harness-editor";
 
 type StudioForm = {
   goal: string;
@@ -45,6 +55,8 @@ export function GenerationStudio({
   isSubmitting,
   contextPreview,
   isContextPreviewLoading,
+  writingHarness = getDefaultWritingHarness(),
+  isHarnessSaving = false,
   onFormChange,
   onGenerate,
   onPreviewContext,
@@ -57,6 +69,8 @@ export function GenerationStudio({
   onReadStory,
   onAddChapter,
   onAddCharacter,
+  onSaveWritingHarness = async () => undefined,
+  onResetWritingHarness = async () => undefined,
 }: {
   form: StudioForm;
   chapters: ChapterRecord[];
@@ -66,6 +80,8 @@ export function GenerationStudio({
   isSubmitting: boolean;
   contextPreview: GenerationContext | null;
   isContextPreviewLoading: boolean;
+  writingHarness?: WritingHarnessConfig;
+  isHarnessSaving?: boolean;
   onFormChange: (patch: Partial<StudioForm>) => void;
   onGenerate: () => void;
   onPreviewContext: () => void;
@@ -78,6 +94,8 @@ export function GenerationStudio({
   onReadStory: () => void;
   onAddChapter: () => void;
   onAddCharacter: () => void;
+  onSaveWritingHarness?: (value: WritingHarnessConfig) => Promise<void>;
+  onResetWritingHarness?: () => Promise<void>;
 }) {
   const activeJob = jobs.find((job) => job.id === selectedJobId);
   const isRunning =
@@ -87,6 +105,9 @@ export function GenerationStudio({
   const isRetryable = activeJob ? isRetryableGenerationStatus(activeJob.status) : false;
   const awaitingFallback = activeJob?.status === "AWAITING_FALLBACK_CONFIRMATION";
   const activeRunDuration = activeJob ? formatRunDuration(activeJob) : null;
+  const writingHarnessAudit = parseWritingHarnessAuditMetadata(
+    activeJob?.draftVersion?.metadata,
+  );
   const readiness = [
     { label: "Story workspace", detail: "A story is selected.", complete: true, action: "story" as const, actionLabel: "View story" },
     { label: "Cast", detail: "Add at least one character to ground the scene.", complete: characters.length > 0, action: "cast" as const, actionLabel: "Add character" },
@@ -177,6 +198,18 @@ export function GenerationStudio({
             </div>
           )}
         </section>
+        <WritingHarnessEditor
+          isSaving={isHarnessSaving}
+          narrativeSettings={{
+            tone: story.settings?.tone,
+            pov: story.settings?.pov,
+            tense: story.settings?.tense,
+            styleGuide: story.settings?.styleGuide,
+          }}
+          value={writingHarness}
+          onReset={onResetWritingHarness}
+          onSave={onSaveWritingHarness}
+        />
         <section className="overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low shadow-panel">
           <div className="border-b border-white/10 px-5 py-4 sm:px-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -361,6 +394,9 @@ export function GenerationStudio({
               {activeJob.generationRun?.totalTokens ? <span>Total tokens: <strong className="text-on-surface">{activeJob.generationRun.totalTokens.toLocaleString()}</strong></span> : null}
               {activeJob.generationRun?.model ? <span className="min-w-0 truncate">Model: <strong className="text-on-surface">{activeJob.generationRun.model}</strong></span> : null}
             </div>
+            {writingHarnessAudit ? (
+              <WritingHarnessRunResult audit={writingHarnessAudit} />
+            ) : null}
             {activeJob.error ? <p className="mt-4 rounded-lg bg-rose-300/10 p-3 text-sm leading-6 text-rose-100">{activeJob.error}</p> : null}
           </section>
         ) : null}
@@ -370,6 +406,10 @@ export function GenerationStudio({
 
 function ContextPreview({ context, includeSecrets, onClose }: { context: GenerationContext; includeSecrets: boolean; onClose: () => void }) {
   const memories = context.memories.slice(0, 4);
+  const writingHarness = context.settings?.writingHarness;
+  const compiledHarness = writingHarness
+    ? compileWritingHarness(writingHarness, context.settings ?? {})
+    : null;
   const omittedCount = context.budget
     ? Object.values(context.budget.omitted).reduce((sum, value) => sum + value, 0)
     : 0;
@@ -397,12 +437,62 @@ function ContextPreview({ context, includeSecrets, onClose }: { context: Generat
         <ContextList title={`Memories (${context.memories.length})`} items={memories.map((memory) => memory.summary ?? memory.content)} empty="No ranked memories were retrieved." />
         <ContextList title={`Plot threads (${context.plotThreads.length})`} items={context.plotThreads.slice(0, 4).map((thread) => thread.title)} empty="No active plot threads were retrieved." />
       </div>
+      {compiledHarness ? (
+        <details className="mt-3 rounded-lg border border-white/[0.08] bg-surface-dim/60 p-3">
+          <summary className="cursor-pointer text-xs font-semibold text-on-surface">
+            Effective AI Writing Harness
+          </summary>
+          <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-xs leading-5 text-on-surface-variant">
+            {compiledHarness}
+          </pre>
+        </details>
+      ) : null}
       <div className="mt-3 flex flex-wrap gap-2 text-xs text-on-surface-variant">
         <span className="rounded-full bg-white/[0.06] px-2.5 py-1">{context.relationships.length} relationships</span>
         <span className="rounded-full bg-white/[0.06] px-2.5 py-1">{context.recentEvents.length} recent events</span>
         <span className="rounded-full bg-white/[0.06] px-2.5 py-1">{includeSecrets ? `${context.secrets.length} secrets included` : "Public canon only"}</span>
       </div>
     </section>
+  );
+}
+
+function WritingHarnessRunResult({ audit }: { audit: WritingHarnessAudit }) {
+  const { evaluation } = audit;
+  const findings = evaluation.repairAttempted
+    ? evaluation.findingsAfterRepair
+    : evaluation.findingsBeforeRepair;
+  const labels = {
+    passed: "Passed",
+    repaired_and_passed: "Repaired and passed",
+    needs_review: "Needs harness review",
+  } as const;
+  const passed = evaluation.status !== "needs_review";
+
+  return (
+    <div
+      className={cn(
+        "mt-4 rounded-xl border p-3 text-sm",
+        passed
+          ? "border-emerald-300/20 bg-emerald-300/[0.06] text-emerald-100"
+          : "border-amber-300/25 bg-amber-300/[0.08] text-amber-50",
+      )}
+    >
+      <p className="flex items-center gap-2 font-semibold">
+        {passed ? (
+          <CheckCircle2 className="size-4" />
+        ) : (
+          <AlertTriangle className="size-4" />
+        )}
+        {labels[evaluation.status]}
+      </p>
+      {!passed && findings.length ? (
+        <ul className="mt-2 space-y-1 text-xs leading-5">
+          {findings.slice(0, 3).map((finding) => (
+            <li key={`${finding.kind}-${finding.rule}`}>{finding.message}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 

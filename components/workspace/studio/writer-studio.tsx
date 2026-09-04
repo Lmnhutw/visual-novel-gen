@@ -47,6 +47,11 @@ import type {
 import { CharacterTemplateLibrary } from "./character-template-library";
 import { WorkspaceNavigation } from "./workspace-navigation";
 import { StoryPicker } from "./story-picker";
+import {
+  getDefaultWritingHarness,
+  parseWritingHarness,
+  type WritingHarnessConfig,
+} from "@/lib/writing-harness/config";
 
 const defaultGoal =
   "Write the next scene with a choice that shifts the relationship and creates a new consequence for the story.";
@@ -230,6 +235,10 @@ export function WriterStudio() {
   const selectedJob = useMemo(
     () => jobs.find((job) => job.id === selectedJobId) ?? null,
     [jobs, selectedJobId],
+  );
+  const writingHarness = useMemo(
+    () => parseWritingHarness(story?.settings?.writingHarness),
+    [story?.settings?.writingHarness],
   );
 
   async function refreshCurrentWorkspace() {
@@ -433,6 +442,35 @@ export function WriterStudio() {
       await refreshCurrentWorkspace();
     } catch (requestError) {
       setError(formatRequestError(requestError, "Could not update the primary protagonist."));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function saveWritingHarness(
+    harness: WritingHarnessConfig,
+    reset = false,
+  ) {
+    if (!storyId) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      await requestJson(`/api/stories/${storyId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ writingHarness: harness }),
+      });
+      setContextPreview(null);
+      setMessage(
+        reset
+          ? "AI Writing Harness reset to the default contract."
+          : "AI Writing Harness saved for this story.",
+      );
+      await refreshCurrentWorkspace();
+    } catch (requestError) {
+      setError(
+        formatRequestError(requestError, "Could not save the writing harness."),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -653,6 +691,8 @@ export function WriterStudio() {
         isSubmitting={isLoading}
         contextPreview={contextPreview}
         isContextPreviewLoading={isContextPreviewLoading}
+        writingHarness={writingHarness}
+        isHarnessSaving={isLoading}
         onFormChange={(patch) => {
           setContextPreview(null);
           if (patch.goal !== undefined) setGoal(patch.goal);
@@ -675,6 +715,10 @@ export function WriterStudio() {
         onReadStory={() => window.location.assign(`/library/story?story=${encodeURIComponent(story.id)}&view=detail`)}
         onAddChapter={() => setIsChapterModalOpen(true)}
         onAddCharacter={openCreateCharacter}
+        onSaveWritingHarness={(harness) => saveWritingHarness(harness)}
+        onResetWritingHarness={() =>
+          saveWritingHarness(getDefaultWritingHarness(), true)
+        }
       />
       <DraftReview
         job={selectedJob}

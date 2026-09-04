@@ -8,6 +8,14 @@ import { extractMemoriesFromDraft } from "@/lib/memory/memory-extractor";
 import { buildGenerationPrompt } from "@/lib/prompts/prompt-builder";
 import { retrieveContext } from "@/lib/retrieval/retrieval-service";
 import { resolveNarrativeFocus } from "@/lib/generation/narrative-focus";
+import { getDefaultWritingHarness } from "@/lib/writing-harness/config";
+import {
+  canAttemptWritingHarnessRepair,
+  combineGenerationUsage,
+  createWritingHarnessAudit,
+  enforceWritingHarness,
+} from "@/lib/writing-harness/evaluation";
+import { GENERATION_PROMPT_VERSION } from "@/lib/writing-harness/prompt";
 
 export type GenerateSceneInput = {
   storyId: string;
@@ -25,6 +33,7 @@ export type GenerateSceneInput = {
 export async function generateScene(input: GenerateSceneInput) {
   const resolved = await resolveNarrativeFocus(input);
   const modelConfig = getModelConfig();
+  const generationModel = modelConfig.freeGenerationModel;
   const context = await retrieveContext({
     storyId: resolved.storyId,
     query: resolved.goal,
@@ -40,6 +49,7 @@ export async function generateScene(input: GenerateSceneInput) {
     povCharacterId: resolved.povCharacterId,
     maturityMode: resolved.maturityMode,
   });
+  const harness = context.settings?.writingHarness ?? getDefaultWritingHarness();
 
   if (input.previewOnly) {
     return {
@@ -47,6 +57,11 @@ export async function generateScene(input: GenerateSceneInput) {
       draft: null,
       prompt,
       contextPreview: context,
+      writingHarness: {
+        schemaVersion: harness.version,
+        promptVersion: GENERATION_PROMPT_VERSION,
+        effectiveHarness: harness,
+      },
       continuityWarnings: [],
     };
   }
@@ -56,18 +71,46 @@ export async function generateScene(input: GenerateSceneInput) {
       storyId: resolved.storyId,
       type: resolved.mode ?? "scene",
       status: "RUNNING",
-      input: toJsonString(resolved),
+      input: toJsonString({
+        ...resolved,
+        writingHarness: {
+          schemaVersion: harness.version,
+          promptVersion: GENERATION_PROMPT_VERSION,
+          effectiveHarness: harness,
+        },
+      }),
       prompt,
-      model: modelConfig.freeGenerationModel,
+      model: generationModel,
     },
   });
 
   try {
     const generation = await generateText(prompt, {
-      model: modelConfig.freeGenerationModel,
+      model: generationModel,
       maxTokens: input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
     });
-    const draft = generation.text;
+    const harnessOutcome = await enforceWritingHarness({
+      draft: generation.text,
+      harness,
+      repair: canAttemptWritingHarnessRepair(harness, {
+        usesPaidModel: generationModel !== modelConfig.freeGenerationModel,
+        paidApproved: false,
+      })
+        ? (repairPrompt) =>
+            generateText(repairPrompt, {
+              model: generationModel,
+              maxTokens:
+                input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
+              retries: 0,
+            })
+        : undefined,
+    });
+    const draft = harnessOutcome.content;
+    const writingHarness = createWritingHarnessAudit(harness, harnessOutcome);
+    const usage = combineGenerationUsage(
+      generation.usage,
+      harnessOutcome.repairUsage,
+    );
 
     const continuityWarnings = await checkContinuity({
       storyId: resolved.storyId,
@@ -83,10 +126,11 @@ export async function generateScene(input: GenerateSceneInput) {
       data: {
         output: draft,
         status: "SUCCEEDED",
+        input: toJsonString({ ...resolved, writingHarness }),
         model: generation.model,
-        promptTokens: generation.usage?.promptTokens,
-        completionTokens: generation.usage?.completionTokens,
-        totalTokens: generation.usage?.totalTokens,
+        promptTokens: usage?.promptTokens,
+        completionTokens: usage?.completionTokens,
+        totalTokens: usage?.totalTokens,
       },
     });
 
@@ -120,6 +164,7 @@ export async function generateScene(input: GenerateSceneInput) {
       draft,
       prompt,
       contextPreview: context,
+      writingHarness,
       continuityWarnings,
     };
   } catch (error) {
@@ -147,6 +192,8 @@ export async function generateChapter(input: GenerateSceneInput) {
 export async function reviseDraft(
   input: GenerateSceneInput & { previousDraft: string },
 ) {
+  const modelConfig = getModelConfig();
+  const generationModel = modelConfig.generationModel;
   const context = await retrieveContext({
     storyId: input.storyId,
     query: input.goal,
@@ -161,21 +208,86 @@ export async function reviseDraft(
     previousDraft: input.previousDraft,
     maturityMode: input.maturityMode,
   });
-
-  const generation = await generateText(prompt);
-  const draft = generation.text;
-  const continuityWarnings = await checkContinuity({
-    storyId: input.storyId,
-    context,
-    draft,
-    chapterId: input.chapterId,
-    maturityMode: input.maturityMode,
+  const harness = context.settings?.writingHarness ?? getDefaultWritingHarness();
+  const run = await prisma.generationRun.create({
+    data: {
+      storyId: input.storyId,
+      type: "revision",
+      status: "RUNNING",
+      input: toJsonString({
+        ...input,
+        writingHarness: {
+          schemaVersion: harness.version,
+          promptVersion: GENERATION_PROMPT_VERSION,
+          effectiveHarness: harness,
+        },
+      }),
+      prompt,
+      model: generationModel,
+    },
   });
 
-  return {
-    draft,
-    prompt,
-    contextPreview: context,
-    continuityWarnings,
-  };
+  try {
+    const generation = await generateText(prompt, { model: generationModel });
+    const harnessOutcome = await enforceWritingHarness({
+      draft: generation.text,
+      harness,
+      repair: canAttemptWritingHarnessRepair(harness, {
+        usesPaidModel: generationModel !== modelConfig.freeGenerationModel,
+        paidApproved: false,
+      })
+        ? (repairPrompt) =>
+            generateText(repairPrompt, {
+              model: generationModel,
+              maxTokens: input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
+              retries: 0,
+            })
+        : undefined,
+    });
+    const draft = harnessOutcome.content;
+    const writingHarness = createWritingHarnessAudit(harness, harnessOutcome);
+    const usage = combineGenerationUsage(
+      generation.usage,
+      harnessOutcome.repairUsage,
+    );
+    const continuityWarnings = await checkContinuity({
+      storyId: input.storyId,
+      context,
+      draft,
+      chapterId: input.chapterId,
+      generationRunId: run.id,
+      maturityMode: input.maturityMode,
+    });
+
+    await prisma.generationRun.update({
+      where: { id: run.id },
+      data: {
+        status: "SUCCEEDED",
+        input: toJsonString({ ...input, writingHarness }),
+        output: draft,
+        model: generation.model,
+        promptTokens: usage?.promptTokens,
+        completionTokens: usage?.completionTokens,
+        totalTokens: usage?.totalTokens,
+      },
+    });
+
+    return {
+      generationRunId: run.id,
+      draft,
+      prompt,
+      contextPreview: context,
+      writingHarness,
+      continuityWarnings,
+    };
+  } catch (error) {
+    await prisma.generationRun.update({
+      where: { id: run.id },
+      data: {
+        status: "FAILED",
+        error: error instanceof Error ? error.message : "Unknown generation error",
+      },
+    });
+    throw error;
+  }
 }

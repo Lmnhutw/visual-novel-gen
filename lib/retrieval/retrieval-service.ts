@@ -6,6 +6,7 @@ import {
   DEFAULT_CONTEXT_TOKEN_BUDGET,
 } from "@/lib/retrieval/context-budget";
 import type { GenerationContext, RetrievedMemory } from "@/lib/retrieval/types";
+import { parseWritingHarness } from "@/lib/writing-harness/config";
 
 export type RetrieveContextInput = {
   storyId: string;
@@ -151,6 +152,7 @@ export async function retrieveContext(
           pov: story.settings.pov,
           tense: story.settings.tense,
           styleGuide: story.settings.styleGuide,
+          writingHarness: parseWritingHarness(story.settings.writingHarness),
           nsfwPolicy: parseJsonString(story.settings.nsfwPolicy, {}),
           modelConfig: parseJsonString(story.settings.modelConfig, {}),
         }

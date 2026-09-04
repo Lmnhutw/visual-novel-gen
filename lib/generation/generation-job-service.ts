@@ -19,6 +19,14 @@ import {
 import { buildGenerationPrompt } from "@/lib/prompts/prompt-builder";
 import { retrieveContext } from "@/lib/retrieval/retrieval-service";
 import { resolveNarrativeFocus } from "@/lib/generation/narrative-focus";
+import { getDefaultWritingHarness } from "@/lib/writing-harness/config";
+import {
+  canAttemptWritingHarnessRepair,
+  combineGenerationUsage,
+  createWritingHarnessAudit,
+  enforceWritingHarness,
+} from "@/lib/writing-harness/evaluation";
+import { GENERATION_PROMPT_VERSION } from "@/lib/writing-harness/prompt";
 
 export type GenerationJobInput = {
   storyId: string;
@@ -174,7 +182,7 @@ async function setStage(
 async function generateTextForJob(
   jobId: string,
   prompt: string,
-  options: { model: string; maxTokens: number },
+  options: { model: string; maxTokens: number; retries?: number },
 ) {
   const controller = new AbortController();
   let pollInFlight = false;
@@ -494,6 +502,8 @@ export async function executeGenerationJob(jobId: string) {
       includeSecrets: input.includeSecrets ?? false,
       tokenBudget: input.contextTokenBudget,
     });
+    const harness =
+      context.settings?.writingHarness ?? getDefaultWritingHarness();
     await setStage(jobId, "BUILDING_PROMPT", 22, {
       contextSnapshot: toJsonString(context),
     });
@@ -512,7 +522,14 @@ export async function executeGenerationJob(jobId: string) {
           storyId: input.storyId,
           type: input.type ?? "scene",
           status: "RUNNING",
-          input: toJsonString(input),
+          input: toJsonString({
+            ...input,
+            writingHarness: {
+              schemaVersion: harness.version,
+              promptVersion: GENERATION_PROMPT_VERSION,
+              effectiveHarness: harness,
+            },
+          }),
           prompt,
           model: generationModel,
         },
@@ -559,7 +576,33 @@ export async function executeGenerationJob(jobId: string) {
       model: generationModel,
       maxTokens: input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
     });
-    const draft = generation.text;
+    await ensureNotCancelled(jobId);
+    await setStage(jobId, "VALIDATING_HARNESS", 52);
+    const harnessOutcome = await enforceWritingHarness({
+      draft: generation.text,
+      harness,
+      repair: canAttemptWritingHarnessRepair(harness, {
+        usesPaidModel: generationModel !== modelConfig.freeGenerationModel,
+        paidApproved: paidAttempt,
+      })
+        ? async (repairPrompt) => {
+            await ensureNotCancelled(jobId);
+            await setStage(jobId, "REPAIRING_HARNESS", 57);
+            return generateTextForJob(jobId, repairPrompt, {
+              model: generationModel,
+              maxTokens:
+                input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
+              retries: 0,
+            });
+          }
+        : undefined,
+    });
+    const draft = harnessOutcome.content;
+    const writingHarness = createWritingHarnessAudit(harness, harnessOutcome);
+    const usage = combineGenerationUsage(
+      generation.usage,
+      harnessOutcome.repairUsage,
+    );
 
     await ensureNotCancelled(jobId);
     await setStage(jobId, "SAVING_DRAFT", 62);
@@ -576,7 +619,7 @@ export async function executeGenerationJob(jobId: string) {
           versionNumber: (previous._max.versionNumber ?? 0) + 1,
           title: input.sceneGoal ?? input.goal.slice(0, 80),
           content: draft,
-          metadata: toJsonString({ generationJobId: jobId }),
+          metadata: toJsonString({ generationJobId: jobId, writingHarness }),
         },
       });
       await tx.generationRun.update({
@@ -584,10 +627,11 @@ export async function executeGenerationJob(jobId: string) {
         data: {
           output: draft,
           status: "SUCCEEDED",
+          input: toJsonString({ ...input, writingHarness }),
           model: generation.model,
-          promptTokens: generation.usage?.promptTokens,
-          completionTokens: generation.usage?.completionTokens,
-          totalTokens: generation.usage?.totalTokens,
+          promptTokens: usage?.promptTokens,
+          completionTokens: usage?.completionTokens,
+          totalTokens: usage?.totalTokens,
         },
       });
       const staged = await tx.generationJob.updateMany({
@@ -650,7 +694,11 @@ export async function executeGenerationJob(jobId: string) {
     await prisma.draftVersion.update({
       where: { id: draftVersion.id },
       data: {
-        metadata: toJsonString({ generationJobId: jobId, evaluation }),
+        metadata: toJsonString({
+          generationJobId: jobId,
+          evaluation,
+          writingHarness,
+        }),
       },
     });
 
@@ -686,9 +734,13 @@ export async function executeGenerationJob(jobId: string) {
         data: {
           status: "READY_FOR_REVIEW",
           stage:
-            evaluation.decision === "pass"
-              ? "READY_FOR_REVIEW"
-              : "CONTINUITY_REVIEW_REQUIRED",
+            writingHarness.evaluation.status === "needs_review"
+              ? evaluation.decision === "pass"
+                ? "HARNESS_REVIEW_REQUIRED"
+                : "HARNESS_AND_CONTINUITY_REVIEW_REQUIRED"
+              : evaluation.decision === "pass"
+                ? "READY_FOR_REVIEW"
+                : "CONTINUITY_REVIEW_REQUIRED",
           progress: 100,
           completedAt: new Date(),
         },
@@ -723,6 +775,10 @@ export async function executeGenerationJob(jobId: string) {
           metadata: toJsonString({
             continuityWarningCount: continuityWarnings.length,
             evaluation,
+            writingHarnessStatus: writingHarness.evaluation.status,
+            writingHarnessViolationCount:
+              writingHarness.evaluation.findingsAfterRepair.length ||
+              writingHarness.evaluation.findingsBeforeRepair.length,
           }),
         },
       });

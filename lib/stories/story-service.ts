@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { optionalJsonString, toJsonString } from "@/lib/db/json";
 import { WorkflowError } from "@/lib/http/api-response";
+import type { WritingHarnessConfig } from "@/lib/writing-harness/config";
 
 export type CreateStoryInput = {
   ownerId?: string;
@@ -11,6 +12,7 @@ export type CreateStoryInput = {
   pov?: string;
   tense?: string;
   styleGuide?: string;
+  writingHarness?: WritingHarnessConfig;
   nsfwPolicy?: Record<string, unknown>;
 };
 
@@ -27,6 +29,9 @@ export async function createStory(input: CreateStoryInput) {
           pov: input.pov,
           tense: input.tense,
           styleGuide: input.styleGuide,
+          writingHarness: input.writingHarness
+            ? toJsonString(input.writingHarness)
+            : undefined,
           nsfwPolicy: toJsonString(input.nsfwPolicy, {
             matureModeAllowed: true,
             requireAdultCharacters: true,
@@ -177,6 +182,9 @@ export async function updateStory(
               pov: input.pov,
               tense: input.tense,
               styleGuide: input.styleGuide,
+              writingHarness: input.writingHarness
+                ? toJsonString(input.writingHarness)
+                : undefined,
               nsfwPolicy: toJsonString(input.nsfwPolicy),
             },
             update: {
@@ -185,6 +193,7 @@ export async function updateStory(
               pov: input.pov,
               tense: input.tense,
               styleGuide: input.styleGuide,
+              writingHarness: optionalJsonString(input.writingHarness),
               nsfwPolicy: optionalJsonString(input.nsfwPolicy),
             },
           },

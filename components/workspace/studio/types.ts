@@ -1,9 +1,12 @@
+import type { WritingHarnessConfig } from "@/lib/writing-harness/config";
+
 export type StorySettings = {
   genre: string[] | string;
   tone: string | null;
   pov: string | null;
   tense: string | null;
   styleGuide?: string | null;
+  writingHarness?: WritingHarnessConfig | string | null;
 };
 
 export type StorySummary = {
@@ -105,6 +108,7 @@ export type DraftVersion = {
   versionNumber: number;
   createdAt: string;
   updatedAt: string;
+  metadata?: string;
 };
 
 export type CanonProposal = {

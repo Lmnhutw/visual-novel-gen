@@ -12,6 +12,7 @@ type TagInputProps = {
   placeholder?: string;
   helperText?: string;
   className?: string;
+  splitOnComma?: boolean;
 };
 
 export function TagInput({
@@ -21,6 +22,7 @@ export function TagInput({
   placeholder = "Add tag",
   helperText,
   className,
+  splitOnComma = true,
 }: TagInputProps) {
   const [draft, setDraft] = useState("");
 
@@ -37,7 +39,7 @@ export function TagInput({
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Enter" || event.key === ",") {
+    if (event.key === "Enter" || (splitOnComma && event.key === ",")) {
       event.preventDefault();
       addTag();
     }

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { writingHarnessSchema } from "@/lib/writing-harness/config";
 export {
   characterRoleSchema,
   characterStatusSchema,
@@ -27,6 +28,7 @@ export const createStorySchema = z.object({
   pov: z.string().optional(),
   tense: z.string().optional(),
   styleGuide: z.string().optional(),
+  writingHarness: writingHarnessSchema.optional(),
   nsfwPolicy: z.record(z.unknown()).optional(),
 });
 

@@ -43,6 +43,7 @@ export function DraftReview({
   const [isSaving, setIsSaving] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const lastDraftId = useRef<string | null>(null);
+  const editorRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (draft?.id !== lastDraftId.current) {
@@ -59,6 +60,14 @@ export function DraftReview({
     }, 1300);
     return () => window.clearTimeout(timeout);
   }, [content, draft, onSaveDraft]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    editor.style.height = "auto";
+    editor.style.height = `${editor.scrollHeight}px`;
+  }, [content, draft?.id]);
 
   const proposals = job?.proposals ?? [];
   const pendingProposals = proposals.filter(
@@ -128,6 +137,7 @@ export function DraftReview({
             aria-label="Draft editor"
             className={styles["draft-review__editor"]}
             placeholder="A generated draft will appear here."
+            ref={editorRef}
             value={content}
             onChange={(event) => setContent(event.target.value)}
           />

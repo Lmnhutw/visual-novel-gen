@@ -4,6 +4,11 @@ import {
   MATURE_CONTENT_RULES,
 } from "@/lib/prompts/templates";
 import type { GenerationContext } from "@/lib/retrieval/types";
+import { getDefaultWritingHarness } from "@/lib/writing-harness/config";
+import {
+  compileWritingHarness,
+  generationOutputContract,
+} from "@/lib/writing-harness/prompt";
 
 export type BuildGenerationPromptInput = {
   context: GenerationContext;
@@ -167,14 +172,24 @@ export function buildGenerationPrompt(
   input: BuildGenerationPromptInput,
 ): string {
   const { context } = input;
+  const harness = context.settings?.writingHarness ?? getDefaultWritingHarness();
+  const storySettings = context.settings
+    ? {
+        genre: context.settings.genre,
+        tone: context.settings.tone,
+        pov: context.settings.pov,
+        tense: context.settings.tense,
+      }
+    : null;
 
   return [
     `# System\n${GENERATION_SYSTEM_INSTRUCTIONS}`,
     input.maturityMode === "mature"
       ? `# Mature Content Rules\n${MATURE_CONTENT_RULES}`
       : "",
+    compileWritingHarness(harness, context.settings ?? {}),
     block("Story", context.story),
-    block("Story Settings", context.settings),
+    block("Story Settings", storySettings),
     block(
       "Active Characters",
       formatCharacterPromptContext(context.characters),
@@ -197,7 +212,7 @@ ${input.povCharacterId ? `Preferred POV character id: ${input.povCharacterId}` :
 Do not infer cheating solely from multiple_people, open_to_multiple, or okay_with_multiple preferences. Treat non-exclusive dynamics as valid when they are consensual, transparent, and emotionally respectful. Cheating, betrayal, secrecy, manipulation, coercion, and dishonesty require explicit support from profile, relationship, or story state.
 
 # Output
-Return polished prose only. Do not explain the context. Preserve canon and character voice.`,
+${generationOutputContract(harness)}`,
   ]
     .filter(Boolean)
     .join("\n");
