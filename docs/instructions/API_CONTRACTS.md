@@ -50,6 +50,21 @@ so the UI can present actionable failures without parsing message strings.
 - Cancellation is terminal and is propagated to the active OpenRouter request.
 - Draft acceptance and canon-proposal decisions are explicit review actions.
 - `POST /api/canon-proposals/:proposalId` accepts a validated `decision` value.
+- Scene, chapter, revision, and queued-job generation all use the Story's
+  effective AI Writing Harness. Deterministic hard findings may trigger one
+  same-model repair when policy and paid-model approval allow it.
+- A usable draft with unresolved hard findings is persisted for editorial review
+  with Writing Harness status `needs_review`; a successful repair is reported as
+  `repaired_and_passed`.
+
+## Story Writing Harness
+
+`POST /api/stories` and `PATCH /api/stories/:storyId` accept an optional full
+version 1 `writingHarness` object. Lists and strings are trimmed, duplicate list
+items are removed, bounds are enforced, empty entries and unknown versions are
+rejected, and unknown object keys are not accepted. Omitting the field preserves
+the existing/default setting. Reset sends the complete default object rather
+than deleting the stored value.
 
 ## Response Rules
 

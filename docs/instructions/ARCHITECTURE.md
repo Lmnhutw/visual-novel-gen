@@ -33,6 +33,8 @@ server-side OpenRouter call; there is no local LLM runtime.
 - `lib/memory`: memory persistence, extraction, and optional pgvector embedding storage.
 - `lib/retrieval`: relational-first retrieval with optional pgvector ranking.
 - `lib/prompts`: prompt templates and prompt assembly.
+- `lib/writing-harness`: versioned configuration, safe prompt compilation,
+  deterministic validation, one-shot repair policy, and audit snapshots.
 - `lib/generation`: synchronous scene/chapter/revision workflows plus persisted,
   cancellable generation jobs, versioned drafts, and canon review.
 - `lib/continuity`: rule-based and LLM-assisted continuity checks.
@@ -49,8 +51,11 @@ User submits scene goal
   -> retrieve structured canon and memories using relational, keyword, recency,
      salience, and optional pgvector signals
   -> enforce the context token budget and record a retrieval log
-  -> build the prompt and route the generation role to OpenRouter
+  -> compile the effective Story Writing Harness and build the ordered prompt
+  -> route the generation role to OpenRouter
      with cancellation propagation
+  -> normalize and deterministically validate the generated prose
+  -> when allowed, repair hard violations once with the same model and revalidate
   -> transactionally save the generation run and versioned draft
   -> run continuity checks and evaluate whether review or rewrite is recommended
   -> extract reviewable canon proposals
@@ -72,4 +77,7 @@ User submits scene goal
 - OpenRouter is abstracted so future model routing can be added without rewriting generation services.
 - Generation, continuity evaluation, and memory extraction support role-based
   model routing while retaining the generation model as the fallback.
+- The Writing Harness is deterministic application logic around the existing
+  provider call, not an agent or LLM judge. It adds no vector store, broker,
+  provider abstraction, or audit table. Paid repair requires explicit approval.
 - Mature-story support is represented as stored consent, boundaries, adult confirmation, and relationship-state continuity.

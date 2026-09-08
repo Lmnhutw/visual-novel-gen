@@ -21,7 +21,8 @@ DIRECT_URL="<supabase direct connection string>"
 ## Main Tables
 
 - `stories`: story workspace and metadata.
-- `story_settings`: genre, tone, POV, style, maturity policy, model config.
+- `story_settings`: genre, tone, POV, style, maturity policy, model config, and
+  the full versioned AI Writing Harness JSON snapshot.
 - `characters`: identity, role, status, adult confirmation.
 - `character_profiles`: personality, voice, backstory, appearance, boundaries.
 - `character_states`: emotional, physical, location, and goals over time.
@@ -53,5 +54,11 @@ DIRECT_URL="<supabase direct connection string>"
 - Memory salience and emotional weight are clamped from `0` to `1`.
 - Generation progress stays within `0..100`; attempt counts cannot be negative.
 - Draft version numbers start at `1`; proposal confidence stays within `0..1`.
+- Writing Harness audit data uses existing fields: the generation snapshot and
+  evaluation are stored in `generation_runs.input`, the effective queued
+  context and compiled instructions remain in
+  `generation_jobs.context_snapshot` and `generation_jobs.prompt`, and final
+  evaluation/repair metadata is stored in `draft_versions.metadata`. No
+  separate harness-audit table is required.
 - Data API roles do not have direct privileges on application workflow tables;
   server-side Prisma routes enforce ownership and RLS remains defense in depth.

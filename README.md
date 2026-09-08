@@ -113,6 +113,30 @@ how many lower-priority records were omitted.
 memory extraction to cheaper or faster OpenRouter models. Empty values fall back
 to `GENERATION_MODEL`.
 
+## AI Writing Harness
+
+Each Story has a versioned AI Writing Harness stored in
+`story_settings.writing_harness`. The editor exposes language, readability,
+style goals, required rules, forbidden characters and phrases, an advisory
+sentence-length target, prose/Markdown rules, blank-line limits, and the repair
+policy. Empty legacy settings resolve to the complete version 1 default; saved
+settings persist the full validated snapshot.
+
+Generation compiles the settings into concise prompt sections rather than
+injecting raw JSON. Authority order is system and safety rules, mature-content
+boundaries, writing harness, story canon, task, then output contract. Story
+`styleGuide` text remains an additional soft goal and cannot override higher
+priority instructions.
+
+Generated prose is normalized and checked deterministically for configured hard
+rules. Sentence length is advisory only. If hard violations remain and repair is
+enabled, the same model receives at most one focused repair request; paid repair
+still requires explicit approval. A still-usable result is retained as
+`needs_review` when repair is unavailable or does not clear every hard finding.
+The effective configuration, prompt version, findings, repair attempt, repair
+model, and final status are recorded in generation-run input, queued-job
+context/prompt snapshots, and draft metadata.
+
 ## Architecture
 
 Route handlers under `app/api/**/route.ts` parse and validate input with Zod, then call service functions. Business logic stays under `lib/`.
@@ -127,6 +151,8 @@ Key modules:
 - `lib/retrieval/vector-search.ts`: pgvector similarity search.
 - `lib/retrieval/retrieval-service.ts`: canonical context assembly.
 - `lib/prompts/prompt-builder.ts`: prompt assembly from retrieved context.
+- `lib/writing-harness/*`: versioned story writing preferences, prompt
+  compilation, deterministic output validation, bounded repair, and audit data.
 - `lib/generation/generation-service.ts`: scene and chapter generation workflow.
 - `lib/generation/generation-job-service.ts`: persisted, cancellable generation
   jobs, versioned drafts, reviewable canon proposals, and worker execution.
