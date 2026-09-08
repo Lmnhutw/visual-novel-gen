@@ -79,6 +79,7 @@ export type ContinuityIssue = {
   severity: string;
   category: string;
   description: string;
+  evidence: string;
   confidence: number;
   status: string;
 };
@@ -121,6 +122,11 @@ export type CanonProposal = {
   confidence: number;
   actionability: string;
   status: string;
+};
+
+export type CanonReviewProposal = {
+  proposal: CanonProposal;
+  draftAccepted: boolean;
 };
 
 export type GenerationJob = {

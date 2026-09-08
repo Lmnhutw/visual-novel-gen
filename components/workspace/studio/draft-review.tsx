@@ -179,6 +179,7 @@ export function DraftReview({
               <ProposalRow
                 key={proposal.id}
                 proposal={proposal}
+                canApply={draft?.status === "ACCEPTED"}
                 onReview={onReviewProposal}
               />
             ))}
@@ -231,9 +232,11 @@ export function DraftReview({
 
 function ProposalRow({
   proposal,
+  canApply,
   onReview,
 }: {
   proposal: CanonProposal;
+  canApply: boolean;
   onReview: (
     proposal: CanonProposal,
     decision: "accept" | "reject",
@@ -272,7 +275,7 @@ function ProposalRow({
         <div className="mt-3 flex gap-2 pl-7">
           <button
             className="rounded-lg bg-primary px-2.5 py-1.5 text-xs font-bold text-on-primary disabled:opacity-50"
-            disabled={isReviewing}
+            disabled={isReviewing || !canApply}
             type="button"
             onClick={() => {
               setIsReviewing(true);
@@ -281,9 +284,11 @@ function ProposalRow({
               );
             }}
           >
-            {proposal.actionability === "AUTO_APPLY"
-              ? "Accept"
-              : "Review manually"}
+            {!canApply
+              ? "Accept draft first"
+              : proposal.actionability === "AUTO_APPLY"
+                ? "Apply"
+                : "Mark manual change"}
           </button>
           <button
             className="rounded-lg bg-white/[0.06] px-2.5 py-1.5 text-xs font-bold text-on-surface-variant hover:text-on-surface disabled:opacity-50"

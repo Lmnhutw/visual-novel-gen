@@ -97,6 +97,10 @@ export const reviewCanonChangeProposalSchema = z.object({
   decision: z.enum(["accept", "reject"]),
 });
 
+export const reviewContinuityIssueSchema = z.object({
+  decision: z.enum(["resolve", "dismiss"]),
+});
+
 export const fallbackDecisionSchema = z.object({
   decision: z.enum(["approve", "decline"]),
 });

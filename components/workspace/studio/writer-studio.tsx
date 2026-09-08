@@ -38,6 +38,8 @@ import {
 } from "./story-ledgers";
 import type {
   CanonProposal,
+  CanonReviewProposal,
+  ContinuityIssue,
   GenerationJob,
   StoryDetail,
   StorySummary,
@@ -235,6 +237,18 @@ export function WriterStudio() {
   const selectedJob = useMemo(
     () => jobs.find((job) => job.id === selectedJobId) ?? null,
     [jobs, selectedJobId],
+  );
+  const canonReviewProposals = useMemo<CanonReviewProposal[]>(
+    () =>
+      jobs.flatMap((job) =>
+        (job.proposals ?? [])
+          .filter((proposal) => proposal.status === "PENDING")
+          .map((proposal) => ({
+            proposal,
+            draftAccepted: job.draftVersion?.status === "ACCEPTED",
+          })),
+      ),
+    [jobs],
   );
   const writingHarness = useMemo(
     () => parseWritingHarness(story?.settings?.writingHarness),
@@ -646,6 +660,25 @@ export function WriterStudio() {
     [loadJobs, storyId],
   );
 
+  const reviewContinuityIssue = useCallback(
+    async (issue: ContinuityIssue, decision: "resolve" | "dismiss") => {
+      await requestJson(`/api/continuity-issues/${issue.id}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ decision }),
+      });
+      setMessage(
+        decision === "resolve"
+          ? "Continuity issue resolved."
+          : "Continuity issue dismissed.",
+      );
+      if (storyId) {
+        await Promise.all([loadStories(), loadWorkspace(storyId)]);
+      }
+    },
+    [loadStories, loadWorkspace, storyId],
+  );
+
   const body = activeView === "story" ? (
     <StoryLedger
       story={story}
@@ -757,7 +790,12 @@ export function WriterStudio() {
       />
     </div>
   ) : (
-    <CanonLedger issues={story.continuityIssues} view={activeView} />
+    <CanonLedger
+      issues={story.continuityIssues}
+      proposals={canonReviewProposals}
+      onReviewIssue={reviewContinuityIssue}
+      onReviewProposal={reviewProposal}
+    />
   );
 
   return (
@@ -787,7 +825,11 @@ export function WriterStudio() {
             <WorkspaceNavigation
               activeView={activeView}
               onChange={setActiveView}
-              issueCount={story?.continuityIssues.length ?? 0}
+              issueCount={
+                story?.continuityIssues.filter(
+                  (issue) => issue.severity === "P0" || issue.severity === "P1",
+                ).length ?? 0
+              }
               storySelected={Boolean(story)}
             />
           </div>
@@ -834,7 +876,11 @@ export function WriterStudio() {
               <WorkspaceNavigation
                 activeView={activeView}
                 onChange={setActiveView}
-                issueCount={story?.continuityIssues.length ?? 0}
+                issueCount={
+                  story?.continuityIssues.filter(
+                    (issue) => issue.severity === "P0" || issue.severity === "P1",
+                  ).length ?? 0
+                }
                 storySelected={Boolean(story)}
               />
             </div>

@@ -2,8 +2,8 @@
 
 import {
   BookOpen,
+  Check,
   CircleAlert,
-  Clock3,
   ExternalLink,
   FilePlus2,
   MoreHorizontal,
@@ -11,14 +11,16 @@ import {
   Trash2,
   UserPlus,
   Users,
+  X,
 } from "lucide-react";
+import { useState } from "react";
 
 import type {
   CharacterRecord,
+  CanonReviewProposal,
   ContinuityIssue,
   StoryDetail,
   StorySummary,
-  WorkspaceView,
 } from "./types";
 
 export function StoryLedger({
@@ -230,50 +232,149 @@ export function CastLedger({
 
 export function CanonLedger({
   issues,
-  view,
+  proposals,
+  onReviewIssue,
+  onReviewProposal,
 }: {
   issues: ContinuityIssue[];
-  view: WorkspaceView;
+  proposals: CanonReviewProposal[];
+  onReviewIssue: (
+    issue: ContinuityIssue,
+    decision: "resolve" | "dismiss",
+  ) => Promise<void>;
+  onReviewProposal: (
+    proposal: CanonReviewProposal["proposal"],
+    decision: "accept" | "reject",
+  ) => Promise<void>;
 }) {
-  return (
-    <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
-      <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">
-        {view === "canon" ? "CONTINUITY QUEUE" : "CANON"}
-      </p>
-      <h2 className="mt-1 text-xl font-semibold text-on-surface">
-        Review contradictions before they harden
-      </h2>
-      <div className="mt-6 space-y-3">
-        {issues.map((issue) => (
-          <article
-            key={issue.id}
-            className="flex gap-3 rounded-xl border border-amber-300/15 bg-amber-300/[0.06] p-4"
-          >
-            <CircleAlert className="mt-0.5 size-4 shrink-0 text-amber-200" />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-amber-100">
-                  {issue.severity}
-                </span>
-                <span className="text-xs text-on-surface-variant">
-                  {issue.category}
-                </span>
-              </div>
-              <p className="mt-1 text-sm leading-6 text-on-surface">
-                {issue.description}
-              </p>
-            </div>
-          </article>
-        ))}
-        {!issues.length ? (
-          <Empty
-            icon={<Clock3 className="size-5" />}
-            text="No open continuity issues. New generation warnings will be collected here."
-          />
-        ) : null}
-      </div>
-    </section>
+  const requiredIssues = issues.filter(
+    (issue) => issue.severity === "P0" || issue.severity === "P1",
   );
+  const advisories = issues.filter(
+    (issue) => issue.severity !== "P0" && issue.severity !== "P1",
+  );
+  return (
+    <div className="space-y-5">
+      <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
+        <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">CANON & CONTINUITY</p>
+        <div className="mt-1 flex flex-wrap items-baseline justify-between gap-3">
+          <h2 className="text-xl font-semibold text-on-surface">Needs attention</h2>
+          <span className="text-sm font-semibold text-amber-200">{requiredIssues.length} blocking</span>
+        </div>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant">Resolve an explicit conflict in the draft or dismiss a false positive before accepting its draft.</p>
+        <div className="mt-5 space-y-3">
+          {requiredIssues.map((issue) => (
+            <ContinuityIssueRow key={issue.id} issue={issue} onReview={onReviewIssue} />
+          ))}
+          {!requiredIssues.length ? <Empty icon={<Check className="size-5" />} text="No blocking continuity issues are open." /> : null}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">CANON PROPOSALS</p>
+            <h2 className="mt-1 text-xl font-semibold text-on-surface">Facts waiting to be committed</h2>
+          </div>
+          <span className="text-sm font-semibold text-primary">{proposals.length} pending</span>
+        </div>
+        <div className="mt-5 space-y-3">
+          {proposals.map((entry) => (
+            <CanonProposalRow key={entry.proposal.id} entry={entry} onReview={onReviewProposal} />
+          ))}
+          {!proposals.length ? <Empty icon={<BookOpen className="size-5" />} text="No canon proposals are waiting for review." /> : null}
+        </div>
+      </section>
+
+      {advisories.length ? (
+        <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
+          <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">ADVISORIES</p>
+          <h2 className="mt-1 text-xl font-semibold text-on-surface">Optional editorial notes</h2>
+          <div className="mt-5 space-y-3">
+            {advisories.map((issue) => (
+              <ContinuityIssueRow key={issue.id} issue={issue} onReview={onReviewIssue} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+function ContinuityIssueRow({ issue, onReview }: { issue: ContinuityIssue; onReview: (issue: ContinuityIssue, decision: "resolve" | "dismiss") => Promise<void> }) {
+  const [isReviewing, setIsReviewing] = useState(false);
+  const evidence = readEvidence(issue.evidence);
+  const isBlocking = issue.severity === "P0" || issue.severity === "P1";
+  const canDismiss = issue.category !== "mature_content";
+  const evidenceSummary = [evidence.draftQuote, evidence.canonQuote]
+    .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
+    .join(" · ");
+
+  return (
+    <article className="rounded-xl border border-amber-300/15 bg-amber-300/[0.06] p-4">
+      <div className="flex gap-3">
+        <CircleAlert className="mt-0.5 size-4 shrink-0 text-amber-200" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="text-xs font-bold text-amber-100">{issue.severity}</span>
+            <span className="text-xs text-on-surface-variant">{issue.category.replaceAll("_", " ")}</span>
+            {typeof evidence.kind === "string" ? <span className="text-xs text-on-surface-variant">{evidence.kind.replaceAll("_", " ").toLowerCase()}</span> : null}
+          </div>
+          <p className="mt-1 text-sm leading-6 text-on-surface">{issue.description}</p>
+          {evidenceSummary ? <p className="mt-2 text-xs leading-5 text-on-surface-variant">Evidence: {evidenceSummary}</p> : null}
+          <p className="mt-2 text-xs text-on-surface-variant">{typeof evidence.detector === "string" ? `${evidence.detector === "rule" ? "Rule check" : "LLM review"} · ` : ""}{Math.round(issue.confidence * 100)}% confidence</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-bold text-on-primary disabled:opacity-50" disabled={isReviewing} type="button" onClick={() => { setIsReviewing(true); void onReview(issue, "resolve").finally(() => setIsReviewing(false)); }}><Check className="size-3.5" />{isBlocking ? "Mark resolved" : "Clear note"}</button>
+            {canDismiss ? <button className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-white/[0.06] px-3 text-xs font-bold text-on-surface-variant hover:text-on-surface disabled:opacity-50" disabled={isReviewing} type="button" onClick={() => { setIsReviewing(true); void onReview(issue, "dismiss").finally(() => setIsReviewing(false)); }}><X className="size-3.5" />Dismiss</button> : null}
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function CanonProposalRow({ entry, onReview }: { entry: CanonReviewProposal; onReview: (proposal: CanonReviewProposal["proposal"], decision: "accept" | "reject") => Promise<void> }) {
+  const [isReviewing, setIsReviewing] = useState(false);
+  const { proposal } = entry;
+  const preview = proposalPreview(proposal.proposedAfter);
+  const applyLabel = proposal.actionability === "AUTO_APPLY" ? "Apply" : "Mark manual change";
+
+  return (
+    <article className="rounded-xl border border-white/10 bg-surface-dim/60 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold text-on-surface">{proposal.title}</p>
+          <p className="mt-1 text-xs text-on-surface-variant">{proposal.type.replaceAll("_", " ")} · {Math.round(proposal.confidence * 100)}% confidence</p>
+        </div>
+        <span className="rounded-full bg-primary/15 px-2 py-1 text-[11px] font-semibold text-primary">{proposal.actionability === "AUTO_APPLY" ? "Ready to apply" : "Manual change"}</span>
+      </div>
+      {preview ? <p className="mt-3 text-sm leading-6 text-on-surface-variant">{preview}</p> : null}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-bold text-on-primary disabled:opacity-50" disabled={isReviewing || !entry.draftAccepted} title={entry.draftAccepted ? undefined : "Accept the draft before changing canon."} type="button" onClick={() => { setIsReviewing(true); void onReview(proposal, "accept").finally(() => setIsReviewing(false)); }}><Check className="size-3.5" />{entry.draftAccepted ? applyLabel : "Accept draft first"}</button>
+        <button className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-white/[0.06] px-3 text-xs font-bold text-on-surface-variant hover:text-on-surface disabled:opacity-50" disabled={isReviewing} type="button" onClick={() => { setIsReviewing(true); void onReview(proposal, "reject").finally(() => setIsReviewing(false)); }}><X className="size-3.5" />Dismiss</button>
+      </div>
+    </article>
+  );
+}
+
+function readEvidence(value: string): Record<string, unknown> {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function proposalPreview(value: string): string | null {
+  const proposal = readEvidence(value);
+  for (const key of ["content", "summary", "description", "title"]) {
+    const candidate = proposal[key];
+    if (typeof candidate === "string" && candidate.trim()) return candidate;
+  }
+  return null;
 }
 
 function Metric({

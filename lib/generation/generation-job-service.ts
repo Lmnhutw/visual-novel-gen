@@ -872,7 +872,11 @@ export async function reviewCanonChangeProposal(
 ) {
   const proposal = await prisma.canonChangeProposal.findUnique({
     where: { id: proposalId },
-    include: { job: true },
+    include: {
+      job: {
+        include: { draftVersion: { select: { status: true } } },
+      },
+    },
   });
   if (!proposal) {
     throw new WorkflowError(
@@ -901,6 +905,14 @@ export async function reviewCanonChangeProposal(
       });
       return reviewed;
     });
+  }
+
+  if (proposal.job.draftVersion?.status !== "ACCEPTED") {
+    throw new WorkflowError(
+      "DRAFT_NOT_ACCEPTED",
+      "Accept the draft before applying its canon proposal.",
+      409,
+    );
   }
 
   const proposedAfter = parseJsonString<Record<string, unknown>>(
@@ -1033,6 +1045,33 @@ export async function updateDraftVersion(
 }
 
 export async function acceptDraftVersion(draftVersionId: string) {
+  const existing = await prisma.draftVersion.findUnique({
+    where: { id: draftVersionId },
+    select: { id: true, storyId: true, generationRunId: true, status: true },
+  });
+  if (!existing) {
+    throw new WorkflowError("DRAFT_NOT_FOUND", "Draft version not found.", 404);
+  }
+  if (existing.status === "ACCEPTED") return existing;
+
+  if (existing.generationRunId) {
+    const blockingIssues = await prisma.continuityIssue.count({
+      where: {
+        storyId: existing.storyId,
+        generationRunId: existing.generationRunId,
+        status: "OPEN",
+        severity: { in: ["P0", "P1"] },
+      },
+    });
+    if (blockingIssues > 0) {
+      throw new WorkflowError(
+        "CONTINUITY_REVIEW_REQUIRED",
+        "Resolve or dismiss the blocking continuity issues before accepting this draft.",
+        409,
+      );
+    }
+  }
+
   const draft = await prisma.draftVersion.update({
     where: { id: draftVersionId },
     data: { status: "ACCEPTED" },

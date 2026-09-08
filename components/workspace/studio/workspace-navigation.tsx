@@ -10,7 +10,7 @@ const items = [
   { id: "story", label: "Library", icon: Library },
   { id: "studio", label: "Studio", icon: Feather },
   { id: "cast", label: "Characters", icon: Users },
-  { id: "canon", label: "Canon review", icon: Library },
+  { id: "canon", label: "Canon & continuity", icon: Library },
 ] as const;
 
 export function WorkspaceNavigation({

@@ -266,7 +266,7 @@ export function buildContinuityReviewPrompt(input: {
 }): string {
   return `${JSON_ONLY_RULE}
 
-Compare the draft against canon context and identify continuity issues.
+Compare the draft against canon context and identify continuity issues. Only report a contradiction when the draft conflicts with an explicit canon fact or violates a stated invariant. Missing canon detail is not a contradiction: new compatible details should be classified as NEW_FACT, and uncertain voice or tone differences as EDITORIAL_NOTE. NEW_FACT and EDITORIAL_NOTE should be P3 unless they also contain an explicit contradiction.
 Relationship preference self and partner fields are independent. Do not flag consensual non-exclusive dynamics as cheating unless secrecy, betrayal, coercion, manipulation, or dishonesty is explicitly represented in canon or the draft.
 
 Return:
@@ -274,9 +274,10 @@ Return:
   "issues": [
     {
       "severity": "P0|P1|P2|P3",
+      "kind": "CONTRADICTION|NEW_FACT|EDITORIAL_NOTE",
       "category": "timeline|personality|relationship|relationship_preference|romantic_exclusivity|secret|lore|appearance|speech|physical_state|emotional_state|plot_thread",
-      "description": "specific issue",
-      "evidence": {},
+      "description": "specific, actionable issue",
+      "evidence": { "draftQuote": "relevant draft text", "canonQuote": "conflicting canon fact when available" },
       "confidence": 0.0
     }
   ]
