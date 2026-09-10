@@ -21,6 +21,7 @@ import studioStyles from "./studio.module.css";
 
 import { CharacterForm, type CharacterFormRecord } from "./character-form";
 import type { GenerationContext } from "@/lib/retrieval/types";
+import type { ChapterLengthConfig } from "@/lib/chapters/chapter-lifecycle";
 import type {
   CreateCharacterInput,
   UpdateCharacterInput,
@@ -29,7 +30,10 @@ import type {
 import { Dialog, ModalFrame } from "@/components/ui/modal";
 
 import { formatRequestError, requestJson } from "./api";
-import { DraftReview } from "./draft-review";
+import {
+  DraftReview,
+  type DraftCommitSuccess,
+} from "./draft-review";
 import { GenerationStudio } from "./generation-studio";
 import {
   CanonLedger,
@@ -77,11 +81,13 @@ export function WriterStudio() {
   const [chapters, setChapters] = useState<StoryDetail["chapters"]>([]);
   const [jobs, setJobs] = useState<GenerationJob[]>([]);
   const [selectedJobId, setSelectedJobId] = useState("");
+  const [commitSuccess, setCommitSuccess] = useState<DraftCommitSuccess | null>(null);
   const [goal, setGoal] = useState(defaultGoal);
   const [chapterId, setChapterId] = useState("");
   const [activeCharacterIds, setActiveCharacterIds] = useState<string[]>([]);
   const [maturityMode, setMaturityMode] = useState<"safe" | "mature">("safe");
   const [includeSecrets, setIncludeSecrets] = useState(false);
+  const [chapterMode, setChapterMode] = useState<"auto" | "normal" | "closing">("auto");
   const [contextPreview, setContextPreview] =
     useState<GenerationContext | null>(null);
   const [isContextPreviewLoading, setIsContextPreviewLoading] = useState(false);
@@ -112,6 +118,7 @@ export function WriterStudio() {
     setStory(null);
     setChapters([]);
     setJobs([]);
+    setCommitSuccess(null);
     setIsWorkspaceLoading(Boolean(nextStoryId));
 
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -133,11 +140,16 @@ export function WriterStudio() {
       `/api/generation/jobs?storyId=${encodeURIComponent(selectedStoryId)}`,
     );
     setJobs(payload.jobs);
-    setSelectedJobId((current) =>
-      current && payload.jobs.some((job) => job.id === current)
-        ? current
-        : (payload.jobs[0]?.id ?? ""),
-    );
+    setSelectedJobId((current) => {
+      if (current && payload.jobs.some((job) => job.id === current)) {
+        return current;
+      }
+      const latest = payload.jobs[0];
+      const committed =
+        latest?.draftVersion?.status === "ACCEPTED" ||
+        Boolean(latest?.draftVersion?.sceneId);
+      return latest && !committed ? latest.id : "";
+    });
     return payload.jobs;
   }, []);
 
@@ -161,7 +173,11 @@ export function WriterStudio() {
         current &&
         chapterPayload.chapters.some((chapter) => chapter.id === current)
           ? current
-          : (chapterPayload.chapters[0]?.id ?? ""),
+          : (chapterPayload.chapters
+              .slice()
+              .reverse()
+              .find((chapter) => !["COMPLETE", "ARCHIVED"].includes(chapter.status))
+              ?.id ?? ""),
       );
       setActiveCharacterIds((current) =>
         current.filter((id) =>
@@ -255,10 +271,10 @@ export function WriterStudio() {
     [story?.settings?.writingHarness],
   );
 
-  async function refreshCurrentWorkspace() {
+  const refreshCurrentWorkspace = useCallback(async () => {
     if (!storyId) return;
     await Promise.all([loadStories(), loadWorkspace(storyId)]);
-  }
+  }, [loadStories, loadWorkspace, storyId]);
 
   async function createStory() {
     if (!newStoryTitle.trim()) return;
@@ -490,6 +506,25 @@ export function WriterStudio() {
     }
   }
 
+  async function saveChapterLength(chapterLength: ChapterLengthConfig) {
+    if (!storyId) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      await requestJson(`/api/stories/${storyId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ chapterLength }),
+      });
+      setMessage("Chapter word limits saved.");
+      await refreshCurrentWorkspace();
+    } catch (requestError) {
+      setError(formatRequestError(requestError, "Could not save chapter limits."));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   async function startGeneration() {
     if (!storyId || goal.trim().length < 10) return;
     setIsLoading(true);
@@ -509,6 +544,7 @@ export function WriterStudio() {
             activeCharacterIds,
             maturityMode,
             includeSecrets,
+            chapterMode,
             idempotencyKey,
             type: "scene",
           }),
@@ -519,6 +555,8 @@ export function WriterStudio() {
         ...current.filter((job) => job.id !== result.job.id),
       ]);
       setSelectedJobId(result.job.id);
+      setChapterId(result.job.chapterId ?? chapterId);
+      setCommitSuccess(null);
       setMessage("Generation job queued. You can keep working while it runs.");
       void requestJson<{ job: GenerationJob }>(
         `/api/generation/jobs/${result.job.id}/run`,
@@ -548,6 +586,7 @@ export function WriterStudio() {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             storyId,
+            chapterId: chapterId || undefined,
             query: goal,
             activeCharacterIds,
             includeSecrets,
@@ -568,7 +607,7 @@ export function WriterStudio() {
     } finally {
       setIsContextPreviewLoading(false);
     }
-  }, [activeCharacterIds, goal, includeSecrets, storyId]);
+  }, [activeCharacterIds, chapterId, goal, includeSecrets, storyId]);
 
   async function cancelGeneration(jobId: string) {
     try {
@@ -633,15 +672,71 @@ export function WriterStudio() {
   );
 
   const acceptDraft = useCallback(
-    async (draftVersionId: string) => {
-      await requestJson(`/api/draft-versions/${draftVersionId}/accept`, {
+    async (
+      draftVersionId: string,
+      content: string,
+      allowContinuityReview: boolean,
+    ) => {
+      const result = await requestJson<{
+        chapter: { id: string; number: number; title: string; wordCount: number };
+        nextChapter: { id: string } | null;
+        progress?: { targetWords: number; hardLimitWords: number };
+      }>(`/api/draft-versions/${draftVersionId}/accept`, {
         method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          content,
+          action: "continue",
+          allowContinuityReview,
+        }),
       });
-      setMessage("Draft accepted. Review its canon proposals next.");
-      if (storyId) await loadJobs(storyId);
+      setCommitSuccess({
+        chapterId: result.chapter.id,
+        chapterNumber: result.chapter.number,
+        chapterTitle: result.chapter.title,
+        wordCount: result.chapter.wordCount,
+        targetWords:
+          result.progress?.targetWords ??
+          story?.settings?.chapterTargetWords ??
+          5000,
+        hardLimitWords:
+          result.progress?.hardLimitWords ??
+          story?.settings?.chapterHardLimitWords ??
+          6000,
+        activeChapterId: result.nextChapter?.id ?? result.chapter.id,
+      });
+      setSelectedJobId("");
+      setMessage("Draft approved and added to the chapter.");
+      if (storyId) await refreshCurrentWorkspace();
     },
-    [loadJobs, storyId],
+    [
+      refreshCurrentWorkspace,
+      story?.settings?.chapterHardLimitWords,
+      story?.settings?.chapterTargetWords,
+      storyId,
+    ],
   );
+
+  const continueChapter = useCallback(() => {
+    if (commitSuccess) setChapterId(commitSuccess.activeChapterId);
+    setCommitSuccess(null);
+    setSelectedJobId("");
+    setGoal("");
+    setContextPreview(null);
+  }, [commitSuccess]);
+
+  const endChapter = useCallback(async (currentChapterId: string) => {
+    const result = await requestJson<{ nextChapter: { id: string } }>(
+      `/api/chapters/${currentChapterId}/end`,
+      { method: "POST" },
+    );
+    setChapterId(result.nextChapter.id);
+    setCommitSuccess(null);
+    setSelectedJobId("");
+    setGoal("");
+    setMessage("Chapter completed. The next chapter is ready.");
+    if (storyId) await refreshCurrentWorkspace();
+  }, [refreshCurrentWorkspace, storyId]);
 
   const reviewProposal = useCallback(
     async (proposal: CanonProposal, decision: "accept" | "reject") => {
@@ -716,6 +811,7 @@ export function WriterStudio() {
           activeCharacterIds,
           maturityMode,
           includeSecrets,
+          chapterMode,
         }}
         chapters={chapters}
         characters={story.characters}
@@ -736,6 +832,8 @@ export function WriterStudio() {
             setMaturityMode(patch.maturityMode);
           if (patch.includeSecrets !== undefined)
             setIncludeSecrets(patch.includeSecrets);
+          if (patch.chapterMode !== undefined)
+            setChapterMode(patch.chapterMode);
         }}
         onGenerate={startGeneration}
         onPreviewContext={previewContext}
@@ -748,19 +846,25 @@ export function WriterStudio() {
         onReadStory={() => window.location.assign(`/library/story?story=${encodeURIComponent(story.id)}&view=detail`)}
         onAddChapter={() => setIsChapterModalOpen(true)}
         onAddCharacter={openCreateCharacter}
+        onEndChapter={endChapter}
         onSaveWritingHarness={(harness) => saveWritingHarness(harness)}
         onResetWritingHarness={() =>
           saveWritingHarness(getDefaultWritingHarness(), true)
         }
+        onSaveChapterLength={saveChapterLength}
       />
       <DraftReview
         job={selectedJob}
         jobs={jobs}
         selectedJobId={selectedJobId}
+        chapter={chapters.find((chapter) => chapter.id === selectedJob?.chapterId) ?? chapters.find((chapter) => chapter.id === chapterId) ?? null}
+        commitSuccess={commitSuccess}
         onSaveDraft={saveDraft}
         onAcceptDraft={acceptDraft}
         onReviewProposal={reviewProposal}
         onSelectJob={setSelectedJobId}
+        onContinueChapter={continueChapter}
+        onEndChapter={endChapter}
       />
     </div>
   ) : activeView === "cast" ? (

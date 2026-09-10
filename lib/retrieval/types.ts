@@ -1,4 +1,5 @@
 import type { WritingHarnessConfig } from "@/lib/writing-harness/config";
+import type { ChapterGenerationMode } from "@/lib/chapters/chapter-lifecycle";
 
 export type RetrievedMemory = {
   id: string;
@@ -9,6 +10,14 @@ export type RetrievedMemory = {
   emotionalWeight?: number;
   similarity?: number;
   finalScore?: number;
+};
+
+export type RecentApprovedScene = {
+  id: string;
+  number: number;
+  title?: string | null;
+  content: string;
+  truncatedAtStart?: boolean;
 };
 
 export type GenerationContext = {
@@ -26,7 +35,29 @@ export type GenerationContext = {
     writingHarness?: WritingHarnessConfig;
     nsfwPolicy?: unknown;
     modelConfig?: unknown;
+    chapterTargetWords?: number;
+    chapterSoftLimitWords?: number;
+    chapterHardLimitWords?: number;
+    chapterAutoAdvance?: boolean;
   } | null;
+  chapter?: {
+    id: string;
+    number: number;
+    title: string;
+    status: string;
+    wordCount: number;
+    progress: {
+      currentWords: number;
+      targetWords: number;
+      softLimitWords: number;
+      hardLimitWords: number;
+      remainingToTarget: number;
+      remainingToHardLimit: number;
+      mode: ChapterGenerationMode;
+      autoAdvance: boolean;
+    };
+  };
+  recentApprovedScenes?: RecentApprovedScene[];
   characters: Array<{
     id: string;
     name: string;
@@ -109,6 +140,7 @@ export type GenerationContext = {
     overBudget: boolean;
     omitted: Record<
       | "characters"
+      | "recentApprovedScenes"
       | "relationships"
       | "secrets"
       | "recentEvents"

@@ -4,9 +4,14 @@ import { searchMemories } from "@/lib/memory/memory-service";
 import {
   applyContextBudget,
   DEFAULT_CONTEXT_TOKEN_BUDGET,
+  RECENT_APPROVED_SCENE_LIMIT,
 } from "@/lib/retrieval/context-budget";
 import type { GenerationContext, RetrievedMemory } from "@/lib/retrieval/types";
 import { parseWritingHarness } from "@/lib/writing-harness/config";
+import {
+  chapterLengthConfig,
+  chapterProgress,
+} from "@/lib/chapters/chapter-lifecycle";
 
 export type RetrieveContextInput = {
   storyId: string;
@@ -16,6 +21,7 @@ export type RetrieveContextInput = {
   maxMemories?: number;
   includeSecrets?: boolean;
   tokenBudget?: number;
+  chapterId?: string;
 };
 
 export async function retrieveContext(
@@ -34,7 +40,16 @@ export async function retrieveContext(
     ? { id: { in: input.activeCharacterIds }, storyId: input.storyId }
     : { storyId: input.storyId };
 
-  const [characters, relationships, recentEvents, lore, secrets, plotThreads] =
+  const [
+    characters,
+    relationships,
+    recentEvents,
+    lore,
+    secrets,
+    plotThreads,
+    chapter,
+    recentApprovedScenes,
+  ] =
     await Promise.all([
       prisma.character.findMany({
         where: characterWhere,
@@ -95,6 +110,28 @@ export async function retrieveContext(
         orderBy: [{ salience: "desc" }, { updatedAt: "desc" }],
         take: 20,
       }),
+      input.chapterId
+        ? prisma.chapter.findFirst({
+            where: { id: input.chapterId, storyId: input.storyId },
+          })
+        : Promise.resolve(null),
+      input.chapterId
+        ? prisma.scene.findMany({
+            where: {
+              storyId: input.storyId,
+              chapterId: input.chapterId,
+              content: { not: null },
+            },
+            select: {
+              id: true,
+              number: true,
+              title: true,
+              content: true,
+            },
+            orderBy: { number: "desc" },
+            take: RECENT_APPROVED_SCENE_LIMIT,
+          })
+        : Promise.resolve([]),
     ]);
 
   let memories: RetrievedMemory[] = [];
@@ -155,8 +192,40 @@ export async function retrieveContext(
           writingHarness: parseWritingHarness(story.settings.writingHarness),
           nsfwPolicy: parseJsonString(story.settings.nsfwPolicy, {}),
           modelConfig: parseJsonString(story.settings.modelConfig, {}),
+          chapterTargetWords: story.settings.chapterTargetWords,
+          chapterSoftLimitWords: story.settings.chapterSoftLimitWords,
+          chapterHardLimitWords: story.settings.chapterHardLimitWords,
+          chapterAutoAdvance: story.settings.chapterAutoAdvance,
         }
       : null,
+    chapter: chapter
+      ? {
+          id: chapter.id,
+          number: chapter.number,
+          title: chapter.title,
+          status: chapter.status,
+          wordCount: chapter.wordCount,
+          progress: chapterProgress(
+            chapter.wordCount,
+            chapterLengthConfig(story.settings),
+          ),
+        }
+      : undefined,
+    recentApprovedScenes: recentApprovedScenes
+      .slice()
+      .reverse()
+      .flatMap((scene) =>
+        scene.content
+          ? [
+              {
+                id: scene.id,
+                number: scene.number,
+                title: scene.title,
+                content: scene.content,
+              },
+            ]
+          : [],
+      ),
     characters: characters.map((character) => ({
       id: character.id,
       name: character.name,

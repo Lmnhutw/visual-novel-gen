@@ -44,6 +44,7 @@ export type GenerationUsage = NonNullable<HarnessRepairResult["usage"]>;
 export type WritingHarnessOutcome = {
   content: string;
   status: HarnessStatus;
+  normalizationFindings: HarnessViolation[];
   findingsBeforeRepair: HarnessViolation[];
   findingsAfterRepair: HarnessViolation[];
   repairAttempted: boolean;
@@ -82,6 +83,7 @@ const harnessEvaluationSchema = z
     repairAttempted: z.boolean(),
     repairModel: z.string().optional(),
     repairError: z.string().optional(),
+    normalizationFindings: z.array(harnessViolationSchema).default([]),
   })
   .strict();
 
@@ -249,6 +251,7 @@ export async function enforceWritingHarness(input: {
   harness: WritingHarnessConfig;
   repair?: (prompt: string) => Promise<HarnessRepairResult>;
 }): Promise<WritingHarnessOutcome> {
+  const rawFindings = validateWritingHarnessOutput(input.draft, input.harness);
   const normalized = normalizeWritingHarnessOutput(input.draft, input.harness);
   const findingsBeforeRepair = validateWritingHarnessOutput(
     normalized,
@@ -257,11 +260,18 @@ export async function enforceWritingHarness(input: {
   const hasHardViolation = findingsBeforeRepair.some(
     (finding) => finding.severity === "error",
   );
+  const normalizationFindings = rawFindings.filter(
+    (raw) =>
+      !findingsBeforeRepair.some(
+        (finding) => finding.kind === raw.kind && finding.rule === raw.rule,
+      ),
+  );
 
   if (!hasHardViolation) {
     return {
       content: normalized,
       status: "passed",
+      normalizationFindings,
       findingsBeforeRepair,
       findingsAfterRepair: [],
       repairAttempted: false,
@@ -272,6 +282,7 @@ export async function enforceWritingHarness(input: {
     return {
       content: normalized,
       status: "needs_review",
+      normalizationFindings,
       findingsBeforeRepair,
       findingsAfterRepair: [],
       repairAttempted: false,
@@ -297,6 +308,7 @@ export async function enforceWritingHarness(input: {
     return {
       content,
       status: stillInvalid ? "needs_review" : "repaired_and_passed",
+      normalizationFindings,
       findingsBeforeRepair,
       findingsAfterRepair,
       repairAttempted: true,
@@ -307,6 +319,7 @@ export async function enforceWritingHarness(input: {
     return {
       content: normalized,
       status: "needs_review",
+      normalizationFindings,
       findingsBeforeRepair,
       findingsAfterRepair: [],
       repairAttempted: true,
@@ -331,6 +344,7 @@ export function createWritingHarnessAudit(
       repairAttempted: outcome.repairAttempted,
       repairModel: outcome.repairModel,
       repairError: outcome.repairError,
+      normalizationFindings: outcome.normalizationFindings,
     },
   };
 }

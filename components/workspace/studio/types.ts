@@ -7,6 +7,10 @@ export type StorySettings = {
   tense: string | null;
   styleGuide?: string | null;
   writingHarness?: WritingHarnessConfig | string | null;
+  chapterTargetWords?: number;
+  chapterSoftLimitWords?: number;
+  chapterHardLimitWords?: number;
+  chapterAutoAdvance?: boolean;
 };
 
 export type StorySummary = {
@@ -71,6 +75,17 @@ export type ChapterRecord = {
   summary: string | null;
   status: string;
   tokenCount: number;
+  wordCount: number;
+  progress?: {
+    currentWords: number;
+    targetWords: number;
+    softLimitWords: number;
+    hardLimitWords: number;
+    remainingToTarget: number;
+    remainingToHardLimit: number;
+    mode: "NORMAL" | "CLOSING";
+    autoAdvance: boolean;
+  };
   _count?: { scenes: number; events: number; continuityIssues: number };
 };
 
@@ -110,6 +125,8 @@ export type DraftVersion = {
   createdAt: string;
   updatedAt: string;
   metadata?: string;
+  sceneId?: string | null;
+  chapterId?: string | null;
 };
 
 export type CanonProposal = {
@@ -131,6 +148,7 @@ export type CanonReviewProposal = {
 
 export type GenerationJob = {
   id: string;
+  chapterId?: string | null;
   type: string;
   status: string;
   stage: string;

@@ -8,6 +8,7 @@ function baseContext(): Omit<GenerationContext, "budget"> {
   return {
     story: { id: "story_1", title: "Budgeted story" },
     settings: null,
+    recentApprovedScenes: [],
     characters: [
       {
         id: "required",
@@ -51,4 +52,24 @@ test("context budget reports unavoidable overage from required characters", () =
 
   assert.equal(context.characters.length, 1);
   assert.equal(context.budget?.overBudget, true);
+});
+
+test("context budget keeps the newest approved manuscript tail within budget", () => {
+  const source = baseContext();
+  source.lore = [];
+  source.recentApprovedScenes = [
+    { id: "scene_1", number: 1, content: "old scene" },
+    { id: "scene_2", number: 2, content: "middle scene" },
+    { id: "scene_3", number: 3, content: `opening ${"x".repeat(8_000)} ending` },
+  ];
+
+  const context = applyContextBudget(source, 1_000);
+
+  assert.equal(context.recentApprovedScenes?.at(-1)?.id, "scene_3");
+  assert.equal(
+    context.recentApprovedScenes?.at(-1)?.truncatedAtStart,
+    true,
+  );
+  assert.match(context.recentApprovedScenes?.at(-1)?.content ?? "", /ending$/);
+  assert.ok((context.budget?.estimatedTokens ?? Infinity) <= 1_000);
 });

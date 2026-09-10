@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import styles from "./story.module.css";
 
+import { composeChapterManuscript } from "@/lib/chapters/chapter-lifecycle";
 import { getLibraryStory } from "@/lib/stories/story-service";
 
 type LibraryStoryPageProps = {
@@ -34,7 +35,11 @@ export default async function LibraryStoryPage({ searchParams }: LibraryStoryPag
   if (chapter && !selectedChapter) notFound();
 
   if (selectedChapter) {
-    const content = selectedChapter.content ?? selectedChapter.draftVersions[0]?.content ?? selectedChapter.summary;
+    const manuscript = composeChapterManuscript(selectedChapter);
+    const content =
+      manuscript ||
+      selectedChapter.draftVersions[0]?.content ||
+      selectedChapter.summary;
     return (
       <main className={styles["story-reader"]}>
         <article className={styles["story-reader__article"]}>

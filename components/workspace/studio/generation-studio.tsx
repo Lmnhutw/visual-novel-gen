@@ -3,6 +3,7 @@
 import { AlertTriangle, BookOpen, CheckCircle2, Eye, Loader2, Plus, RefreshCw, ShieldCheck, Sparkles, UserPlus, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import type { ChapterLengthConfig } from "@/lib/chapters/chapter-lifecycle";
 import type { GenerationContext } from "@/lib/retrieval/types";
 import { isRetryableGenerationStatus } from "@/lib/generation/job-state";
 import {
@@ -25,6 +26,7 @@ type StudioForm = {
   activeCharacterIds: string[];
   maturityMode: "safe" | "mature";
   includeSecrets: boolean;
+  chapterMode?: "auto" | "normal" | "closing";
 };
 
 function jobTone(status: string) {
@@ -69,8 +71,10 @@ export function GenerationStudio({
   onReadStory,
   onAddChapter,
   onAddCharacter,
+  onEndChapter,
   onSaveWritingHarness = async () => undefined,
   onResetWritingHarness = async () => undefined,
+  onSaveChapterLength = async () => undefined,
 }: {
   form: StudioForm;
   chapters: ChapterRecord[];
@@ -94,8 +98,10 @@ export function GenerationStudio({
   onReadStory: () => void;
   onAddChapter: () => void;
   onAddCharacter: () => void;
+  onEndChapter: (chapterId: string) => Promise<void>;
   onSaveWritingHarness?: (value: WritingHarnessConfig) => Promise<void>;
   onResetWritingHarness?: () => Promise<void>;
+  onSaveChapterLength?: (value: ChapterLengthConfig) => Promise<void>;
 }) {
   const activeJob = jobs.find((job) => job.id === selectedJobId);
   const isRunning =
@@ -108,10 +114,15 @@ export function GenerationStudio({
   const writingHarnessAudit = parseWritingHarnessAuditMetadata(
     activeJob?.draftVersion?.metadata,
   );
+  const activeChapter =
+    chapters.find((chapter) => chapter.id === form.chapterId) ??
+    chapters.find((chapter) => !["COMPLETE", "ARCHIVED"].includes(chapter.status)) ??
+    null;
+  const hardLimitReached =
+    activeChapter?.progress?.remainingToHardLimit === 0;
   const readiness = [
     { label: "Story workspace", detail: "A story is selected.", complete: true, action: "story" as const, actionLabel: "View story" },
     { label: "Cast", detail: "Add at least one character to ground the scene.", complete: characters.length > 0, action: "cast" as const, actionLabel: "Add character" },
-    { label: "Chapter", detail: "Add an outline chapter to anchor the draft.", complete: chapters.length > 0, action: "chapter" as const, actionLabel: "Add chapter" },
     { label: "Scene brief", detail: "Describe a change or consequence in at least 10 characters.", complete: form.goal.trim().length >= 10, action: "studio" as const, actionLabel: "Write brief" },
   ];
   const incompleteReadiness = readiness.filter((item) => !item.complete);
@@ -131,6 +142,39 @@ export function GenerationStudio({
             </div>
           </div>
         </section>
+        {activeChapter ? (
+          <section className="border-b border-white/[0.08] pb-5" aria-label="Active chapter progress">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold tracking-[0.16em] text-primary">
+                  CHAPTER {String(activeChapter.number).padStart(2, "0")} · {activeChapter.status === "COMPLETE" ? "COMPLETE" : "IN PROGRESS"}
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-on-surface">{activeChapter.title}</h2>
+              </div>
+              <p className="text-sm text-on-surface-variant">
+                <strong className="text-on-surface">{activeChapter.wordCount.toLocaleString()}</strong>
+                {activeChapter.progress ? ` words · ${activeChapter.progress.targetWords.toLocaleString()} target · ${activeChapter.progress.hardLimitWords.toLocaleString()} hard` : " words"}
+              </p>
+            </div>
+            {activeChapter.progress ? (
+              <>
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
+                  <div
+                    className={cn("h-full rounded-full transition-[width]", activeChapter.progress.mode === "CLOSING" ? "bg-amber-300" : "bg-primary")}
+                    style={{ width: `${Math.min(100, (activeChapter.wordCount / activeChapter.progress.targetWords) * 100)}%` }}
+                  />
+                </div>
+                <p className={cn("mt-2 text-xs", activeChapter.progress.mode === "CLOSING" ? "text-amber-200" : "text-on-surface-variant")}>
+                  {activeChapter.progress.mode === "CLOSING"
+                    ? hardLimitReached
+                      ? "Chapter hard limit reached. End this chapter before generating more prose."
+                      : `${activeChapter.progress.remainingToHardLimit.toLocaleString()} words remain before the hard limit. Generate a natural chapter ending.`
+                    : `~${activeChapter.progress.remainingToTarget.toLocaleString()} words to target.`}
+                </p>
+              </>
+            ) : null}
+          </section>
+        ) : null}
         {incompleteReadiness.length ? (
           <section className="rounded-2xl border border-primary/20 bg-primary/[0.06] p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -148,7 +192,7 @@ export function GenerationStudio({
                     <p className="text-sm font-semibold text-on-surface">{item.label}</p>
                     <p className="mt-0.5 text-xs leading-5 text-on-surface-variant">{item.complete ? "Ready" : item.detail}</p>
                   </div>
-                  {!item.complete ? <button className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => item.action === "studio" ? document.getElementById("scene-brief")?.focus() : item.action === "chapter" ? onAddChapter() : onNavigate(item.action)}>{item.actionLabel}</button> : <CheckCircle2 aria-label="Complete" className="size-4 shrink-0 text-emerald-200" />}
+                  {!item.complete ? <button className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => item.action === "studio" ? document.getElementById("scene-brief")?.focus() : onNavigate(item.action)}>{item.actionLabel}</button> : <CheckCircle2 aria-label="Complete" className="size-4 shrink-0 text-emerald-200" />}
                 </li>
               ))}
             </ol>
@@ -193,10 +237,23 @@ export function GenerationStudio({
           ) : (
             <div className="mt-5 rounded-xl border border-dashed border-white/15 bg-surface-dim/35 px-4 py-5">
               <p className="text-sm font-semibold text-on-surface">No chapters in this story yet.</p>
-              <p className="mt-1 text-sm leading-6 text-on-surface-variant">Add the first outline chapter before generating a scene.</p>
+              <p className="mt-1 text-sm leading-6 text-on-surface-variant">Chapter 1 will be created automatically when you generate the first scene.</p>
               <button className="mt-3 inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onAddChapter}><Plus className="size-3.5" /> Add first chapter</button>
             </div>
           )}
+          {activeChapter?.progress?.mode === "CLOSING" ? (
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/[0.08] pt-4">
+              <span className="mr-auto text-sm text-amber-100">Approaching the chapter limit.</span>
+              {hardLimitReached ? (
+                <button className="h-9 rounded-lg bg-primary px-3 text-xs font-semibold text-on-primary" disabled={isSubmitting} type="button" onClick={() => void onEndChapter(activeChapter.id)}>End chapter now</button>
+              ) : (
+                <button className={cn("h-9 rounded-lg px-3 text-xs font-semibold", form.chapterMode !== "normal" ? "bg-primary text-on-primary" : "border border-white/15 text-on-surface")} type="button" onClick={() => onFormChange({ chapterMode: "closing" })}>Generate chapter ending</button>
+              )}
+              {!hardLimitReached ? (
+                <button className={cn("h-9 rounded-lg px-3 text-xs font-semibold", form.chapterMode === "normal" ? "bg-amber-300/15 text-amber-100" : "border border-white/15 text-on-surface-variant")} type="button" onClick={() => onFormChange({ chapterMode: "normal" })}>Continue anyway</button>
+              ) : null}
+            </div>
+          ) : null}
         </section>
         <WritingHarnessEditor
           isSaving={isHarnessSaving}
@@ -210,6 +267,43 @@ export function GenerationStudio({
           onReset={onResetWritingHarness}
           onSave={onSaveWritingHarness}
         />
+        <form
+          className="border-y border-white/[0.08] py-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const data = new FormData(event.currentTarget);
+            void onSaveChapterLength({
+              targetWords: Number(data.get("targetWords")),
+              softLimitWords: Number(data.get("softLimitWords")),
+              hardLimitWords: Number(data.get("hardLimitWords")),
+              autoAdvance: data.get("autoAdvance") === "on",
+            });
+          }}
+        >
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">CHAPTER LENGTH</p>
+              <h2 className="mt-1 text-lg font-semibold text-on-surface">Writing budget</h2>
+            </div>
+            <button className="h-10 rounded-xl border border-white/15 px-4 text-sm font-semibold text-on-surface" disabled={isSubmitting} type="submit">Save limits</button>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            {([
+              ["targetWords", "Target", story.settings?.chapterTargetWords ?? 5000],
+              ["softLimitWords", "Soft limit", story.settings?.chapterSoftLimitWords ?? 5500],
+              ["hardLimitWords", "Hard limit", story.settings?.chapterHardLimitWords ?? 6000],
+            ] as const).map(([name, label, value]) => (
+              <label className="text-xs font-semibold text-on-surface-variant" key={name}>
+                {label}
+                <input key={`${name}-${value}`} className="mt-2 h-10 w-full rounded-lg border border-white/10 bg-surface-dim px-3 text-sm text-on-surface outline-none focus:border-primary/70" defaultValue={value} min={1} name={name} type="number" />
+              </label>
+            ))}
+          </div>
+          <label className="mt-4 flex items-center gap-2 text-sm text-on-surface-variant">
+            <input defaultChecked={story.settings?.chapterAutoAdvance ?? true} name="autoAdvance" type="checkbox" />
+            Automatically advance after an approved closing draft reaches the target.
+          </label>
+        </form>
         <section className="overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low shadow-panel">
           <div className="border-b border-white/10 px-5 py-4 sm:px-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -232,12 +326,12 @@ export function GenerationStudio({
                 </button>
                 <button
                   className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                  disabled={isSubmitting || form.goal.trim().length < 10}
+                  disabled={isSubmitting || hardLimitReached || form.goal.trim().length < 10}
                   type="button"
                   onClick={onGenerate}
                 >
                   {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                  Start generation
+                  {hardLimitReached ? "Hard limit reached" : activeChapter?.progress?.mode === "CLOSING" && form.chapterMode !== "normal" ? "Generate chapter ending" : "Generate next scene"}
                 </button>
               </div>
             </div>

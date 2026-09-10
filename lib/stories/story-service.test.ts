@@ -76,3 +76,41 @@ test("cross-Story or non-protagonist candidates are rejected and primary can be 
   );
   assert.equal(updateData?.primaryProtagonistId, null);
 });
+
+test("chapter hard limit cannot be lowered below the active chapter word count", async () => {
+  let updates = 0;
+  const transaction = {
+    story: {
+      findFirst: async (): Promise<{ id: string }> => ({ id: "story-1" }),
+      update: async () => {
+        updates += 1;
+      },
+    },
+    chapter: {
+      findFirst: async () => ({ id: "chapter-1", number: 1, wordCount: 1_200 }),
+    },
+  };
+
+  await assert.rejects(
+    withTransaction(transaction, () =>
+      updateStory(
+        "story-1",
+        {
+          chapterLength: {
+            targetWords: 800,
+            softLimitWords: 900,
+            hardLimitWords: 1_000,
+            autoAdvance: true,
+          },
+        },
+        "owner-1",
+      ),
+    ),
+    (error: unknown) =>
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "CHAPTER_HARD_LIMIT_BELOW_ACTIVE_COUNT",
+  );
+  assert.equal(updates, 0);
+});

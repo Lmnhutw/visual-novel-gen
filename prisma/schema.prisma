@@ -57,6 +57,10 @@ model StorySettings {
   styleGuide  String?  @map("style_guide")
   modelConfig String   @default("{}") @map("model_config")
   writingHarness String @default("{}") @map("writing_harness")
+  chapterTargetWords Int @default(5000) @map("chapter_target_words")
+  chapterSoftLimitWords Int @default(5500) @map("chapter_soft_limit_words")
+  chapterHardLimitWords Int @default(6000) @map("chapter_hard_limit_words")
+  chapterAutoAdvance Boolean @default(true) @map("chapter_auto_advance")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
@@ -224,6 +228,7 @@ model Chapter {
   content    String?
   status     String   @default("OUTLINE")
   tokenCount Int      @default(0) @map("token_count")
+  wordCount  Int      @default(0) @map("word_count")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 

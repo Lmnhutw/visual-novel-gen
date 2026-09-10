@@ -10,6 +10,19 @@ export {
 export const uuidSchema = z.string().min(1);
 
 export const storyStatusSchema = z.enum(["DRAFT", "ACTIVE", "ARCHIVED"]);
+export const chapterLengthSchema = z
+  .object({
+    targetWords: z.number().int().positive().default(5000),
+    softLimitWords: z.number().int().positive().default(5500),
+    hardLimitWords: z.number().int().positive().default(6000),
+    autoAdvance: z.boolean().default(true),
+  })
+  .refine(
+    (value) =>
+      value.targetWords <= value.softLimitWords &&
+      value.softLimitWords <= value.hardLimitWords,
+    { message: "Chapter word limits must satisfy target <= soft <= hard." },
+  );
 export const relationshipStatusSchema = z.enum([
   "NEUTRAL",
   "ALLIED",
@@ -30,6 +43,7 @@ export const createStorySchema = z.object({
   styleGuide: z.string().optional(),
   writingHarness: writingHarnessSchema.optional(),
   nsfwPolicy: z.record(z.unknown()).optional(),
+  chapterLength: chapterLengthSchema.optional(),
 });
 
 export const updateStorySchema = createStorySchema
@@ -84,6 +98,7 @@ export const generateSceneSchema = z.object({
   maturityMode: z.enum(["safe", "mature"]).default("safe"),
   maxTokens: z.number().int().min(500).max(12000).default(2500),
   previewOnly: z.boolean().default(false),
+  chapterMode: z.enum(["auto", "normal", "closing"]).default("auto"),
 });
 
 export const createGenerationJobSchema = generateSceneSchema.extend({
@@ -99,6 +114,12 @@ export const reviewCanonChangeProposalSchema = z.object({
 
 export const reviewContinuityIssueSchema = z.object({
   decision: z.enum(["resolve", "dismiss"]),
+});
+
+export const commitDraftSchema = z.object({
+  content: z.string().min(1).optional(),
+  action: z.enum(["continue", "end_chapter"]).default("continue"),
+  allowContinuityReview: z.boolean().default(false),
 });
 
 export const fallbackDecisionSchema = z.object({
@@ -120,6 +141,7 @@ export const createChapterSchema = z.object({
 
 export const retrieveContextSchema = z.object({
   storyId: uuidSchema,
+  chapterId: uuidSchema.optional(),
   query: z.string().optional(),
   activeCharacterIds: z.array(uuidSchema).optional(),
   memoryTypes: z.array(z.string()).optional(),

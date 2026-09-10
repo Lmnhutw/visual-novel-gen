@@ -14,36 +14,61 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { countWords } from "@/lib/chapters/chapter-lifecycle";
 import styles from "./draft-review.module.css";
 import { titleCase } from "./api";
-import type { CanonProposal, GenerationJob } from "./types";
+import type { CanonProposal, ChapterRecord, GenerationJob } from "./types";
+
+export type DraftCommitSuccess = {
+  chapterId: string;
+  chapterNumber: number;
+  chapterTitle: string;
+  wordCount: number;
+  targetWords: number;
+  hardLimitWords: number;
+  activeChapterId: string;
+};
 
 export function DraftReview({
   job,
   jobs,
   selectedJobId,
+  chapter,
+  commitSuccess,
   onSaveDraft,
   onAcceptDraft,
   onReviewProposal,
   onSelectJob,
+  onContinueChapter,
+  onEndChapter,
 }: {
   job: GenerationJob | null;
   jobs: GenerationJob[];
   selectedJobId: string;
+  chapter: ChapterRecord | null;
+  commitSuccess: DraftCommitSuccess | null;
   onSaveDraft: (draftVersionId: string, content: string) => Promise<void>;
-  onAcceptDraft: (draftVersionId: string) => Promise<void>;
+  onAcceptDraft: (
+    draftVersionId: string,
+    content: string,
+    allowContinuityReview: boolean,
+  ) => Promise<void>;
   onReviewProposal: (
     proposal: CanonProposal,
     decision: "accept" | "reject",
   ) => Promise<void>;
   onSelectJob: (jobId: string) => void;
+  onContinueChapter: () => void;
+  onEndChapter: (chapterId: string) => Promise<void>;
 }) {
   const draft = job?.draftVersion ?? null;
   const [content, setContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
+  const [allowContinuityReview, setAllowContinuityReview] = useState(false);
   const lastDraftId = useRef<string | null>(null);
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
+  const committed = draft?.status === "ACCEPTED" || Boolean(draft?.sceneId);
 
   useEffect(() => {
     if (draft?.id !== lastDraftId.current) {
@@ -53,13 +78,13 @@ export function DraftReview({
   }, [draft]);
 
   useEffect(() => {
-    if (!draft || content === draft.content) return;
+    if (!draft || committed || isAccepting || content === draft.content) return;
     const timeout = window.setTimeout(() => {
       setIsSaving(true);
       void onSaveDraft(draft.id, content).finally(() => setIsSaving(false));
     }, 1300);
     return () => window.clearTimeout(timeout);
-  }, [content, draft, onSaveDraft]);
+  }, [committed, content, draft, isAccepting, onSaveDraft]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -73,6 +98,46 @@ export function DraftReview({
   const pendingProposals = proposals.filter(
     (proposal) => proposal.status === "PENDING",
   );
+  const harnessNeedsReview = job?.stage.includes("HARNESS") ?? false;
+  const continuityNeedsReview = job?.stage.includes("CONTINUITY") ?? false;
+
+  if (commitSuccess) {
+    const advanced = commitSuccess.activeChapterId !== commitSuccess.chapterId;
+    const canContinue =
+      advanced ||
+      commitSuccess.wordCount < commitSuccess.hardLimitWords;
+    return (
+      <section className="border-y border-white/[0.08] py-8" aria-live="polite">
+        <p className="text-xs font-semibold tracking-[0.16em] text-emerald-200">ADDED TO CHAPTER {String(commitSuccess.chapterNumber).padStart(2, "0")}</p>
+        <h2 className="mt-2 text-2xl font-semibold text-on-surface">{commitSuccess.chapterTitle}</h2>
+        <p className="mt-3 text-sm text-on-surface-variant">
+          Chapter length <strong className="text-on-surface">{commitSuccess.wordCount.toLocaleString()} words</strong>
+          {" · "}target {commitSuccess.targetWords.toLocaleString()}
+          {" · "}hard limit {commitSuccess.hardLimitWords.toLocaleString()}
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          {canContinue ? (
+            <button className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary" type="button" onClick={onContinueChapter}>
+              <Sparkles className="size-4" /> {advanced ? "Continue to next chapter" : "Continue chapter"}
+            </button>
+          ) : null}
+          {!advanced ? (
+            <button className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/15 px-4 text-sm font-semibold text-on-surface" type="button" onClick={() => void onEndChapter(commitSuccess.chapterId)}>
+              <BookOpen className="size-4" /> End chapter
+            </button>
+          ) : null}
+        </div>
+      </section>
+    );
+  }
+
+  const draftWords = countWords(content);
+  const projectedWords = (chapter?.wordCount ?? 0) + draftWords;
+  const hardLimitWords = chapter?.progress?.hardLimitWords;
+  const excessWords = hardLimitWords
+    ? Math.max(0, projectedWords - hardLimitWords)
+    : 0;
+  const hardLimitExceeded = excessWords > 0;
 
   return (
     <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
@@ -104,7 +169,7 @@ export function DraftReview({
               </span>
               <button
                 className={cn(styles["draft-review__action"], styles["draft-review__action--save"])}
-                disabled={isSaving || content === draft.content}
+                disabled={committed || isAccepting || isSaving || content === draft.content}
                 type="button"
                 onClick={() => {
                   setIsSaving(true);
@@ -117,30 +182,71 @@ export function DraftReview({
               </button>
               <button
                 className={cn(styles["draft-review__action"], styles["draft-review__action--accept"])}
-                disabled={isAccepting || draft.status === "ACCEPTED"}
+                disabled={committed || isAccepting || hardLimitExceeded}
+                title={hardLimitExceeded ? "Shorten this draft before approving it." : undefined}
                 type="button"
                 onClick={() => {
                   setIsAccepting(true);
-                  void onAcceptDraft(draft.id).finally(() =>
+                  void onAcceptDraft(draft.id, content, allowContinuityReview).finally(() =>
                     setIsAccepting(false),
                   );
                 }}
               >
                 <CheckCircle2 className="size-3.5" />
-                {draft.status === "ACCEPTED" ? "Accepted" : "Accept draft"}
+                {committed ? "Added" : "Approve & Add to Chapter"}
               </button>
             </div>
           ) : null}
         </div>
         {draft ? (
+          <>
           <textarea
             aria-label="Draft editor"
             className={styles["draft-review__editor"]}
             placeholder="A generated draft will appear here."
             ref={editorRef}
+            readOnly={committed || isAccepting}
             value={content}
             onChange={(event) => setContent(event.target.value)}
           />
+          <div className="border-t border-white/[0.08] px-5 py-4 text-sm text-on-surface-variant">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>AI draft · <strong className="text-on-surface">{draftWords.toLocaleString()} words</strong></span>
+              {chapter ? (
+                <span>
+                  Chapter after approval · <strong className={hardLimitExceeded ? "text-rose-200" : "text-on-surface"}>{projectedWords.toLocaleString()} words</strong>
+                  {" · "}target {(chapter.progress?.targetWords ?? 5000).toLocaleString()}
+                  {hardLimitWords ? ` · hard ${hardLimitWords.toLocaleString()}` : ""}
+                </span>
+              ) : null}
+            </div>
+            {hardLimitExceeded ? (
+              <p className="mt-3 rounded-lg border border-rose-300/20 bg-rose-300/[0.08] px-3 py-2 text-xs leading-5 text-rose-100" role="alert">
+                This draft is {excessWords.toLocaleString()} words over the chapter hard limit. Shorten it before approval.
+              </p>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 border-t border-white/[0.06] pt-3 text-xs">
+              <span>
+                Harness · {" "}
+                <strong className={harnessNeedsReview ? "text-amber-200" : "text-emerald-200"}>
+                  {harnessNeedsReview ? "Review required" : "Passed"}
+                </strong>
+              </span>
+              <span>
+                Continuity · {" "}
+                <strong className={continuityNeedsReview ? "text-amber-200" : "text-emerald-200"}>
+                  {continuityNeedsReview ? "Review required" : "Passed"}
+                </strong>
+              </span>
+            </div>
+            {job?.stage.includes("CONTINUITY_REVIEW_REQUIRED") ? (
+              <label className="mt-3 flex items-start gap-2 text-xs text-amber-100">
+                <input className="mt-0.5" type="checkbox" checked={allowContinuityReview} onChange={(event) => setAllowContinuityReview(event.target.checked)} />
+                I reviewed the P1 continuity warnings and want to approve this draft.
+              </label>
+            ) : null}
+          </div>
+          </>
         ) : (
           <div className={styles["draft-review__empty"]}>
             <div className={styles["draft-review__empty-content"]}>

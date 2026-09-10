@@ -1,7 +1,10 @@
+import { Prisma } from "@prisma/client";
+
 import { prisma } from "@/lib/db/prisma";
 import { optionalJsonString, toJsonString } from "@/lib/db/json";
 import { WorkflowError } from "@/lib/http/api-response";
 import type { WritingHarnessConfig } from "@/lib/writing-harness/config";
+import type { ChapterLengthConfig } from "@/lib/chapters/chapter-lifecycle";
 
 export type CreateStoryInput = {
   ownerId?: string;
@@ -14,6 +17,7 @@ export type CreateStoryInput = {
   styleGuide?: string;
   writingHarness?: WritingHarnessConfig;
   nsfwPolicy?: Record<string, unknown>;
+  chapterLength?: ChapterLengthConfig;
 };
 
 export async function createStory(input: CreateStoryInput) {
@@ -37,6 +41,10 @@ export async function createStory(input: CreateStoryInput) {
             requireAdultCharacters: true,
             requireConsentContinuity: true,
           }),
+          chapterTargetWords: input.chapterLength?.targetWords,
+          chapterSoftLimitWords: input.chapterLength?.softLimitWords,
+          chapterHardLimitWords: input.chapterLength?.hardLimitWords,
+          chapterAutoAdvance: input.chapterLength?.autoAdvance,
         },
       },
     },
@@ -114,6 +122,7 @@ export async function getLibraryStory(storyId: string, ownerId?: string | null) 
       chapters: {
         orderBy: { number: "asc" },
         include: {
+          scenes: { orderBy: { number: "asc" } },
           draftVersions: {
             where: { status: "ACCEPTED" },
             orderBy: { updatedAt: "desc" },
@@ -167,6 +176,32 @@ export async function updateStory(
       }
     }
 
+    if (input.chapterLength) {
+      const activeChapter = await tx.chapter.findFirst({
+        where: {
+          storyId,
+          status: { notIn: ["COMPLETE", "ARCHIVED"] },
+        },
+        orderBy: { number: "desc" },
+        select: { number: true, wordCount: true },
+      });
+      if (
+        activeChapter &&
+        activeChapter.wordCount > input.chapterLength.hardLimitWords
+      ) {
+        throw new WorkflowError(
+          "CHAPTER_HARD_LIMIT_BELOW_ACTIVE_COUNT",
+          `Chapter ${activeChapter.number} already contains ${activeChapter.wordCount.toLocaleString("en-US")} words. The hard limit cannot be lower than the active chapter word count.`,
+          409,
+          {
+            chapterNumber: activeChapter.number,
+            currentWords: activeChapter.wordCount,
+            requestedHardLimitWords: input.chapterLength.hardLimitWords,
+          },
+        );
+      }
+    }
+
     return tx.story.update({
       where: { id: storyId },
       data: {
@@ -186,6 +221,10 @@ export async function updateStory(
                 ? toJsonString(input.writingHarness)
                 : undefined,
               nsfwPolicy: toJsonString(input.nsfwPolicy),
+              chapterTargetWords: input.chapterLength?.targetWords,
+              chapterSoftLimitWords: input.chapterLength?.softLimitWords,
+              chapterHardLimitWords: input.chapterLength?.hardLimitWords,
+              chapterAutoAdvance: input.chapterLength?.autoAdvance,
             },
             update: {
               genre: optionalJsonString(input.genre),
@@ -195,11 +234,15 @@ export async function updateStory(
               styleGuide: input.styleGuide,
               writingHarness: optionalJsonString(input.writingHarness),
               nsfwPolicy: optionalJsonString(input.nsfwPolicy),
+              chapterTargetWords: input.chapterLength?.targetWords,
+              chapterSoftLimitWords: input.chapterLength?.softLimitWords,
+              chapterHardLimitWords: input.chapterLength?.hardLimitWords,
+              chapterAutoAdvance: input.chapterLength?.autoAdvance,
             },
           },
         },
       },
       include: { settings: true, primaryProtagonist: true },
     });
-  });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }

@@ -1,31 +1,27 @@
 import { Prisma } from "@prisma/client";
 
 import { getModelConfig } from "@/lib/ai/model-config";
+import {
+  commitDraftToChapter,
+  ensureActiveChapter,
+  type CommitDraftInput,
+} from "@/lib/chapters/chapter-service";
+import { chapterLengthConfig } from "@/lib/chapters/chapter-lifecycle";
 import { OpenRouterRequestError } from "@/lib/ai/openrouter";
 import { generateText } from "@/lib/ai/provider";
-import { checkContinuity } from "@/lib/continuity/continuity-service";
 import { parseJsonString, toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
-import { evaluateDraft } from "@/lib/evaluation/generation-evaluator";
 import { WorkflowError } from "@/lib/http/api-response";
 import {
   isRetryableGenerationStatus,
   isTerminalGenerationStatus,
 } from "@/lib/generation/job-state";
-import {
-  extractMemoriesFromDraft,
-  type MemoryExtractionResult,
-} from "@/lib/memory/memory-extractor";
-import { buildGenerationPrompt } from "@/lib/prompts/prompt-builder";
-import { retrieveContext } from "@/lib/retrieval/retrieval-service";
 import { resolveNarrativeFocus } from "@/lib/generation/narrative-focus";
-import { getDefaultWritingHarness } from "@/lib/writing-harness/config";
 import {
-  canAttemptWritingHarnessRepair,
-  combineGenerationUsage,
-  createWritingHarnessAudit,
-  enforceWritingHarness,
-} from "@/lib/writing-harness/evaluation";
+  executePreparedGenerationPipeline,
+  prepareGenerationPipeline,
+  type GenerationPipelineStage,
+} from "@/lib/generation/generation-pipeline";
 import { GENERATION_PROMPT_VERSION } from "@/lib/writing-harness/prompt";
 
 export type GenerationJobInput = {
@@ -42,6 +38,7 @@ export type GenerationJobInput = {
   idempotencyKey?: string;
   type?: "scene" | "chapter" | "revision";
   primaryProtagonistIdUsed?: string;
+  chapterMode?: "auto" | "normal" | "closing";
 };
 
 function proposalTitle(type: string, value: Record<string, unknown>) {
@@ -133,6 +130,8 @@ async function assertPreflight(input: GenerationJobInput) {
       }
     }
   }
+
+  return story;
 }
 
 async function ensureNotCancelled(jobId: string) {
@@ -222,7 +221,11 @@ async function generateTextForJob(
   }
 }
 
-function proposalsFromExtraction(extraction: MemoryExtractionResult) {
+function proposalsFromExtraction(
+  extraction: NonNullable<
+    Awaited<ReturnType<typeof executePreparedGenerationPipeline>>["extraction"]
+  >,
+) {
   return [
     ...extraction.memories.slice(0, 12).map((memory) => ({
       type: "memory",
@@ -277,8 +280,26 @@ function proposalsFromExtraction(extraction: MemoryExtractionResult) {
 }
 
 export async function createGenerationJob(input: GenerationJobInput) {
-  const resolved = await resolveNarrativeFocus(input);
-  await assertPreflight(resolved);
+  const focused = await resolveNarrativeFocus(input);
+  const story = await assertPreflight(focused);
+  const chapter = await ensureActiveChapter(focused.storyId, focused.chapterId);
+  const config = chapterLengthConfig(story.settings);
+  if (
+    (focused.type ?? "scene") !== "revision" &&
+    chapter.wordCount >= config.hardLimitWords
+  ) {
+    throw new WorkflowError(
+      "CHAPTER_HARD_LIMIT_REACHED",
+      "This chapter has reached its hard word limit. End the chapter before generating more prose.",
+      409,
+      {
+        chapterId: chapter.id,
+        currentWords: chapter.wordCount,
+        hardLimitWords: config.hardLimitWords,
+      },
+    );
+  }
+  const resolved = { ...focused, chapterId: chapter.id };
 
   if (resolved.idempotencyKey) {
     const existing = await prisma.generationJob.findFirst({
@@ -377,12 +398,20 @@ export async function cancelGenerationJob(jobId: string) {
     return job;
   }
 
-  await prisma.generationJob.updateMany({
-    where: {
-      id: jobId,
-      status: { notIn: ["READY_FOR_REVIEW", "FAILED", "CANCELLED"] },
-    },
-    data: { status: "CANCELLED", stage: "CANCELLED", completedAt: new Date() },
+  await prisma.$transaction(async (tx) => {
+    await tx.generationJob.updateMany({
+      where: {
+        id: jobId,
+        status: { notIn: ["READY_FOR_REVIEW", "FAILED", "CANCELLED"] },
+      },
+      data: { status: "CANCELLED", stage: "CANCELLED", completedAt: new Date() },
+    });
+    if (job.generationRunId) {
+      await tx.generationRun.update({
+        where: { id: job.generationRunId },
+        data: { status: "CANCELLED", error: "Generation was cancelled." },
+      });
+    }
   });
   return getGenerationJob(jobId);
 }
@@ -495,27 +524,28 @@ export async function executeGenerationJob(jobId: string) {
 
   try {
     await ensureNotCancelled(jobId);
-    const context = await retrieveContext({
+    const prepared = await prepareGenerationPipeline({
       storyId: input.storyId,
-      query: input.goal,
+      chapterId: input.chapterId,
+      goal: input.goal,
+      sceneGoal: input.sceneGoal,
+      povCharacterId: input.povCharacterId,
       activeCharacterIds: input.activeCharacterIds,
+      maturityMode: input.maturityMode,
+      mode: input.type ?? "scene",
       includeSecrets: input.includeSecrets ?? false,
-      tokenBudget: input.contextTokenBudget,
+      contextTokenBudget: input.contextTokenBudget,
+      model: generationModel,
+      freeModel: modelConfig.freeGenerationModel,
+      maxTokens: input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
+      repairPolicy: paidAttempt ? "explicit-paid" : "free-only",
+      chapterMode: input.chapterMode,
     });
-    const harness =
-      context.settings?.writingHarness ?? getDefaultWritingHarness();
+    const { context, harness, prompt } = prepared;
     await setStage(jobId, "BUILDING_PROMPT", 22, {
       contextSnapshot: toJsonString(context),
     });
 
-    const prompt = buildGenerationPrompt({
-      context,
-      goal: input.goal,
-      sceneGoal: input.sceneGoal,
-      mode: input.type ?? "scene",
-      povCharacterId: input.povCharacterId,
-      maturityMode: input.maturityMode,
-    });
     const run = await prisma.$transaction(async (tx) => {
       const createdRun = await tx.generationRun.create({
         data: {
@@ -571,42 +601,31 @@ export async function executeGenerationJob(jobId: string) {
       },
     });
 
-    await ensureNotCancelled(jobId);
-    const generation = await generateTextForJob(jobId, prompt, {
-      model: generationModel,
-      maxTokens: input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
+    const stageDetails: Record<
+      GenerationPipelineStage,
+      [stage: string, progress: number]
+    > = {
+      generating: ["GENERATING", 35],
+      validating_harness: ["VALIDATING_HARNESS", 52],
+      repairing_harness: ["REPAIRING_HARNESS", 57],
+      checking_continuity: ["CHECKING_CONTINUITY", 70],
+      extracting_proposals: ["EXTRACTING_CANON_PROPOSALS", 82],
+    };
+    const result = await executePreparedGenerationPipeline(prepared, {
+      generationRunId: run.id,
+      generate: (text, options) => generateTextForJob(jobId, text, options),
+      checkpoint: async (stage) => {
+        await ensureNotCancelled(jobId);
+        const [jobStage, progress] = stageDetails[stage];
+        await setStage(jobId, jobStage, progress);
+      },
     });
     await ensureNotCancelled(jobId);
-    await setStage(jobId, "VALIDATING_HARNESS", 52);
-    const harnessOutcome = await enforceWritingHarness({
-      draft: generation.text,
-      harness,
-      repair: canAttemptWritingHarnessRepair(harness, {
-        usesPaidModel: generationModel !== modelConfig.freeGenerationModel,
-        paidApproved: paidAttempt,
-      })
-        ? async (repairPrompt) => {
-            await ensureNotCancelled(jobId);
-            await setStage(jobId, "REPAIRING_HARNESS", 57);
-            return generateTextForJob(jobId, repairPrompt, {
-              model: generationModel,
-              maxTokens:
-                input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
-              retries: 0,
-            });
-          }
-        : undefined,
-    });
-    const draft = harnessOutcome.content;
-    const writingHarness = createWritingHarnessAudit(harness, harnessOutcome);
-    const usage = combineGenerationUsage(
-      generation.usage,
-      harnessOutcome.repairUsage,
-    );
-
-    await ensureNotCancelled(jobId);
-    await setStage(jobId, "SAVING_DRAFT", 62);
-    const draftVersion = await prisma.$transaction(async (tx) => {
+    await setStage(jobId, "SAVING_DRAFT", 90);
+    const proposals = result.extraction
+      ? proposalsFromExtraction(result.extraction)
+      : [];
+    await prisma.$transaction(async (tx) => {
       const previous = await tx.draftVersion.aggregate({
         where: { storyId: input.storyId, chapterId: input.chapterId },
         _max: { versionNumber: true },
@@ -618,55 +637,34 @@ export async function executeGenerationJob(jobId: string) {
           generationRunId: run.id,
           versionNumber: (previous._max.versionNumber ?? 0) + 1,
           title: input.sceneGoal ?? input.goal.slice(0, 80),
-          content: draft,
-          metadata: toJsonString({ generationJobId: jobId, writingHarness }),
+          content: result.draft,
+          metadata: toJsonString({
+            generationJobId: jobId,
+            chapterMode: prepared.effectiveChapterMode,
+            evaluation: result.evaluation,
+            writingHarness: result.writingHarness,
+          }),
         },
       });
       await tx.generationRun.update({
         where: { id: run.id },
         data: {
-          output: draft,
+          output: result.draft,
           status: "SUCCEEDED",
-          input: toJsonString({ ...input, writingHarness }),
-          model: generation.model,
-          promptTokens: usage?.promptTokens,
-          completionTokens: usage?.completionTokens,
-          totalTokens: usage?.totalTokens,
+          input: toJsonString({
+            ...input,
+            effectiveMaxTokens: result.effectiveMaxTokens,
+            writingHarness: result.writingHarness,
+          }),
+          model: result.generation.model,
+          promptTokens: result.usage?.promptTokens,
+          completionTokens: result.usage?.completionTokens,
+          totalTokens: result.usage?.totalTokens,
         },
       });
-      const staged = await tx.generationJob.updateMany({
-        where: { id: jobId, status: "RUNNING" },
-        data: {
-          stage: "CHECKING_CONTINUITY",
-          progress: 75,
-          draftVersionId: persistedDraft.id,
-        },
-      });
-      if (staged.count === 0) {
-        throw new WorkflowError(
-          "GENERATION_CANCELLED",
-          "Generation was cancelled.",
-          409,
-        );
-      }
-      return persistedDraft;
-    });
-
-    await ensureNotCancelled(jobId);
-    const continuityWarnings = await checkContinuity({
-      storyId: input.storyId,
-      context,
-      draft,
-      chapterId: input.chapterId,
-      generationRunId: run.id,
-      maturityMode: input.maturityMode,
-      persist: false,
-    });
-    await ensureNotCancelled(jobId);
-    await prisma.$transaction(async (tx) => {
-      if (continuityWarnings.length) {
+      if (result.continuity.length) {
         await tx.continuityIssue.createMany({
-          data: continuityWarnings.map((warning) => ({
+          data: result.continuity.map((warning) => ({
             storyId: input.storyId,
             chapterId: input.chapterId,
             generationRunId: run.id,
@@ -678,67 +676,17 @@ export async function executeGenerationJob(jobId: string) {
           })),
         });
       }
-      const staged = await tx.generationJob.updateMany({
-        where: { id: jobId, status: "RUNNING" },
-        data: { stage: "EXTRACTING_CANON_PROPOSALS", progress: 88 },
-      });
-      if (staged.count === 0) {
-        throw new WorkflowError(
-          "GENERATION_CANCELLED",
-          "Generation was cancelled.",
-          409,
-        );
-      }
-    });
-    const evaluation = evaluateDraft(continuityWarnings);
-    await prisma.draftVersion.update({
-      where: { id: draftVersion.id },
-      data: {
-        metadata: toJsonString({
-          generationJobId: jobId,
-          evaluation,
-          writingHarness,
-        }),
-      },
-    });
-
-    let extraction: MemoryExtractionResult | null = null;
-    try {
-      extraction = await extractMemoriesFromDraft({
-        draft,
-        contextSummary: JSON.stringify({
-          story: context.story,
-          characters: context.characters,
-        }),
-      });
-    } catch (error) {
-      await ensureNotCancelled(jobId);
-      await prisma.auditLog.create({
-        data: {
-          storyId: input.storyId,
-          action: "generation.extraction.failed",
-          entityType: "generation_job",
-          entityId: jobId,
-          metadata: toJsonString({
-            message: error instanceof Error ? error.message : "Unknown error",
-          }),
-        },
-      });
-    }
-
-    await ensureNotCancelled(jobId);
-    const proposals = extraction ? proposalsFromExtraction(extraction) : [];
-    await prisma.$transaction(async (tx) => {
       const completed = await tx.generationJob.updateMany({
         where: { id: jobId, status: "RUNNING" },
         data: {
+          draftVersionId: persistedDraft.id,
           status: "READY_FOR_REVIEW",
           stage:
-            writingHarness.evaluation.status === "needs_review"
-              ? evaluation.decision === "pass"
+            result.writingHarness.evaluation.status === "needs_review"
+              ? result.evaluation.decision === "pass"
                 ? "HARNESS_REVIEW_REQUIRED"
                 : "HARNESS_AND_CONTINUITY_REVIEW_REQUIRED"
-              : evaluation.decision === "pass"
+              : result.evaluation.decision === "pass"
                 ? "READY_FOR_REVIEW"
                 : "CONTINUITY_REVIEW_REQUIRED",
           progress: 100,
@@ -766,6 +714,17 @@ export async function executeGenerationJob(jobId: string) {
           })),
         });
       }
+      if (result.extractionError) {
+        await tx.auditLog.create({
+          data: {
+            storyId: input.storyId,
+            action: "generation.extraction.failed",
+            entityType: "generation_job",
+            entityId: jobId,
+            metadata: toJsonString({ message: result.extractionError }),
+          },
+        });
+      }
       await tx.auditLog.create({
         data: {
           storyId: input.storyId,
@@ -773,12 +732,12 @@ export async function executeGenerationJob(jobId: string) {
           entityType: "generation_job",
           entityId: jobId,
           metadata: toJsonString({
-            continuityWarningCount: continuityWarnings.length,
-            evaluation,
-            writingHarnessStatus: writingHarness.evaluation.status,
+            continuityWarningCount: result.continuity.length,
+            evaluation: result.evaluation,
+            writingHarnessStatus: result.writingHarness.evaluation.status,
             writingHarnessViolationCount:
-              writingHarness.evaluation.findingsAfterRepair.length ||
-              writingHarness.evaluation.findingsBeforeRepair.length,
+              result.writingHarness.evaluation.findingsAfterRepair.length ||
+              result.writingHarness.evaluation.findingsBeforeRepair.length,
           }),
         },
       });
@@ -788,12 +747,18 @@ export async function executeGenerationJob(jobId: string) {
   } catch (error) {
     const current = await prisma.generationJob.findUnique({
       where: { id: jobId },
-      select: { status: true },
+      select: { status: true, generationRunId: true },
     });
     if (
       current?.status === "CANCELLED" ||
       (error instanceof WorkflowError && error.code === "GENERATION_CANCELLED")
     ) {
+      if (current?.generationRunId) {
+        await prisma.generationRun.updateMany({
+          where: { id: current.generationRunId, status: "RUNNING" },
+          data: { status: "CANCELLED", error: "Generation was cancelled." },
+        });
+      }
       return getGenerationJob(jobId);
     }
 
@@ -1027,6 +992,17 @@ export async function updateDraftVersion(
   draftVersionId: string,
   input: { content: string; title?: string },
 ) {
+  const existing = await prisma.draftVersion.findUnique({
+    where: { id: draftVersionId },
+    select: { sceneId: true },
+  });
+  if (existing?.sceneId) {
+    throw new WorkflowError(
+      "DRAFT_ALREADY_COMMITTED",
+      "Committed draft history is read-only.",
+      409,
+    );
+  }
   const draft = await prisma.draftVersion.update({
     where: { id: draftVersionId },
     data: { content: input.content, title: input.title },
@@ -1044,47 +1020,9 @@ export async function updateDraftVersion(
   return draft;
 }
 
-export async function acceptDraftVersion(draftVersionId: string) {
-  const existing = await prisma.draftVersion.findUnique({
-    where: { id: draftVersionId },
-    select: { id: true, storyId: true, generationRunId: true, status: true },
-  });
-  if (!existing) {
-    throw new WorkflowError("DRAFT_NOT_FOUND", "Draft version not found.", 404);
-  }
-  if (existing.status === "ACCEPTED") return existing;
-
-  if (existing.generationRunId) {
-    const blockingIssues = await prisma.continuityIssue.count({
-      where: {
-        storyId: existing.storyId,
-        generationRunId: existing.generationRunId,
-        status: "OPEN",
-        severity: { in: ["P0", "P1"] },
-      },
-    });
-    if (blockingIssues > 0) {
-      throw new WorkflowError(
-        "CONTINUITY_REVIEW_REQUIRED",
-        "Resolve or dismiss the blocking continuity issues before accepting this draft.",
-        409,
-      );
-    }
-  }
-
-  const draft = await prisma.draftVersion.update({
-    where: { id: draftVersionId },
-    data: { status: "ACCEPTED" },
-  });
-
-  await prisma.auditLog.create({
-    data: {
-      storyId: draft.storyId,
-      action: "draft.version.accepted",
-      entityType: "draft_version",
-      entityId: draft.id,
-      metadata: toJsonString({ versionNumber: draft.versionNumber }),
-    },
-  });
-  return draft;
+export async function acceptDraftVersion(
+  draftVersionId: string,
+  input?: CommitDraftInput,
+) {
+  return commitDraftToChapter(draftVersionId, input);
 }
