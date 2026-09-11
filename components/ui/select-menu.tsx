@@ -17,6 +17,7 @@ type SelectMenuProps = {
   invalid?: boolean;
   options: readonly SelectMenuOption[];
   placeholder: string;
+  showPlaceholderOption?: boolean;
   value: string;
   onChange: (value: string) => void;
 };
@@ -28,6 +29,7 @@ export function SelectMenu({
   invalid = false,
   options,
   placeholder,
+  showPlaceholderOption = true,
   value,
   onChange,
 }: SelectMenuProps) {
@@ -37,7 +39,12 @@ export function SelectMenu({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const selectedOption = options.find((option) => option.value === value);
-  const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value) + 1);
+  const placeholderOffset = showPlaceholderOption ? 1 : 0;
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex((option) => option.value === value) + placeholderOffset,
+  );
+  const lastOptionIndex = Math.max(0, options.length - 1 + placeholderOffset);
 
   useEffect(() => {
     function closeOnOutsidePointer(event: MouseEvent) {
@@ -83,7 +90,7 @@ export function SelectMenu({
         onKeyDown={(event) => {
           if (event.key === "ArrowDown" || event.key === "ArrowUp") {
             event.preventDefault();
-            openAndFocus(event.key === "ArrowDown" ? selectedIndex : options.length);
+            openAndFocus(event.key === "ArrowDown" ? selectedIndex : lastOptionIndex);
           }
           if (event.key === "Escape") setIsOpen(false);
         }}
@@ -103,42 +110,46 @@ export function SelectMenu({
           role="listbox"
           aria-label={ariaLabel}
         >
-          <button
-            aria-selected={!value}
-            className={cn(
-              "flex min-h-10 w-full items-center rounded-lg px-3 text-left text-sm transition",
-              !value ? "bg-primary/15 text-primary" : "text-on-surface-variant hover:bg-white/[0.06] hover:text-on-surface",
-            )}
-            ref={(element) => {
-              optionRefs.current[0] = element;
-            }}
-            role="option"
-            type="button"
-            onClick={() => selectOption("")}
-            onKeyDown={(event) => {
-              if (event.key === "ArrowDown") {
-                event.preventDefault();
-                focusOption(1);
-              }
-              if (event.key === "ArrowUp" || event.key === "Home") {
-                event.preventDefault();
-                focusOption(0);
-              }
-              if (event.key === "End") {
-                event.preventDefault();
-                focusOption(options.length);
-              }
-              if (event.key === "Escape") {
-                setIsOpen(false);
-                triggerRef.current?.focus();
-              }
-            }}
-          >
-            {placeholder}
-          </button>
+          {showPlaceholderOption ? (
+            <button
+              aria-selected={!value}
+              className={cn(
+                "flex min-h-10 w-full items-center rounded-lg px-3 text-left text-sm transition",
+                !value
+                  ? "bg-primary/15 text-primary"
+                  : "text-on-surface-variant hover:bg-white/[0.06] hover:text-on-surface",
+              )}
+              ref={(element) => {
+                optionRefs.current[0] = element;
+              }}
+              role="option"
+              type="button"
+              onClick={() => selectOption("")}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  focusOption(1);
+                }
+                if (event.key === "ArrowUp" || event.key === "Home") {
+                  event.preventDefault();
+                  focusOption(0);
+                }
+                if (event.key === "End") {
+                  event.preventDefault();
+                  focusOption(lastOptionIndex);
+                }
+                if (event.key === "Escape") {
+                  setIsOpen(false);
+                  triggerRef.current?.focus();
+                }
+              }}
+            >
+              {placeholder}
+            </button>
+          ) : null}
           {options.map((option, index) => {
             const selected = option.value === value;
-            const optionIndex = index + 1;
+            const optionIndex = index + placeholderOffset;
             return (
               <button
                 aria-selected={selected}
@@ -156,11 +167,11 @@ export function SelectMenu({
                 onKeyDown={(event) => {
                   if (event.key === "ArrowDown") {
                     event.preventDefault();
-                    focusOption(optionIndex === options.length ? 0 : optionIndex + 1);
+                    focusOption(optionIndex === lastOptionIndex ? 0 : optionIndex + 1);
                   }
                   if (event.key === "ArrowUp") {
                     event.preventDefault();
-                    focusOption(optionIndex - 1);
+                    focusOption(optionIndex === 0 ? lastOptionIndex : optionIndex - 1);
                   }
                   if (event.key === "Home") {
                     event.preventDefault();
@@ -168,7 +179,7 @@ export function SelectMenu({
                   }
                   if (event.key === "End") {
                     event.preventDefault();
-                    focusOption(options.length);
+                    focusOption(lastOptionIndex);
                   }
                   if (event.key === "Escape") {
                     setIsOpen(false);

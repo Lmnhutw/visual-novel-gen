@@ -4,7 +4,9 @@ import {
   BookOpen,
   Loader2,
   Plus,
+  Settings2,
   Sparkles,
+  Users,
   X,
 } from "lucide-react";
 import Image from "next/image";
@@ -17,6 +19,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { SelectMenu } from "@/components/ui/select-menu";
+import { cn } from "@/lib/utils";
 import studioStyles from "./studio.module.css";
 
 import { CharacterForm, type CharacterFormRecord } from "./character-form";
@@ -97,6 +100,7 @@ export function WriterStudio() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
+  const [isChapterLimitsOpen, setIsChapterLimitsOpen] = useState(false);
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
   const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
   const [storyToDelete, setStoryToDelete] = useState<StorySummary | null>(null);
@@ -110,6 +114,17 @@ export function WriterStudio() {
   const [newStoryTitle, setNewStoryTitle] = useState("");
   const [newStoryDescription, setNewStoryDescription] = useState("");
   const [newChapterTitle, setNewChapterTitle] = useState("");
+  const [hasScrolledPastStoryIntro, setHasScrolledPastStoryIntro] = useState(false);
+
+  useEffect(() => {
+    function updateScrollState() {
+      setHasScrolledPastStoryIntro(window.scrollY > 72);
+    }
+
+    updateScrollState();
+    window.addEventListener("scroll", updateScrollState, { passive: true });
+    return () => window.removeEventListener("scroll", updateScrollState);
+  }, []);
 
   const selectStory = useCallback((nextStoryId: string, nextView: WorkspaceView = nextStoryId ? "studio" : "story") => {
     setActiveView(nextView);
@@ -120,6 +135,7 @@ export function WriterStudio() {
     setChapters([]);
     setJobs([]);
     setCommitSuccess(null);
+    setIsChapterLimitsOpen(false);
     setIsWorkspaceLoading(Boolean(nextStoryId));
 
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -775,6 +791,10 @@ export function WriterStudio() {
     [loadStories, loadWorkspace, storyId],
   );
 
+  const showWorkspaceNavbar =
+    activeView !== "studio" || !story || hasScrolledPastStoryIntro;
+  const chapterTargetWords = story?.settings?.chapterTargetWords ?? 5000;
+
   const body = activeView === "story" ? (
     <StoryLedger
       story={story}
@@ -800,6 +820,16 @@ export function WriterStudio() {
     <EmptyWorkspace onCreate={() => setIsStoryModalOpen(true)} />
   ) : activeView === "studio" ? (
     <div className="space-y-5">
+      <CurrentStoryHeader
+        story={story}
+        onOpenCharacters={() => setActiveView("cast")}
+        onOpenChapterSetup={() => setIsChapterLimitsOpen(true)}
+        onRead={() =>
+          window.location.assign(
+            `/library/story?story=${encodeURIComponent(story.id)}&view=detail`,
+          )
+        }
+      />
       {!story.primaryProtagonistId ? (
         <p className="rounded-xl border border-amber-300/20 bg-amber-300/[0.06] px-4 py-3 text-sm leading-6 text-amber-100">
           No primary protagonist selected. The AI can continue, but Story-level narrative focus may be less consistent.
@@ -840,8 +870,6 @@ export function WriterStudio() {
         onCancel={cancelGeneration}
         onRetry={retryGeneration}
         onFallback={decideFallback}
-        story={story}
-        onSaveChapterLength={saveChapterLength}
       />
       <DraftReview
         job={selectedJob}
@@ -942,7 +970,15 @@ export function WriterStudio() {
           </div>
         </aside>
         <section className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-white/[0.08] bg-background/90 backdrop-blur-xl">
+          <header
+            aria-hidden={!showWorkspaceNavbar}
+            className={cn(
+              "fixed inset-x-0 top-0 z-30 border-b border-white/[0.08] bg-background/90 backdrop-blur-xl transition duration-200 lg:left-64",
+              showWorkspaceNavbar
+                ? "translate-y-0 opacity-100"
+                : "pointer-events-none invisible -translate-y-full opacity-0",
+            )}
+          >
             <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-lg bg-[#f4f1eb] shadow-md shadow-black/15 lg:hidden">
@@ -955,20 +991,52 @@ export function WriterStudio() {
                   />
                 </span>
                 <div className="min-w-0">
-                <p className="pb-1.5 text-xs font-semibold tracking-[0.14em] text-on-surface-variant">
-                  {activeView === "studio"
-                    ? "DRAFTING"
-                    : activeView === "story"
-                      ? "LIBRARY"
-                      : activeView.toUpperCase()}
-                </p>
-                <div className="w-[min(34rem,calc(100vw-10rem))] min-w-0">
-                  <StoryPicker
-                    stories={stories}
-                    value={storyId}
-                    onChange={selectStory}
-                  />
-                </div>
+                  <p className="pb-1.5 text-xs font-semibold tracking-[0.14em] text-on-surface-variant">
+                    {activeView === "studio"
+                      ? "DRAFTING"
+                      : activeView === "story"
+                        ? "LIBRARY"
+                        : activeView.toUpperCase()}
+                  </p>
+                  {activeView === "studio" && story ? (
+                    <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+                      <div className="w-[min(24rem,calc(100vw-10rem))] min-w-0">
+                        <StoryPicker
+                          stories={stories}
+                          value={storyId}
+                          onChange={selectStory}
+                        />
+                      </div>
+                      <div className="w-[min(22rem,calc(100vw-8rem))] min-w-0">
+                        <SelectMenu
+                          ariaLabel="Select chapter"
+                          className="h-10"
+                          options={chapters.map((chapter) => ({
+                            label: `${String(chapter.number).padStart(2, "0")} · ${chapter.title}`,
+                            value: chapter.id,
+                          }))}
+                          placeholder="Select a chapter"
+                          showPlaceholderOption={false}
+                          value={chapterId}
+                          onChange={(nextChapterId) => {
+                            setContextPreview(null);
+                            setChapterId(nextChapterId);
+                          }}
+                        />
+                      </div>
+                      <p className="whitespace-nowrap text-xs font-semibold text-on-surface-variant">
+                        {chapterTargetWords.toLocaleString()} words
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="w-[min(34rem,calc(100vw-10rem))] min-w-0">
+                      <StoryPicker
+                        stories={stories}
+                        value={storyId}
+                        onChange={selectStory}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               <button
@@ -1002,7 +1070,12 @@ export function WriterStudio() {
               {error || message}
             </div>
           )}
-          <div className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div
+            className={cn(
+              "flex-1 p-4 sm:p-6 lg:p-8",
+              activeView !== "studio" || !story ? "pt-28 lg:pt-24" : undefined,
+            )}
+          >
             <div className="w-full">{body}</div>
           </div>
           <footer className="border-t border-white/[0.08] px-4 py-4 sm:px-6 lg:px-8">
@@ -1048,6 +1121,67 @@ export function WriterStudio() {
             )}{" "}
             Create workspace
           </button>
+        </Dialog>
+      )}
+      {isChapterLimitsOpen && story && (
+        <Dialog title="Chapter setup" onClose={() => setIsChapterLimitsOpen(false)}>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              const data = new FormData(event.currentTarget);
+              void saveChapterLength({
+                targetWords: Number(data.get("targetWords")),
+                softLimitWords: Number(data.get("softLimitWords")),
+                hardLimitWords: Number(data.get("hardLimitWords")),
+                autoAdvance: data.get("autoAdvance") === "on",
+              }).then(() => setIsChapterLimitsOpen(false));
+            }}
+          >
+            <div className="grid gap-3">
+              {(
+                [
+                  ["targetWords", "Target words", story.settings?.chapterTargetWords ?? 5000],
+                  ["softLimitWords", "Soft limit", story.settings?.chapterSoftLimitWords ?? 5500],
+                  ["hardLimitWords", "Hard limit", story.settings?.chapterHardLimitWords ?? 6000],
+                ] as const
+              ).map(([name, label, value]) => (
+                <label className="text-sm font-semibold text-on-surface" key={name}>
+                  {label}
+                  <input
+                    className="mt-2 h-10 w-full rounded-lg border border-white/10 bg-surface-dim px-3 text-on-surface outline-none focus:border-primary"
+                    defaultValue={value}
+                    min={1}
+                    name={name}
+                    type="number"
+                  />
+                </label>
+              ))}
+            </div>
+            <label className="mt-4 flex items-center gap-2 text-sm text-on-surface-variant">
+              <input
+                defaultChecked={story.settings?.chapterAutoAdvance ?? true}
+                name="autoAdvance"
+                type="checkbox"
+              />
+              Automatically advance after reaching target
+            </label>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                className="h-10 rounded-lg px-4 text-sm font-semibold text-on-surface-variant hover:text-on-surface"
+                type="button"
+                onClick={() => setIsChapterLimitsOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-on-primary disabled:opacity-50"
+                disabled={isLoading}
+                type="submit"
+              >
+                Save
+              </button>
+            </div>
+          </form>
         </Dialog>
       )}
       {isChapterModalOpen && (
@@ -1147,6 +1281,63 @@ export function WriterStudio() {
         </Dialog>
       )}
     </main>
+  );
+}
+
+function CurrentStoryHeader({
+  story,
+  onOpenCharacters,
+  onOpenChapterSetup,
+  onRead,
+}: {
+  story: StoryDetail;
+  onOpenCharacters: () => void;
+  onOpenChapterSetup: () => void;
+  onRead: () => void;
+}) {
+  return (
+    <section
+      aria-labelledby="current-story-title"
+      className="flex flex-wrap items-end justify-between gap-5 border-b border-white/[0.08] pb-6"
+    >
+      <div className="min-w-0 max-w-3xl">
+        <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">
+          CURRENT STORY
+        </p>
+        <h2
+          className="mt-2 text-2xl font-semibold tracking-tight text-on-surface sm:text-3xl"
+          id="current-story-title"
+        >
+          {story.title}
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-on-surface-variant">
+          {story.description ?? "No story description yet."}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          type="button"
+          onClick={onRead}
+        >
+          <BookOpen className="size-4" /> Read
+        </button>
+        <button
+          className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          type="button"
+          onClick={onOpenCharacters}
+        >
+          <Users className="size-4" /> Characters
+        </button>
+        <button
+          className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          type="button"
+          onClick={onOpenChapterSetup}
+        >
+          <Settings2 className="size-4" /> Chapter setup
+        </button>
+      </div>
+    </section>
   );
 }
 

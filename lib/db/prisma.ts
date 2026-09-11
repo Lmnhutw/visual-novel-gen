@@ -4,8 +4,23 @@ const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
+function getRuntimeDatabaseUrl() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl || process.env.VERCEL !== "1") return databaseUrl;
+
+  const url = new URL(databaseUrl);
+  if (!url.searchParams.has("connection_limit")) {
+    url.searchParams.set("connection_limit", "1");
+  }
+
+  return url.toString();
+}
+
 function createPrismaClient() {
   return new PrismaClient({
+    datasources: {
+      db: { url: getRuntimeDatabaseUrl() },
+    },
     log:
       process.env.NODE_ENV === "development"
         ? ["query", "warn", "error"]

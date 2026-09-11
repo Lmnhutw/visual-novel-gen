@@ -3,10 +3,8 @@
 import { Check, CheckCircle2, Eye, Loader2, Plus, RefreshCw, ShieldCheck, Sparkles, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Dialog } from "@/components/ui/modal";
 import { SelectMenu } from "@/components/ui/select-menu";
 import { cn } from "@/lib/utils";
-import type { ChapterLengthConfig } from "@/lib/chapters/chapter-lifecycle";
 import type { GenerationContext } from "@/lib/retrieval/types";
 
 import type { CharacterRecord, ChapterRecord, GenerationJob, StoryDetail, WorkspaceView } from "./types";
@@ -22,14 +20,13 @@ type StudioForm = {
 
 export function GenerationStudio({
   form, chapters, characters, jobs, selectedJobId, isSubmitting, contextPreview, isContextPreviewLoading,
-  onFormChange, onGenerate, onPreviewContext, onCloseContextPreview, story, onCancel, onRetry, onFallback, onEndChapter, onSaveChapterLength = async () => undefined,
+  onFormChange, onGenerate, onPreviewContext, onCloseContextPreview, onCancel, onRetry, onFallback, onEndChapter,
 }: {
   form: StudioForm; chapters: ChapterRecord[]; characters: CharacterRecord[]; jobs: GenerationJob[]; selectedJobId: string;
   isSubmitting: boolean; contextPreview: GenerationContext | null; isContextPreviewLoading: boolean;
   onFormChange: (patch: Partial<StudioForm>) => void; onGenerate: () => void; onPreviewContext: () => void;
-  onCloseContextPreview: () => void; story: StoryDetail; onRetry?: (jobId: string) => void; onFallback?: (jobId: string, decision: "approve" | "decline") => void; onEndChapter?: (chapterId: string) => Promise<void>; onNavigate?: (view: WorkspaceView) => void; onCancel?: (jobId: string) => void; onReadStory?: () => void; onAddChapter?: () => void; onAddCharacter?: () => void; onSaveChapterLength?: (value: ChapterLengthConfig) => Promise<void>;
+  onCloseContextPreview: () => void; story?: StoryDetail; onRetry?: (jobId: string) => void; onFallback?: (jobId: string, decision: "approve" | "decline") => void; onEndChapter?: (chapterId: string) => Promise<void>; onNavigate?: (view: WorkspaceView) => void; onCancel?: (jobId: string) => void; onReadStory?: () => void; onAddChapter?: () => void; onAddCharacter?: () => void;
 }) {
-  const [isLimitsOpen, setIsLimitsOpen] = useState(false);
   const [isCharacterPickerOpen, setIsCharacterPickerOpen] = useState(false);
   const [characterQuery, setCharacterQuery] = useState("");
   const activeJob = jobs.find((job) => job.id === selectedJobId);
@@ -37,9 +34,6 @@ export function GenerationStudio({
   const selectedCharacters = characters.filter((character) => form.activeCharacterIds.includes(character.id));
   const matchingCharacters = useMemo(() => characters.filter((character) => character.name.toLowerCase().includes(characterQuery.trim().toLowerCase())), [characterQuery, characters]);
   const hardLimitReached = activeChapter?.progress?.remainingToHardLimit === 0;
-  const wordCount = activeChapter?.wordCount ?? 0;
-  const targetWords = activeChapter?.progress?.targetWords;
-  const progress = targetWords ? Math.min(100, (wordCount / targetWords) * 100) : 0;
   const proposedFacts = activeJob?.proposals?.filter((proposal) => proposal.status === "PENDING") ?? [];
 
   function toggleCharacter(characterId: string) {
@@ -49,24 +43,6 @@ export function GenerationStudio({
 
   return (
     <div className="min-w-0 space-y-5">
-      <section className="grid gap-5 border-b border-white/[0.08] pb-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="min-w-0 text-xs font-medium text-on-surface-variant">Story<div className="mt-1 truncate rounded-lg border border-white/10 bg-surface-dim px-3 py-2.5 text-sm font-semibold text-on-surface">{story.title}</div></div>
-          <div className="min-w-0 text-xs font-medium text-on-surface-variant">Chapter
-            <div className="mt-1">
-              <SelectMenu
-                ariaLabel="Select chapter"
-                options={chapters.map((chapter) => ({ label: `${String(chapter.number).padStart(2, "0")} · ${chapter.title}`, value: chapter.id }))}
-                placeholder="Select a chapter"
-                value={form.chapterId}
-                onChange={(chapterId) => onFormChange({ chapterId })}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="flex items-end gap-3"><div className="min-w-0 flex-1 pb-0.5"><p className="text-xs text-on-surface-variant"><strong className="text-on-surface">{wordCount.toLocaleString()}</strong>{targetWords ? ` / ${targetWords.toLocaleString()} words` : " words"}</p><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.08]"><div className="h-full rounded-full bg-primary transition-[width] duration-200" style={{ width: `${progress}%` }} /></div></div><button className="h-9 shrink-0 rounded-lg border border-white/10 px-3 text-xs font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => setIsLimitsOpen(true)}>Edit limits</button></div>
-      </section>
-
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <section className="rounded-xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-xl font-semibold tracking-tight text-on-surface">Write the next scene</h1><p className="mt-1 text-sm leading-6 text-on-surface-variant">Describe what you want to happen next. Mention events, characters, conflicts, or anything the AI should include.</p></div><button className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" disabled={isContextPreviewLoading || form.goal.trim().length < 10} type="button" onClick={onPreviewContext}>{isContextPreviewLoading ? <Loader2 className="size-3.5 animate-spin" /> : <Eye className="size-3.5" />} What will AI know?</button></div>
@@ -83,6 +59,7 @@ export function GenerationStudio({
                   className="h-10"
                   options={[{ label: "Standard (Safe)", value: "safe" }, { label: "Mature", value: "mature" }]}
                   placeholder="Select content rating"
+                  showPlaceholderOption={false}
                   value={form.maturityMode}
                   onChange={(maturityMode) => onFormChange({ maturityMode: maturityMode as StudioForm["maturityMode"] })}
                 />
@@ -98,7 +75,6 @@ export function GenerationStudio({
       {activeJob && ["RUNNING", "QUEUED", "RETRYING"].includes(activeJob.status) ? <section className="rounded-xl border border-primary/20 bg-primary/[0.06] p-4" aria-live="polite"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-semibold text-on-surface">Generating scene</p><p className="mt-1 text-xs text-on-surface-variant">{activeJob.progress}% complete</p></div><Loader2 className="size-4 animate-spin text-primary" /></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.08]"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${Math.max(activeJob.progress, 8)}%` }} /></div><button className="mt-3 text-xs font-semibold text-rose-200 hover:text-rose-100" type="button" onClick={() => onCancel?.(activeJob.id)}>Cancel generation</button></section> : null}
       {activeJob?.status === "AWAITING_FALLBACK_CONFIRMATION" ? <section className="rounded-xl border border-amber-300/25 bg-amber-300/[0.08] p-4"><p className="text-sm font-semibold text-amber-50">Generation is paused</p><p className="mt-1 text-xs leading-5 text-amber-100">Continue with {activeJob.fallbackModel ?? "the fallback model"} may consume credits. No paid request is sent without confirmation.</p><div className="mt-3 flex gap-2"><button className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary" type="button" onClick={() => onFallback?.(activeJob.id, "approve")}>Continue</button><button className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-on-surface" type="button" onClick={() => onFallback?.(activeJob.id, "decline")}>Stop</button></div></section> : null}
       {activeJob?.status === "FAILED" ? <section className="rounded-xl border border-rose-300/20 bg-rose-300/[0.08] p-4" role="alert"><div aria-label="Generation progress" aria-valuemax={100} aria-valuemin={0} aria-valuenow={activeJob.progress} className="sr-only" role="progressbar" /><p className="text-sm font-semibold text-rose-100">Generation failed</p><p className="mt-1 text-sm text-rose-100/80">{activeJob.error ?? "The provider could not complete this generation."}</p><button className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-200/25 px-3 text-xs font-semibold text-rose-100" type="button" onClick={() => onRetry?.(activeJob.id)}><RefreshCw className="size-3.5" /> Retry job</button></section> : null}
-      {isLimitsOpen ? <Dialog title="Chapter limits" onClose={() => setIsLimitsOpen(false)}><form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); void onSaveChapterLength({ targetWords: Number(data.get("targetWords")), softLimitWords: Number(data.get("softLimitWords")), hardLimitWords: Number(data.get("hardLimitWords")), autoAdvance: data.get("autoAdvance") === "on" }).then(() => setIsLimitsOpen(false)); }}><div className="grid gap-3">{([["targetWords", "Target words", story.settings?.chapterTargetWords ?? 5000], ["softLimitWords", "Soft limit", story.settings?.chapterSoftLimitWords ?? 5500], ["hardLimitWords", "Hard limit", story.settings?.chapterHardLimitWords ?? 6000]] as const).map(([name, label, value]) => <label className="text-sm font-semibold text-on-surface" key={name}>{label}<input className="mt-2 h-10 w-full rounded-lg border border-white/10 bg-surface-dim px-3 text-on-surface outline-none focus:border-primary" defaultValue={value} min={1} name={name} type="number" /></label>)}</div><label className="mt-4 flex items-center gap-2 text-sm text-on-surface-variant"><input defaultChecked={story.settings?.chapterAutoAdvance ?? true} name="autoAdvance" type="checkbox" />Automatically advance after reaching target</label><div className="mt-6 flex justify-end gap-2"><button className="h-10 rounded-lg px-4 text-sm font-semibold text-on-surface-variant hover:text-on-surface" type="button" onClick={() => setIsLimitsOpen(false)}>Cancel</button><button className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-on-primary" type="submit">Save</button></div></form></Dialog> : null}
     </div>
   );
 }
