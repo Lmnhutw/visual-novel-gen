@@ -143,10 +143,10 @@ export function DraftReview({
       <section className={styles["draft-review__paper"]}>
         <div className={styles["draft-review__toolbar"]}>
           <div className="flex items-center gap-5">
-            <h2 className="border-b-2 border-primary pb-2 text-sm font-semibold text-on-surface">Draft</h2>
-            <button className="pb-2 text-sm text-on-surface-variant transition hover:text-on-surface" type="button" onClick={() => jobs.length && onSelectJob(jobs[0].id)}>Versions{jobs.length ? ` (${jobs.length})` : ""}</button>
+            <h2 className={`${styles["draft-review__tab"]} ${styles["draft-review__tab--active"]}`}>Draft</h2>
+            <button className={styles["draft-review__tab"]} type="button" onClick={() => jobs.length && onSelectJob(jobs[0].id)}>Versions{jobs.length ? ` (${jobs.length})` : ""}</button>
           </div>
-          <div className="flex items-center gap-3 text-xs text-on-surface-variant">
+          <div className={styles["draft-review__status"]}>
             {draft ? <span>{draftWords.toLocaleString()} words</span> : null}
             {draft ? <span>{isSaving ? "Saving…" : content === draft.content ? "Saved" : "Unsaved"}</span> : null}
           </div>
@@ -162,7 +162,7 @@ export function DraftReview({
             value={content}
             onChange={(event) => setContent(event.target.value)}
           />
-          <div className="border-t border-white/[0.08] px-5 py-4 text-sm text-on-surface-variant">
+          <div className={`${styles["draft-review__metadata"]} border-t border-white/[0.08] px-5 py-4 text-sm`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span>AI draft · <strong className="text-on-surface">{draftWords.toLocaleString()} words</strong></span>
               {chapter ? (

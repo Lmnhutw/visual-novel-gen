@@ -48,6 +48,32 @@
   font-weight: 500;
 }
 
+.draft-review__tab {
+  padding-bottom: 0.5rem;
+  color: rgb(var(--color-manuscript-muted) / 1);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: color 160ms ease;
+}
+
+.draft-review__tab:hover {
+  color: rgb(var(--color-manuscript-ink) / 1);
+}
+
+.draft-review__tab--active {
+  border-bottom: 2px solid rgb(var(--color-manuscript-link) / 1);
+  color: rgb(var(--color-manuscript-ink) / 1);
+  font-weight: 700;
+}
+
+.draft-review__metadata {
+  color: rgb(var(--color-manuscript-muted) / 1);
+}
+
+.draft-review__metadata strong {
+  color: rgb(var(--color-manuscript-ink) / 1);
+}
+
 .draft-review__action {
   display: inline-flex;
   height: 2.25rem;

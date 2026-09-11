@@ -907,7 +907,7 @@ export function WriterStudio() {
 
   return (
     <main className={studioStyles.workspace}>
-      <div className="mx-auto flex min-h-screen max-w-[1760px]">
+      <div className="flex min-h-screen w-full">
         <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.08] bg-surface-dim/65 px-4 py-5 lg:flex">
           <div className="flex items-center gap-3 px-2">
             <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-[#f4f1eb] shadow-lg shadow-black/15">
@@ -1003,10 +1003,10 @@ export function WriterStudio() {
             </div>
           )}
           <div className="flex-1 p-4 sm:p-6 lg:p-8">
-            <div className="mx-auto w-full max-w-[1440px]">{body}</div>
+            <div className="w-full">{body}</div>
           </div>
           <footer className="border-t border-white/[0.08] px-4 py-4 sm:px-6 lg:px-8">
-            <div className="mx-auto flex w-full max-w-[1440px] flex-wrap items-center justify-between gap-2 text-xs text-on-surface-variant">
+            <div className="flex w-full flex-wrap items-center justify-between gap-2 text-xs text-on-surface-variant">
               <span>Narrative Studio</span>
               <span>Local-first editorial workspace</span>
             </div>

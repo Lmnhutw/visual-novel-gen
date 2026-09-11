@@ -4,6 +4,7 @@ import { Check, CheckCircle2, Eye, Loader2, Plus, RefreshCw, ShieldCheck, Sparkl
 import { useMemo, useState } from "react";
 
 import { Dialog } from "@/components/ui/modal";
+import { SelectMenu } from "@/components/ui/select-menu";
 import { cn } from "@/lib/utils";
 import type { ChapterLengthConfig } from "@/lib/chapters/chapter-lifecycle";
 import type { GenerationContext } from "@/lib/retrieval/types";
@@ -48,28 +49,45 @@ export function GenerationStudio({
 
   return (
     <div className="min-w-0 space-y-5">
-      <section className="grid gap-5 border-b border-white/[0.08] pb-5 lg:grid-cols-[minmax(0,1fr)_14rem]">
+      <section className="grid gap-5 border-b border-white/[0.08] pb-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="min-w-0 text-xs font-medium text-on-surface-variant">Story<div className="mt-1 truncate rounded-lg border border-white/10 bg-surface-dim px-3 py-2.5 text-sm font-semibold text-on-surface">{story.title}</div></div>
-          <label className="block min-w-0 text-xs font-medium text-on-surface-variant">Chapter
-            <select aria-label="Select chapter" className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-surface-dim px-3 text-sm font-semibold text-on-surface outline-none focus:border-primary" value={form.chapterId} onChange={(event) => onFormChange({ chapterId: event.target.value })}>
-              {chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{String(chapter.number).padStart(2, "0")} · {chapter.title}</option>)}
-            </select>
-          </label>
+          <div className="min-w-0 text-xs font-medium text-on-surface-variant">Chapter
+            <div className="mt-1">
+              <SelectMenu
+                ariaLabel="Select chapter"
+                options={chapters.map((chapter) => ({ label: `${String(chapter.number).padStart(2, "0")} · ${chapter.title}`, value: chapter.id }))}
+                placeholder="Select a chapter"
+                value={form.chapterId}
+                onChange={(chapterId) => onFormChange({ chapterId })}
+              />
+            </div>
+          </div>
         </div>
         <div className="flex items-end gap-3"><div className="min-w-0 flex-1 pb-0.5"><p className="text-xs text-on-surface-variant"><strong className="text-on-surface">{wordCount.toLocaleString()}</strong>{targetWords ? ` / ${targetWords.toLocaleString()} words` : " words"}</p><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.08]"><div className="h-full rounded-full bg-primary transition-[width] duration-200" style={{ width: `${progress}%` }} /></div></div><button className="h-9 shrink-0 rounded-lg border border-white/10 px-3 text-xs font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => setIsLimitsOpen(true)}>Edit limits</button></div>
       </section>
 
-      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_14rem]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <section className="rounded-xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-xl font-semibold tracking-tight text-on-surface">Write the next scene</h1><p className="mt-1 text-sm leading-6 text-on-surface-variant">Describe what you want to happen next. Mention events, characters, conflicts, or anything the AI should include.</p></div><button className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" disabled={isContextPreviewLoading || form.goal.trim().length < 10} type="button" onClick={onPreviewContext}>{isContextPreviewLoading ? <Loader2 className="size-3.5 animate-spin" /> : <Eye className="size-3.5" />} What will AI know?</button></div>
           <label className="mt-4 block"><span className="sr-only">What should happen next?</span><textarea id="scene-brief" className="min-h-40 w-full rounded-lg border border-white/10 bg-surface-dim/80 px-3.5 py-3 text-sm leading-7 text-on-surface outline-none transition placeholder:text-on-surface-variant/60 focus:border-primary focus:ring-2 focus:ring-primary/15" placeholder="e.g. Alex discovers his father's advisor has been secretly communicating with the enemy. He confronts the advisor at night in the castle library…" value={form.goal} onChange={(event) => onFormChange({ goal: event.target.value })} /><span className="mt-1.5 block text-right text-xs text-on-surface-variant">{form.goal.length.toLocaleString()} / 1,000</span></label>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_auto] lg:items-end">
+          <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_11rem_11rem] lg:items-end">
             <div className="relative min-w-0"><p className="mb-2 text-xs font-semibold text-on-surface">Characters</p><div className="flex flex-wrap items-center gap-2">{selectedCharacters.map((character) => <button key={character.id} className="inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-lg border border-primary/50 bg-primary/15 px-2.5 text-xs font-medium text-primary transition hover:bg-primary/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => toggleCharacter(character.id)}><span className="truncate">{character.name}</span><X className="size-3 shrink-0" aria-label={`Remove ${character.name}`} /></button>)}<button aria-expanded={isCharacterPickerOpen} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 text-xs font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => setIsCharacterPickerOpen((open) => !open)}><Plus className="size-3.5" /> Add character</button></div>
               {isCharacterPickerOpen ? <div className="absolute z-20 mt-2 w-[min(22rem,calc(100vw-3rem))] rounded-xl border border-white/10 bg-surface-container p-3 shadow-lg shadow-black/30"><label className="block text-xs font-semibold text-on-surface">Select characters<input autoFocus className="mt-2 h-9 w-full rounded-lg border border-white/10 bg-surface-dim px-3 text-sm text-on-surface outline-none focus:border-primary" placeholder="Search characters…" value={characterQuery} onChange={(event) => setCharacterQuery(event.target.value)} /></label><div className="mt-2 max-h-52 overflow-y-auto">{matchingCharacters.map((character) => { const selected = form.activeCharacterIds.includes(character.id); return <button aria-pressed={selected} className={cn("flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary", selected && "bg-primary/10 text-primary")} key={character.id} type="button" onClick={() => toggleCharacter(character.id)}><span className="truncate">{character.name}</span>{selected ? <Check className="size-4 shrink-0" /> : null}</button>; })}{!matchingCharacters.length ? <p className="px-3 py-4 text-sm text-on-surface-variant">No characters found.</p> : null}</div><button className="mt-2 text-xs font-semibold text-primary hover:text-primary/80" type="button" onClick={() => setIsCharacterPickerOpen(false)}>Done</button></div> : null}
             </div>
-            <label className="block text-xs font-semibold text-on-surface">Content<select className="mt-2 h-9 w-full rounded-lg border border-white/10 bg-surface-dim px-3 text-sm font-medium text-on-surface outline-none focus:border-primary" value={form.maturityMode} onChange={(event) => onFormChange({ maturityMode: event.target.value as StudioForm["maturityMode"] })}><option value="safe">Standard (Safe)</option><option value="mature">Mature</option></select></label>
+            <div className="min-w-0 text-xs font-semibold text-on-surface">Content
+              <div className="mt-2">
+                <SelectMenu
+                  ariaLabel="Select content rating"
+                  className="h-10"
+                  options={[{ label: "Standard (Safe)", value: "safe" }, { label: "Mature", value: "mature" }]}
+                  placeholder="Select content rating"
+                  value={form.maturityMode}
+                  onChange={(maturityMode) => onFormChange({ maturityMode: maturityMode as StudioForm["maturityMode"] })}
+                />
+              </div>
+            </div>
             <button className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" disabled={isSubmitting || hardLimitReached || form.goal.trim().length < 10} type="button" onClick={onGenerate}>{isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}{hardLimitReached ? "Hard limit reached" : "Generate scene"}</button>
           </div>
           {contextPreview ? <ContextPreview context={contextPreview} includeSecrets={form.includeSecrets} onClose={onCloseContextPreview} /> : null}
