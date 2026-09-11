@@ -8,6 +8,11 @@ import {
   ensureActiveChapter,
 } from "@/lib/chapters/chapter-service";
 import { prisma } from "@/lib/db/prisma";
+import { getDefaultWritingHarness } from "@/lib/writing-harness/config";
+import {
+  createWritingHarnessAudit,
+  validateWritingHarnessOutput,
+} from "@/lib/writing-harness/evaluation";
 
 async function withTransaction<T>(transaction: unknown, run: () => Promise<T>) {
   const client = prisma as unknown as { $transaction: unknown };
@@ -211,6 +216,76 @@ test("commit uses final edited content while pending canon proposals remain non-
   });
   assert.equal(chapterUpdate?.wordCount, 13);
   assert.equal(result.reused, false);
+});
+
+test("manual edits can resolve a stored Writing Harness violation before approval", async () => {
+  const harness = {
+    ...getDefaultWritingHarness(),
+    forbiddenPhrases: ["forbidden phrase"],
+  };
+  const originalContent = "This contains a forbidden phrase.";
+  const metadata = JSON.stringify({
+    writingHarness: createWritingHarnessAudit(harness, {
+      content: originalContent,
+      status: "needs_review",
+      normalizationFindings: [],
+      findingsBeforeRepair: validateWritingHarnessOutput(originalContent, harness),
+      findingsAfterRepair: [],
+      repairAttempted: false,
+    }),
+  });
+  let sceneContent = "";
+
+  await withTransaction(
+    {
+      draftVersion: {
+        findUnique: async () => ({
+          id: "draft-1",
+          storyId: "story-1",
+          chapterId: "chapter-1",
+          title: "Scene",
+          content: originalContent,
+          metadata,
+          scene: null,
+          job: { chapterId: "chapter-1" },
+          generationRun: { continuityIssues: [] },
+        }),
+        updateMany: async () => ({ count: 1 }),
+      },
+      chapter: {
+        findFirst: async () => ({
+          id: "chapter-1",
+          storyId: "story-1",
+          number: 1,
+          title: "Chapter 1",
+          wordCount: 0,
+          tokenCount: 0,
+          status: "DRAFT",
+          story: { settings: null },
+        }),
+        update: async () => ({
+          id: "chapter-1",
+          number: 1,
+          title: "Chapter 1",
+          wordCount: 3,
+        }),
+        upsert: async () => {
+          throw new Error("should not advance");
+        },
+      },
+      scene: {
+        aggregate: async () => ({ _max: { number: 0 } }),
+        create: async ({ data }: { data: { content: string } }) => {
+          sceneContent = data.content;
+          return { id: "scene-1", ...data };
+        },
+      },
+      auditLog: { create: async () => ({ id: "audit-1" }) },
+    },
+    () => commitDraftToChapter("draft-1", { content: "Clean final prose." }),
+  );
+
+  assert.equal(sceneContent, "Clean final prose.");
 });
 
 test("duplicate approval reuses its existing scene without appending", async () => {

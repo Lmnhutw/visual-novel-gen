@@ -10,10 +10,14 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { countWords } from "@/lib/chapters/chapter-lifecycle";
+import {
+  parseWritingHarnessAuditMetadata,
+  validateWritingHarnessOutput,
+} from "@/lib/writing-harness/evaluation";
 import styles from "./draft-review.module.css";
 import { titleCase } from "./api";
 import type { CanonProposal, ChapterRecord, GenerationJob } from "./types";
@@ -97,7 +101,20 @@ export function DraftReview({
   const pendingProposals = proposals.filter(
     (proposal) => proposal.status === "PENDING",
   );
-  const harnessNeedsReview = job?.stage.includes("HARNESS") ?? false;
+  const harnessAudit = useMemo(
+    () => parseWritingHarnessAuditMetadata(draft?.metadata),
+    [draft?.metadata],
+  );
+  const harnessViolations = useMemo(
+    () =>
+      harnessAudit
+        ? validateWritingHarnessOutput(content, harnessAudit.effectiveHarness).filter(
+            (finding) => finding.severity === "error",
+          )
+        : [],
+    [content, harnessAudit],
+  );
+  const harnessNeedsReview = harnessViolations.length > 0;
   const continuityNeedsReview = job?.stage.includes("CONTINUITY") ?? false;
 
   if (commitSuccess) {
@@ -198,6 +215,23 @@ export function DraftReview({
                 I reviewed the P1 continuity warnings and want to approve this draft.
               </label>
             ) : null}
+            {harnessNeedsReview ? (
+              <div
+                className="mt-3 rounded-lg border border-amber-300/20 bg-amber-300/[0.08] px-3 py-2 text-xs leading-5 text-amber-100"
+                role="alert"
+              >
+                <p className="font-semibold text-amber-50">
+                  Fix these Writing Harness violations to add this draft.
+                </p>
+                <ul className="mt-1 list-disc space-y-1 pl-4">
+                  {harnessViolations.map((finding) => (
+                    <li key={`${finding.kind}-${finding.rule}`}>
+                      {finding.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] pt-4">
               <button
                 className={cn(styles["draft-review__action"], styles["draft-review__action--save"])}
@@ -212,8 +246,14 @@ export function DraftReview({
               </button>
               <button
                 className={cn(styles["draft-review__action"], styles["draft-review__action--accept"])}
-                disabled={committed || isAccepting || hardLimitExceeded}
-                title={hardLimitExceeded ? "Shorten this draft before approving it." : undefined}
+                disabled={committed || isAccepting || hardLimitExceeded || harnessNeedsReview}
+                title={
+                  hardLimitExceeded
+                    ? "Shorten this draft before approving it."
+                    : harnessNeedsReview
+                      ? "Fix all Writing Harness violations before approving it."
+                      : undefined
+                }
                 type="button"
                 onClick={() => {
                   setIsAccepting(true);

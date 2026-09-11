@@ -45,6 +45,7 @@ import {
   StoryLedger,
 } from "./story-ledgers";
 import type {
+  ChapterRecord,
   CanonProposal,
   CanonReviewProposal,
   ContinuityIssue,
@@ -252,6 +253,16 @@ export function WriterStudio() {
     }
   }, [activeView, isTemplatePickerOpen, loadTemplates, templateQuery]);
 
+  const activeGenerationJob = useMemo(
+    () =>
+      jobs.find(
+        (job) =>
+          job.status === "QUEUED" ||
+          job.status === "RUNNING" ||
+          job.status === "RETRYING",
+      ) ?? null,
+    [jobs],
+  );
   const runningJob = jobs.some(
     (job) =>
       job.status === "QUEUED" ||
@@ -270,6 +281,14 @@ export function WriterStudio() {
   const selectedJob = useMemo(
     () => jobs.find((job) => job.id === selectedJobId) ?? null,
     [jobs, selectedJobId],
+  );
+  const currentStoryChapter = useMemo(
+    () =>
+      chapters.find(
+        (chapter) =>
+          chapter.id === (activeGenerationJob?.chapterId ?? chapterId),
+      ) ?? null,
+    [activeGenerationJob?.chapterId, chapterId, chapters],
   );
   const canonReviewProposals = useMemo<CanonReviewProposal[]>(
     () =>
@@ -822,6 +841,8 @@ export function WriterStudio() {
     <div className="space-y-5">
       <CurrentStoryHeader
         story={story}
+        chapter={currentStoryChapter}
+        isGenerating={Boolean(activeGenerationJob)}
         onOpenCharacters={() => setActiveView("cast")}
         onOpenChapterSetup={() => setIsChapterLimitsOpen(true)}
         onRead={() =>
@@ -1286,57 +1307,70 @@ export function WriterStudio() {
 
 function CurrentStoryHeader({
   story,
+  chapter,
+  isGenerating,
   onOpenCharacters,
   onOpenChapterSetup,
   onRead,
 }: {
   story: StoryDetail;
+  chapter: ChapterRecord | null;
+  isGenerating: boolean;
   onOpenCharacters: () => void;
   onOpenChapterSetup: () => void;
   onRead: () => void;
 }) {
   return (
-    <section
-      aria-labelledby="current-story-title"
-      className="flex flex-wrap items-end justify-between gap-5 border-b border-white/[0.08] pb-6"
-    >
-      <div className="min-w-0 max-w-3xl">
-        <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">
-          CURRENT STORY
-        </p>
-        <h2
-          className="mt-2 text-2xl font-semibold tracking-tight text-on-surface sm:text-3xl"
-          id="current-story-title"
-        >
-          {story.title}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-on-surface-variant">
-          {story.description ?? "No story description yet."}
-        </p>
+    <section aria-labelledby="current-story-title" className="border-b border-white/[0.08] pb-6">
+      <div className="flex flex-wrap items-end justify-between gap-5">
+        <div className="min-w-0 max-w-3xl">
+          <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">
+            CURRENT STORY
+          </p>
+          <h2
+            className="mt-2 text-2xl font-semibold tracking-tight text-on-surface sm:text-3xl"
+            id="current-story-title"
+          >
+            {story.title}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-on-surface-variant">
+            {story.description ?? "No story description yet."}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            type="button"
+            onClick={onRead}
+          >
+            <BookOpen className="size-4" /> Read
+          </button>
+          <button
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            type="button"
+            onClick={onOpenCharacters}
+          >
+            <Users className="size-4" /> Characters
+          </button>
+          <button
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            type="button"
+            onClick={onOpenChapterSetup}
+          >
+            <Settings2 className="size-4" /> Chapter setup
+          </button>
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          type="button"
-          onClick={onRead}
-        >
-          <BookOpen className="size-4" /> Read
-        </button>
-        <button
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          type="button"
-          onClick={onOpenCharacters}
-        >
-          <Users className="size-4" /> Characters
-        </button>
-        <button
-          className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          type="button"
-          onClick={onOpenChapterSetup}
-        >
-          <Settings2 className="size-4" /> Chapter setup
-        </button>
-      </div>
+      {chapter ? (
+        <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/[0.06] pt-4">
+          <span className="text-xs font-semibold tracking-[0.14em] text-primary/80">
+            {isGenerating ? "GENERATING FOR" : "CURRENT CHAPTER"}
+          </span>
+          <p className="text-sm font-semibold text-on-surface">
+            Chapter {String(chapter.number).padStart(2, "0")} · {chapter.title}
+          </p>
+        </div>
+      ) : null}
     </section>
   );
 }

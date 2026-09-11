@@ -30,6 +30,16 @@ export function GenerationStudio({
   const [isCharacterPickerOpen, setIsCharacterPickerOpen] = useState(false);
   const [characterQuery, setCharacterQuery] = useState("");
   const activeJob = jobs.find((job) => job.id === selectedJobId);
+  const activeGenerationJob = jobs.find(
+    (job) =>
+      job.status === "RUNNING" ||
+      job.status === "QUEUED" ||
+      job.status === "RETRYING",
+  );
+  const generationProgress = Math.min(
+    100,
+    Math.max(0, activeGenerationJob?.progress ?? 0),
+  );
   const activeChapter = chapters.find((chapter) => chapter.id === form.chapterId) ?? null;
   const selectedCharacters = characters.filter((character) => form.activeCharacterIds.includes(character.id));
   const matchingCharacters = useMemo(() => characters.filter((character) => character.name.toLowerCase().includes(characterQuery.trim().toLowerCase())), [characterQuery, characters]);
@@ -72,7 +82,37 @@ export function GenerationStudio({
         </section>
         <aside className="space-y-4"><section className="rounded-xl border border-white/10 bg-surface-container-low p-4"><div className="flex items-center justify-between gap-3"><h2 className="text-sm font-semibold text-on-surface">New story facts</h2><span className="grid size-5 place-items-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">{proposedFacts.length}</span></div><p className="mt-1 text-xs leading-5 text-on-surface-variant">Facts introduced by this scene that may become part of your story.</p>{proposedFacts.length ? <ul className="mt-3 space-y-2 text-xs text-on-surface-variant">{proposedFacts.slice(0, 3).map((fact) => <li className="rounded-lg bg-surface-dim p-2" key={fact.id}>{fact.title}</li>)}</ul> : <p className="mt-4 rounded-lg border border-dashed border-white/10 px-3 py-5 text-center text-xs leading-5 text-on-surface-variant">Generate a scene to see potential story facts here.</p>}</section><section className="rounded-xl border border-white/10 bg-surface-container-low p-4"><h2 className="text-sm font-semibold text-on-surface">Scene context</h2><ul className="mt-3 space-y-2 text-xs leading-5 text-on-surface-variant"><li className="flex gap-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-200" />{activeChapter ? `Chapter ${String(activeChapter.number).padStart(2, "0")}: ${activeChapter.title}` : "Choose a chapter"}</li><li className="flex gap-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-200" />Selected characters ({selectedCharacters.length})</li><li className="flex gap-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-200" />Approved canon facts</li><li className="flex gap-2"><ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" />Story writing rules</li></ul></section></aside>
       </div>
-      {activeJob && ["RUNNING", "QUEUED", "RETRYING"].includes(activeJob.status) ? <section className="rounded-xl border border-primary/20 bg-primary/[0.06] p-4" aria-live="polite"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-semibold text-on-surface">Generating scene</p><p className="mt-1 text-xs text-on-surface-variant">{activeJob.progress}% complete</p></div><Loader2 className="size-4 animate-spin text-primary" /></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.08]"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${Math.max(activeJob.progress, 8)}%` }} /></div><button className="mt-3 text-xs font-semibold text-rose-200 hover:text-rose-100" type="button" onClick={() => onCancel?.(activeJob.id)}>Cancel generation</button></section> : null}
+      {activeGenerationJob ? (
+        <section className="rounded-xl border border-primary/20 bg-primary/[0.06] p-4" aria-live="polite">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-on-surface">Generating scene</p>
+              <p className="mt-1 text-xs text-on-surface-variant">{generationProgress}% complete</p>
+            </div>
+            <Loader2 className="size-4 animate-spin text-primary" />
+          </div>
+          <div
+            aria-label="Generation progress"
+            aria-valuemax={100}
+            aria-valuemin={0}
+            aria-valuenow={generationProgress}
+            className="mt-3 h-2 w-full overflow-hidden rounded-full bg-white/[0.08]"
+            role="progressbar"
+          >
+            <div
+              className="h-full rounded-full bg-primary transition-[width] duration-300"
+              style={{ width: `${generationProgress}%` }}
+            />
+          </div>
+          <button
+            className="mt-3 text-xs font-semibold text-rose-200 hover:text-rose-100"
+            type="button"
+            onClick={() => onCancel?.(activeGenerationJob.id)}
+          >
+            Cancel generation
+          </button>
+        </section>
+      ) : null}
       {activeJob?.status === "AWAITING_FALLBACK_CONFIRMATION" ? <section className="rounded-xl border border-amber-300/25 bg-amber-300/[0.08] p-4"><p className="text-sm font-semibold text-amber-50">Generation is paused</p><p className="mt-1 text-xs leading-5 text-amber-100">Continue with {activeJob.fallbackModel ?? "the fallback model"} may consume credits. No paid request is sent without confirmation.</p><div className="mt-3 flex gap-2"><button className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary" type="button" onClick={() => onFallback?.(activeJob.id, "approve")}>Continue</button><button className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-on-surface" type="button" onClick={() => onFallback?.(activeJob.id, "decline")}>Stop</button></div></section> : null}
       {activeJob?.status === "FAILED" ? <section className="rounded-xl border border-rose-300/20 bg-rose-300/[0.08] p-4" role="alert"><div aria-label="Generation progress" aria-valuemax={100} aria-valuemin={0} aria-valuenow={activeJob.progress} className="sr-only" role="progressbar" /><p className="text-sm font-semibold text-rose-100">Generation failed</p><p className="mt-1 text-sm text-rose-100/80">{activeJob.error ?? "The provider could not complete this generation."}</p><button className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-200/25 px-3 text-xs font-semibold text-rose-100" type="button" onClick={() => onRetry?.(activeJob.id)}><RefreshCw className="size-3.5" /> Retry job</button></section> : null}
     </div>

@@ -4,7 +4,10 @@ import { generateText } from "@/lib/ai/provider";
 import { parseJsonString, toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
 import { WorkflowError } from "@/lib/http/api-response";
-import { parseWritingHarnessAuditMetadata } from "@/lib/writing-harness/evaluation";
+import {
+  parseWritingHarnessAuditMetadata,
+  validateWritingHarnessOutput,
+} from "@/lib/writing-harness/evaluation";
 import {
   chapterGenerationMode,
   chapterLengthConfig,
@@ -214,8 +217,15 @@ export async function commitDraftToChapter(
           return { draft, scene: draft.scene, chapter, nextChapter: null, reused: true };
         }
 
+        const content = input.content?.trim() || draft.content;
         const audit = parseWritingHarnessAuditMetadata(draft.metadata);
-        if (audit?.evaluation.status === "needs_review") {
+        const hasHarnessViolation = audit
+          ? validateWritingHarnessOutput(
+              content,
+              audit.effectiveHarness,
+            ).some((finding) => finding.severity === "error")
+          : false;
+        if (hasHarnessViolation) {
           throw new WorkflowError(
             "HARNESS_REVIEW_REQUIRED",
             "Resolve remaining Writing Harness violations before adding this draft to the chapter.",
@@ -261,7 +271,6 @@ export async function commitDraftToChapter(
           );
         }
 
-        const content = input.content?.trim() || draft.content;
         const addedWords = countWords(content);
         if (!addedWords) {
           throw new WorkflowError("EMPTY_DRAFT", "Draft content cannot be empty.", 422);
