@@ -35,6 +35,7 @@ import {
   type DraftCommitSuccess,
 } from "./draft-review";
 import { GenerationStudio } from "./generation-studio";
+import { WritingHarnessEditor } from "./writing-harness-editor";
 import {
   CanonLedger,
   CastLedger,
@@ -820,8 +821,6 @@ export function WriterStudio() {
         isSubmitting={isLoading}
         contextPreview={contextPreview}
         isContextPreviewLoading={isContextPreviewLoading}
-        writingHarness={writingHarness}
-        isHarnessSaving={isLoading}
         onFormChange={(patch) => {
           setContextPreview(null);
           if (patch.goal !== undefined) setGoal(patch.goal);
@@ -838,19 +837,10 @@ export function WriterStudio() {
         onGenerate={startGeneration}
         onPreviewContext={previewContext}
         onCloseContextPreview={() => setContextPreview(null)}
-        onNavigate={setActiveView}
         onCancel={cancelGeneration}
         onRetry={retryGeneration}
         onFallback={decideFallback}
         story={story}
-        onReadStory={() => window.location.assign(`/library/story?story=${encodeURIComponent(story.id)}&view=detail`)}
-        onAddChapter={() => setIsChapterModalOpen(true)}
-        onAddCharacter={openCreateCharacter}
-        onEndChapter={endChapter}
-        onSaveWritingHarness={(harness) => saveWritingHarness(harness)}
-        onResetWritingHarness={() =>
-          saveWritingHarness(getDefaultWritingHarness(), true)
-        }
         onSaveChapterLength={saveChapterLength}
       />
       <DraftReview
@@ -867,6 +857,19 @@ export function WriterStudio() {
         onEndChapter={endChapter}
       />
     </div>
+  ) : activeView === "harness" ? (
+    <WritingHarnessEditor
+      isSaving={isLoading}
+      narrativeSettings={{
+        tone: story.settings?.tone,
+        pov: story.settings?.pov,
+        tense: story.settings?.tense,
+        styleGuide: story.settings?.styleGuide,
+      }}
+      value={writingHarness}
+      onReset={() => saveWritingHarness(getDefaultWritingHarness(), true)}
+      onSave={saveWritingHarness}
+    />
   ) : activeView === "cast" ? (
     <div className="space-y-5">
       <CastLedger

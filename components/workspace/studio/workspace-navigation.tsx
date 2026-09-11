@@ -1,6 +1,6 @@
 "use client";
 
-import { Feather, Library, Users } from "lucide-react";
+import { Feather, Library, Settings2, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ const items = [
   { id: "studio", label: "Studio", icon: Feather },
   { id: "cast", label: "Characters", icon: Users },
   { id: "canon", label: "Canon & continuity", icon: Library },
+  { id: "harness", label: "Writing Harness", icon: Settings2 },
 ] as const;
 
 export function WorkspaceNavigation({

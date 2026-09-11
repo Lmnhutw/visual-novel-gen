@@ -4,7 +4,6 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
-  FileText,
   BookOpen,
   RefreshCw,
   Save,
@@ -143,60 +142,14 @@ export function DraftReview({
     <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
       <section className={styles["draft-review__paper"]}>
         <div className={styles["draft-review__toolbar"]}>
-          <div className="flex items-center gap-3">
-            <span className={styles["draft-review__icon"]}>
-              <FileText className="size-4" />
-            </span>
-            <div>
-              <p className={styles["draft-review__eyebrow"]}>
-                DRAFT VERSION
-              </p>
-              <h2 className={styles["draft-review__title"]}>
-                {draft
-                  ? `v${draft.versionNumber} · ${draft.title ?? "Untitled draft"}`
-                  : "No draft selected"}
-              </h2>
-            </div>
+          <div className="flex items-center gap-5">
+            <h2 className="border-b-2 border-primary pb-2 text-sm font-semibold text-on-surface">Draft</h2>
+            <button className="pb-2 text-sm text-on-surface-variant transition hover:text-on-surface" type="button" onClick={() => jobs.length && onSelectJob(jobs[0].id)}>Versions{jobs.length ? ` (${jobs.length})` : ""}</button>
           </div>
-          {draft ? (
-            <div className="flex items-center gap-2">
-              <span className={styles["draft-review__status"]}>
-                {isSaving
-                  ? "Saving…"
-                  : content === draft.content
-                    ? "Saved"
-                    : "Unsaved"}
-              </span>
-              <button
-                className={cn(styles["draft-review__action"], styles["draft-review__action--save"])}
-                disabled={committed || isAccepting || isSaving || content === draft.content}
-                type="button"
-                onClick={() => {
-                  setIsSaving(true);
-                  void onSaveDraft(draft.id, content).finally(() =>
-                    setIsSaving(false),
-                  );
-                }}
-              >
-                <Save className="size-3.5" /> Save
-              </button>
-              <button
-                className={cn(styles["draft-review__action"], styles["draft-review__action--accept"])}
-                disabled={committed || isAccepting || hardLimitExceeded}
-                title={hardLimitExceeded ? "Shorten this draft before approving it." : undefined}
-                type="button"
-                onClick={() => {
-                  setIsAccepting(true);
-                  void onAcceptDraft(draft.id, content, allowContinuityReview).finally(() =>
-                    setIsAccepting(false),
-                  );
-                }}
-              >
-                <CheckCircle2 className="size-3.5" />
-                {committed ? "Added" : "Approve & Add to Chapter"}
-              </button>
-            </div>
-          ) : null}
+          <div className="flex items-center gap-3 text-xs text-on-surface-variant">
+            {draft ? <span>{draftWords.toLocaleString()} words</span> : null}
+            {draft ? <span>{isSaving ? "Saving…" : content === draft.content ? "Saved" : "Unsaved"}</span> : null}
+          </div>
         </div>
         {draft ? (
           <>
@@ -245,6 +198,31 @@ export function DraftReview({
                 I reviewed the P1 continuity warnings and want to approve this draft.
               </label>
             ) : null}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] pt-4">
+              <button
+                className={cn(styles["draft-review__action"], styles["draft-review__action--save"])}
+                disabled={committed || isAccepting || isSaving || content === draft.content}
+                type="button"
+                onClick={() => {
+                  setIsSaving(true);
+                  void onSaveDraft(draft.id, content).finally(() => setIsSaving(false));
+                }}
+              >
+                <Save className="size-3.5" /> Save changes
+              </button>
+              <button
+                className={cn(styles["draft-review__action"], styles["draft-review__action--accept"])}
+                disabled={committed || isAccepting || hardLimitExceeded}
+                title={hardLimitExceeded ? "Shorten this draft before approving it." : undefined}
+                type="button"
+                onClick={() => {
+                  setIsAccepting(true);
+                  void onAcceptDraft(draft.id, content, allowContinuityReview).finally(() => setIsAccepting(false));
+                }}
+              >
+                <CheckCircle2 className="size-3.5" />{committed ? "Added to chapter" : "Add to chapter"}
+              </button>
+            </div>
           </div>
           </>
         ) : (
@@ -254,11 +232,10 @@ export function DraftReview({
                 <Sparkles className="size-5" />
               </span>
               <h3 className={styles["draft-review__empty-title"]}>
-                A draft waits for a scene brief
+                No draft yet
               </h3>
               <p className={styles["draft-review__empty-copy"]}>
-                Start a generation run from Studio. The output will be versioned
-                here before it can become story truth.
+                Generate a scene to start writing. Your draft will appear here.
               </p>
             </div>
           </div>
@@ -270,10 +247,10 @@ export function DraftReview({
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold tracking-[0.15em] text-on-surface-variant">
-                CANON PROPOSALS
+                NEW STORY FACTS
               </p>
               <h2 className="mt-1 text-base font-semibold text-on-surface">
-                Review before commit
+                {pendingProposals.length ? "Review new facts" : "No new facts yet"}
               </h2>
             </div>
             <span className="grid size-7 place-items-center rounded-full bg-primary/15 text-xs font-bold text-primary">
@@ -291,7 +268,7 @@ export function DraftReview({
             ))}
             {!proposals.length ? (
               <p className="rounded-xl border border-dashed border-white/10 p-4 text-sm leading-6 text-on-surface-variant">
-                Generated facts will appear here as reviewable proposals.
+                Facts introduced by a scene will appear here for your review.
               </p>
             ) : null}
           </div>
@@ -299,8 +276,8 @@ export function DraftReview({
         <section className="rounded-2xl border border-white/10 bg-surface-container-low p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold tracking-[0.15em] text-on-surface-variant">RUNS</p>
-              <h2 className="mt-1 text-base font-semibold text-on-surface">Recent generation</h2>
+              <p className="text-xs font-semibold tracking-[0.15em] text-on-surface-variant">VERSIONS</p>
+              <h2 className="mt-1 text-base font-semibold text-on-surface">Draft history</h2>
             </div>
             <BookOpen className="size-4 text-primary" />
           </div>
@@ -325,11 +302,6 @@ export function DraftReview({
             ))}
             {!jobs.length ? <p className="rounded-xl border border-dashed border-white/10 p-4 text-sm leading-6 text-on-surface-variant">Your generation history will appear here.</p> : null}
           </div>
-        </section>
-
-        <section className="rounded-2xl border border-white/10 bg-surface-container-low p-4">
-          <p className="text-xs font-semibold tracking-[0.15em] text-on-surface-variant">EDITORIAL GUARDRAIL</p>
-          <p className="mt-2 text-sm leading-6 text-on-surface-variant">Generated text is a draft. Memories, events, and changes to canon remain proposals until you approve them.</p>
         </section>
       </aside>
     </div>

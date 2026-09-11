@@ -1,24 +1,14 @@
 "use client";
 
-import { AlertTriangle, BookOpen, CheckCircle2, Eye, Loader2, Plus, RefreshCw, ShieldCheck, Sparkles, UserPlus, X } from "lucide-react";
+import { Check, CheckCircle2, Eye, Loader2, Plus, RefreshCw, ShieldCheck, Sparkles, X } from "lucide-react";
+import { useMemo, useState } from "react";
 
+import { Dialog } from "@/components/ui/modal";
 import { cn } from "@/lib/utils";
 import type { ChapterLengthConfig } from "@/lib/chapters/chapter-lifecycle";
 import type { GenerationContext } from "@/lib/retrieval/types";
-import { isRetryableGenerationStatus } from "@/lib/generation/job-state";
-import {
-  getDefaultWritingHarness,
-  type WritingHarnessConfig,
-} from "@/lib/writing-harness/config";
-import {
-  parseWritingHarnessAuditMetadata,
-  type WritingHarnessAudit,
-} from "@/lib/writing-harness/evaluation";
-import { compileWritingHarness } from "@/lib/writing-harness/prompt";
 
-import { formatRelativeDate, titleCase } from "./api";
 import type { CharacterRecord, ChapterRecord, GenerationJob, StoryDetail, WorkspaceView } from "./types";
-import { WritingHarnessEditor } from "./writing-harness-editor";
 
 type StudioForm = {
   goal: string;
@@ -29,567 +19,73 @@ type StudioForm = {
   chapterMode?: "auto" | "normal" | "closing";
 };
 
-function jobTone(status: string) {
-  if (status === "READY_FOR_REVIEW") return "text-emerald-200 bg-emerald-300/10 border-emerald-300/20";
-  if (status === "FAILED") return "text-rose-200 bg-rose-300/10 border-rose-300/20";
-  if (status === "CANCELLED") return "text-amber-100 bg-amber-300/10 border-amber-300/20";
-  return "text-violet-200 bg-violet-300/10 border-violet-300/20";
-}
-
-function formatRunDuration(job: GenerationJob) {
-  if (!job.startedAt) return null;
-  const startedAt = new Date(job.startedAt).getTime();
-  const end = job.completedAt ? new Date(job.completedAt).getTime() : Date.now();
-  if (!Number.isFinite(startedAt) || !Number.isFinite(end)) return null;
-  const seconds = Math.max(
-    0,
-    Math.round((end - startedAt) / 1000),
-  );
-  return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-}
-
 export function GenerationStudio({
-  form,
-  chapters,
-  characters,
-  jobs,
-  selectedJobId,
-  isSubmitting,
-  contextPreview,
-  isContextPreviewLoading,
-  writingHarness = getDefaultWritingHarness(),
-  isHarnessSaving = false,
-  onFormChange,
-  onGenerate,
-  onPreviewContext,
-  onCloseContextPreview,
-  onNavigate,
-  onCancel,
-  onRetry,
-  onFallback,
-  story,
-  onReadStory,
-  onAddChapter,
-  onAddCharacter,
-  onEndChapter,
-  onSaveWritingHarness = async () => undefined,
-  onResetWritingHarness = async () => undefined,
-  onSaveChapterLength = async () => undefined,
+  form, chapters, characters, jobs, selectedJobId, isSubmitting, contextPreview, isContextPreviewLoading,
+  onFormChange, onGenerate, onPreviewContext, onCloseContextPreview, story, onCancel, onRetry, onFallback, onEndChapter, onSaveChapterLength = async () => undefined,
 }: {
-  form: StudioForm;
-  chapters: ChapterRecord[];
-  characters: CharacterRecord[];
-  jobs: GenerationJob[];
-  selectedJobId: string;
-  isSubmitting: boolean;
-  contextPreview: GenerationContext | null;
-  isContextPreviewLoading: boolean;
-  writingHarness?: WritingHarnessConfig;
-  isHarnessSaving?: boolean;
-  onFormChange: (patch: Partial<StudioForm>) => void;
-  onGenerate: () => void;
-  onPreviewContext: () => void;
-  onCloseContextPreview: () => void;
-  onNavigate: (view: WorkspaceView) => void;
-  onCancel: (jobId: string) => void;
-  onRetry: (jobId: string) => void;
-  onFallback?: (jobId: string, decision: "approve" | "decline") => void;
-  story: StoryDetail;
-  onReadStory: () => void;
-  onAddChapter: () => void;
-  onAddCharacter: () => void;
-  onEndChapter: (chapterId: string) => Promise<void>;
-  onSaveWritingHarness?: (value: WritingHarnessConfig) => Promise<void>;
-  onResetWritingHarness?: () => Promise<void>;
-  onSaveChapterLength?: (value: ChapterLengthConfig) => Promise<void>;
+  form: StudioForm; chapters: ChapterRecord[]; characters: CharacterRecord[]; jobs: GenerationJob[]; selectedJobId: string;
+  isSubmitting: boolean; contextPreview: GenerationContext | null; isContextPreviewLoading: boolean;
+  onFormChange: (patch: Partial<StudioForm>) => void; onGenerate: () => void; onPreviewContext: () => void;
+  onCloseContextPreview: () => void; story: StoryDetail; onRetry?: (jobId: string) => void; onFallback?: (jobId: string, decision: "approve" | "decline") => void; onEndChapter?: (chapterId: string) => Promise<void>; onNavigate?: (view: WorkspaceView) => void; onCancel?: (jobId: string) => void; onReadStory?: () => void; onAddChapter?: () => void; onAddCharacter?: () => void; onSaveChapterLength?: (value: ChapterLengthConfig) => Promise<void>;
 }) {
+  const [isLimitsOpen, setIsLimitsOpen] = useState(false);
+  const [isCharacterPickerOpen, setIsCharacterPickerOpen] = useState(false);
+  const [characterQuery, setCharacterQuery] = useState("");
   const activeJob = jobs.find((job) => job.id === selectedJobId);
-  const isRunning =
-    activeJob?.status === "RUNNING" ||
-    activeJob?.status === "QUEUED" ||
-    activeJob?.status === "RETRYING";
-  const isRetryable = activeJob ? isRetryableGenerationStatus(activeJob.status) : false;
-  const awaitingFallback = activeJob?.status === "AWAITING_FALLBACK_CONFIRMATION";
-  const activeRunDuration = activeJob ? formatRunDuration(activeJob) : null;
-  const writingHarnessAudit = parseWritingHarnessAuditMetadata(
-    activeJob?.draftVersion?.metadata,
-  );
-  const activeChapter =
-    chapters.find((chapter) => chapter.id === form.chapterId) ??
-    chapters.find((chapter) => !["COMPLETE", "ARCHIVED"].includes(chapter.status)) ??
-    null;
-  const hardLimitReached =
-    activeChapter?.progress?.remainingToHardLimit === 0;
-  const readiness = [
-    { label: "Story workspace", detail: "A story is selected.", complete: true, action: "story" as const, actionLabel: "View story" },
-    { label: "Cast", detail: "Add at least one character to ground the scene.", complete: characters.length > 0, action: "cast" as const, actionLabel: "Add character" },
-    { label: "Scene brief", detail: "Describe a change or consequence in at least 10 characters.", complete: form.goal.trim().length >= 10, action: "studio" as const, actionLabel: "Write brief" },
-  ];
-  const incompleteReadiness = readiness.filter((item) => !item.complete);
+  const activeChapter = chapters.find((chapter) => chapter.id === form.chapterId) ?? null;
+  const selectedCharacters = characters.filter((character) => form.activeCharacterIds.includes(character.id));
+  const matchingCharacters = useMemo(() => characters.filter((character) => character.name.toLowerCase().includes(characterQuery.trim().toLowerCase())), [characterQuery, characters]);
+  const hardLimitReached = activeChapter?.progress?.remainingToHardLimit === 0;
+  const wordCount = activeChapter?.wordCount ?? 0;
+  const targetWords = activeChapter?.progress?.targetWords;
+  const progress = targetWords ? Math.min(100, (wordCount / targetWords) * 100) : 0;
+  const proposedFacts = activeJob?.proposals?.filter((proposal) => proposal.status === "PENDING") ?? [];
+
+  function toggleCharacter(characterId: string) {
+    const isSelected = form.activeCharacterIds.includes(characterId);
+    onFormChange({ activeCharacterIds: isSelected ? form.activeCharacterIds.filter((id) => id !== characterId) : [...form.activeCharacterIds, characterId] });
+  }
 
   return (
     <div className="min-w-0 space-y-5">
-        <section className="border-b border-white/[0.08] pb-5">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">CURRENT STORY</p>
-              <h1 className="mt-1 truncate text-2xl font-semibold tracking-tight text-on-surface">{story.title}</h1>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-on-surface-variant">{story.description ?? "Build the next scene from this story’s canon."}</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onReadStory}><BookOpen className="size-4" /> Read</button>
-              <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onAddCharacter}><UserPlus className="size-4" /> Character</button>
-            </div>
-          </div>
-        </section>
-        {activeChapter ? (
-          <section className="border-b border-white/[0.08] pb-5" aria-label="Active chapter progress">
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold tracking-[0.16em] text-primary">
-                  CHAPTER {String(activeChapter.number).padStart(2, "0")} · {activeChapter.status === "COMPLETE" ? "COMPLETE" : "IN PROGRESS"}
-                </p>
-                <h2 className="mt-1 text-xl font-semibold text-on-surface">{activeChapter.title}</h2>
-              </div>
-              <p className="text-sm text-on-surface-variant">
-                <strong className="text-on-surface">{activeChapter.wordCount.toLocaleString()}</strong>
-                {activeChapter.progress ? ` words · ${activeChapter.progress.targetWords.toLocaleString()} target · ${activeChapter.progress.hardLimitWords.toLocaleString()} hard` : " words"}
-              </p>
-            </div>
-            {activeChapter.progress ? (
-              <>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
-                  <div
-                    className={cn("h-full rounded-full transition-[width]", activeChapter.progress.mode === "CLOSING" ? "bg-amber-300" : "bg-primary")}
-                    style={{ width: `${Math.min(100, (activeChapter.wordCount / activeChapter.progress.targetWords) * 100)}%` }}
-                  />
-                </div>
-                <p className={cn("mt-2 text-xs", activeChapter.progress.mode === "CLOSING" ? "text-amber-200" : "text-on-surface-variant")}>
-                  {activeChapter.progress.mode === "CLOSING"
-                    ? hardLimitReached
-                      ? "Chapter hard limit reached. End this chapter before generating more prose."
-                      : `${activeChapter.progress.remainingToHardLimit.toLocaleString()} words remain before the hard limit. Generate a natural chapter ending.`
-                    : `~${activeChapter.progress.remainingToTarget.toLocaleString()} words to target.`}
-                </p>
-              </>
-            ) : null}
-          </section>
-        ) : null}
-        {incompleteReadiness.length ? (
-          <section className="rounded-2xl border border-primary/20 bg-primary/[0.06] p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold tracking-[0.16em] text-primary">FIRST SCENE</p>
-                <h2 className="mt-1 text-lg font-semibold text-on-surface">Get the essentials in place</h2>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-on-surface-variant">Complete only what is missing, then return here to preview the context before generating.</p>
-              </div>
-              <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{readiness.length - incompleteReadiness.length}/{readiness.length} ready</span>
-            </div>
-            <ol className="mt-5 grid gap-2 sm:grid-cols-2">
-              {readiness.map((item) => (
-                <li key={item.label} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-surface-dim/60 px-3 py-2.5">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-on-surface">{item.label}</p>
-                    <p className="mt-0.5 text-xs leading-5 text-on-surface-variant">{item.complete ? "Ready" : item.detail}</p>
-                  </div>
-                  {!item.complete ? <button className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-primary transition hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => item.action === "studio" ? document.getElementById("scene-brief")?.focus() : onNavigate(item.action)}>{item.actionLabel}</button> : <CheckCircle2 aria-label="Complete" className="size-4 shrink-0 text-emerald-200" />}
-                </li>
-              ))}
-            </ol>
-          </section>
-        ) : null}
-        <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 shadow-panel sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">MANUSCRIPT</p>
-              <h2 className="mt-1 text-xl font-semibold tracking-tight text-on-surface">Chapters in this story</h2>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-on-surface-variant">Keep the manuscript spine attached to “{story.title}”. Select a chapter to anchor the next scene.</p>
-            </div>
-            <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onAddChapter}><Plus className="size-4" /> Add chapter</button>
-          </div>
-          {chapters.length ? (
-            <div className="mt-5 divide-y divide-white/[0.08] overflow-hidden rounded-xl border border-white/[0.08] bg-surface-dim/45">
-              {chapters.map((chapter) => {
-                const selected = form.chapterId === chapter.id;
-                return (
-                  <button
-                    key={chapter.id}
-                    aria-pressed={selected}
-                    className={cn(
-                      "flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-primary",
-                      selected ? "bg-primary/[0.12]" : "hover:bg-white/[0.04]",
-                    )}
-                    type="button"
-                    onClick={() => onFormChange({ chapterId: chapter.id })}
-                  >
-                    <span className="flex min-w-0 items-center gap-3">
-                      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/15 text-xs font-bold text-primary">{String(chapter.number).padStart(2, "0")}</span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-on-surface">{chapter.title}</span>
-                        <span className="mt-0.5 block text-xs text-on-surface-variant">{titleCase(chapter.status)}</span>
-                      </span>
-                    </span>
-                    <span className="shrink-0 text-xs text-on-surface-variant">{chapter._count?.scenes ?? 0} scenes · {chapter._count?.events ?? 0} events</span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="mt-5 rounded-xl border border-dashed border-white/15 bg-surface-dim/35 px-4 py-5">
-              <p className="text-sm font-semibold text-on-surface">No chapters in this story yet.</p>
-              <p className="mt-1 text-sm leading-6 text-on-surface-variant">Chapter 1 will be created automatically when you generate the first scene.</p>
-              <button className="mt-3 inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onAddChapter}><Plus className="size-3.5" /> Add first chapter</button>
-            </div>
-          )}
-          {activeChapter?.progress?.mode === "CLOSING" ? (
-            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/[0.08] pt-4">
-              <span className="mr-auto text-sm text-amber-100">Approaching the chapter limit.</span>
-              {hardLimitReached ? (
-                <button className="h-9 rounded-lg bg-primary px-3 text-xs font-semibold text-on-primary" disabled={isSubmitting} type="button" onClick={() => void onEndChapter(activeChapter.id)}>End chapter now</button>
-              ) : (
-                <button className={cn("h-9 rounded-lg px-3 text-xs font-semibold", form.chapterMode !== "normal" ? "bg-primary text-on-primary" : "border border-white/15 text-on-surface")} type="button" onClick={() => onFormChange({ chapterMode: "closing" })}>Generate chapter ending</button>
-              )}
-              {!hardLimitReached ? (
-                <button className={cn("h-9 rounded-lg px-3 text-xs font-semibold", form.chapterMode === "normal" ? "bg-amber-300/15 text-amber-100" : "border border-white/15 text-on-surface-variant")} type="button" onClick={() => onFormChange({ chapterMode: "normal" })}>Continue anyway</button>
-              ) : null}
-            </div>
-          ) : null}
-        </section>
-        <WritingHarnessEditor
-          isSaving={isHarnessSaving}
-          narrativeSettings={{
-            tone: story.settings?.tone,
-            pov: story.settings?.pov,
-            tense: story.settings?.tense,
-            styleGuide: story.settings?.styleGuide,
-          }}
-          value={writingHarness}
-          onReset={onResetWritingHarness}
-          onSave={onSaveWritingHarness}
-        />
-        <form
-          className="border-y border-white/[0.08] py-5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const data = new FormData(event.currentTarget);
-            void onSaveChapterLength({
-              targetWords: Number(data.get("targetWords")),
-              softLimitWords: Number(data.get("softLimitWords")),
-              hardLimitWords: Number(data.get("hardLimitWords")),
-              autoAdvance: data.get("autoAdvance") === "on",
-            });
-          }}
-        >
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">CHAPTER LENGTH</p>
-              <h2 className="mt-1 text-lg font-semibold text-on-surface">Writing budget</h2>
-            </div>
-            <button className="h-10 rounded-xl border border-white/15 px-4 text-sm font-semibold text-on-surface" disabled={isSubmitting} type="submit">Save limits</button>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            {([
-              ["targetWords", "Target", story.settings?.chapterTargetWords ?? 5000],
-              ["softLimitWords", "Soft limit", story.settings?.chapterSoftLimitWords ?? 5500],
-              ["hardLimitWords", "Hard limit", story.settings?.chapterHardLimitWords ?? 6000],
-            ] as const).map(([name, label, value]) => (
-              <label className="text-xs font-semibold text-on-surface-variant" key={name}>
-                {label}
-                <input key={`${name}-${value}`} className="mt-2 h-10 w-full rounded-lg border border-white/10 bg-surface-dim px-3 text-sm text-on-surface outline-none focus:border-primary/70" defaultValue={value} min={1} name={name} type="number" />
-              </label>
-            ))}
-          </div>
-          <label className="mt-4 flex items-center gap-2 text-sm text-on-surface-variant">
-            <input defaultChecked={story.settings?.chapterAutoAdvance ?? true} name="autoAdvance" type="checkbox" />
-            Automatically advance after an approved closing draft reaches the target.
+      <section className="grid gap-5 border-b border-white/[0.08] pb-5 lg:grid-cols-[minmax(0,1fr)_14rem]">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="min-w-0 text-xs font-medium text-on-surface-variant">Story<div className="mt-1 truncate rounded-lg border border-white/10 bg-surface-dim px-3 py-2.5 text-sm font-semibold text-on-surface">{story.title}</div></div>
+          <label className="block min-w-0 text-xs font-medium text-on-surface-variant">Chapter
+            <select aria-label="Select chapter" className="mt-1 h-10 w-full rounded-lg border border-white/10 bg-surface-dim px-3 text-sm font-semibold text-on-surface outline-none focus:border-primary" value={form.chapterId} onChange={(event) => onFormChange({ chapterId: event.target.value })}>
+              {chapters.map((chapter) => <option key={chapter.id} value={chapter.id}>{String(chapter.number).padStart(2, "0")} · {chapter.title}</option>)}
+            </select>
           </label>
-        </form>
-        <section className="overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low shadow-panel">
-          <div className="border-b border-white/10 px-5 py-4 sm:px-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">SCENE BRIEF</p>
-                <h2 className="mt-1 text-xl font-semibold tracking-tight text-on-surface">Direct the next beat</h2>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-on-surface-variant">
-                  Give the draft a consequence, a shift, and a point of view. Context stays inspectable before it reaches the model.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                  disabled={isContextPreviewLoading || form.goal.trim().length < 10}
-                  type="button"
-                  onClick={onPreviewContext}
-                >
-                  {isContextPreviewLoading ? <Loader2 className="size-4 animate-spin" /> : <Eye className="size-4" />}
-                  Review context
-                </button>
-                <button
-                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                  disabled={isSubmitting || hardLimitReached || form.goal.trim().length < 10}
-                  type="button"
-                  onClick={onGenerate}
-                >
-                  {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                  {hardLimitReached ? "Hard limit reached" : activeChapter?.progress?.mode === "CLOSING" && form.chapterMode !== "normal" ? "Generate chapter ending" : "Generate next scene"}
-                </button>
-              </div>
+        </div>
+        <div className="flex items-end gap-3"><div className="min-w-0 flex-1 pb-0.5"><p className="text-xs text-on-surface-variant"><strong className="text-on-surface">{wordCount.toLocaleString()}</strong>{targetWords ? ` / ${targetWords.toLocaleString()} words` : " words"}</p><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.08]"><div className="h-full rounded-full bg-primary transition-[width] duration-200" style={{ width: `${progress}%` }} /></div></div><button className="h-9 shrink-0 rounded-lg border border-white/10 px-3 text-xs font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => setIsLimitsOpen(true)}>Edit limits</button></div>
+      </section>
+
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_14rem]">
+        <section className="rounded-xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-xl font-semibold tracking-tight text-on-surface">Write the next scene</h1><p className="mt-1 text-sm leading-6 text-on-surface-variant">Describe what you want to happen next. Mention events, characters, conflicts, or anything the AI should include.</p></div><button className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" disabled={isContextPreviewLoading || form.goal.trim().length < 10} type="button" onClick={onPreviewContext}>{isContextPreviewLoading ? <Loader2 className="size-3.5 animate-spin" /> : <Eye className="size-3.5" />} What will AI know?</button></div>
+          <label className="mt-4 block"><span className="sr-only">What should happen next?</span><textarea id="scene-brief" className="min-h-40 w-full rounded-lg border border-white/10 bg-surface-dim/80 px-3.5 py-3 text-sm leading-7 text-on-surface outline-none transition placeholder:text-on-surface-variant/60 focus:border-primary focus:ring-2 focus:ring-primary/15" placeholder="e.g. Alex discovers his father's advisor has been secretly communicating with the enemy. He confronts the advisor at night in the castle library…" value={form.goal} onChange={(event) => onFormChange({ goal: event.target.value })} /><span className="mt-1.5 block text-right text-xs text-on-surface-variant">{form.goal.length.toLocaleString()} / 1,000</span></label>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_12rem_auto] lg:items-end">
+            <div className="relative min-w-0"><p className="mb-2 text-xs font-semibold text-on-surface">Characters</p><div className="flex flex-wrap items-center gap-2">{selectedCharacters.map((character) => <button key={character.id} className="inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-lg border border-primary/50 bg-primary/15 px-2.5 text-xs font-medium text-primary transition hover:bg-primary/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => toggleCharacter(character.id)}><span className="truncate">{character.name}</span><X className="size-3 shrink-0" aria-label={`Remove ${character.name}`} /></button>)}<button aria-expanded={isCharacterPickerOpen} className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/10 px-2.5 text-xs font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => setIsCharacterPickerOpen((open) => !open)}><Plus className="size-3.5" /> Add character</button></div>
+              {isCharacterPickerOpen ? <div className="absolute z-20 mt-2 w-[min(22rem,calc(100vw-3rem))] rounded-xl border border-white/10 bg-surface-container p-3 shadow-lg shadow-black/30"><label className="block text-xs font-semibold text-on-surface">Select characters<input autoFocus className="mt-2 h-9 w-full rounded-lg border border-white/10 bg-surface-dim px-3 text-sm text-on-surface outline-none focus:border-primary" placeholder="Search characters…" value={characterQuery} onChange={(event) => setCharacterQuery(event.target.value)} /></label><div className="mt-2 max-h-52 overflow-y-auto">{matchingCharacters.map((character) => { const selected = form.activeCharacterIds.includes(character.id); return <button aria-pressed={selected} className={cn("flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary", selected && "bg-primary/10 text-primary")} key={character.id} type="button" onClick={() => toggleCharacter(character.id)}><span className="truncate">{character.name}</span>{selected ? <Check className="size-4 shrink-0" /> : null}</button>; })}{!matchingCharacters.length ? <p className="px-3 py-4 text-sm text-on-surface-variant">No characters found.</p> : null}</div><button className="mt-2 text-xs font-semibold text-primary hover:text-primary/80" type="button" onClick={() => setIsCharacterPickerOpen(false)}>Done</button></div> : null}
             </div>
+            <label className="block text-xs font-semibold text-on-surface">Content<select className="mt-2 h-9 w-full rounded-lg border border-white/10 bg-surface-dim px-3 text-sm font-medium text-on-surface outline-none focus:border-primary" value={form.maturityMode} onChange={(event) => onFormChange({ maturityMode: event.target.value as StudioForm["maturityMode"] })}><option value="safe">Standard (Safe)</option><option value="mature">Mature</option></select></label>
+            <button className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" disabled={isSubmitting || hardLimitReached || form.goal.trim().length < 10} type="button" onClick={onGenerate}>{isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}{hardLimitReached ? "Hard limit reached" : "Generate scene"}</button>
           </div>
-
-          <div className="space-y-6 p-5 sm:p-6">
-            <label className="block">
-              <span className="mb-2 block text-sm font-semibold text-on-surface">What must change in this scene?</span>
-              <textarea
-                id="scene-brief"
-                className="min-h-44 w-full resize-y rounded-xl border border-white/10 bg-surface-dim/80 px-4 py-3 text-[15px] leading-7 text-on-surface outline-none transition placeholder:text-on-surface-variant/55 focus:border-primary/70 focus:ring-2 focus:ring-primary/15"
-                placeholder="Example: They are forced to cooperate in public, but the old betrayal becomes impossible to ignore. End with a choice that changes the balance between them."
-                value={form.goal}
-                onChange={(event) => onFormChange({ goal: event.target.value })}
-              />
-              <span className="mt-2 block text-xs text-on-surface-variant">
-                {form.goal.trim().split(/\s+/).filter(Boolean).length} words · scene briefs are saved with the generation run.
-              </span>
-            </label>
-
-            <div className="grid gap-5 md:grid-cols-2">
-              <div>
-                <span className="mb-2 block text-sm font-semibold text-on-surface">Safety and knowledge scope</span>
-                <div className="grid grid-cols-2 gap-2">
-                  {(["safe", "mature"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      className={cn(
-                        "h-11 rounded-xl border text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                        form.maturityMode === mode
-                          ? "border-primary/50 bg-primary/15 text-primary"
-                          : "border-white/10 bg-surface-dim text-on-surface-variant hover:border-white/25 hover:text-on-surface",
-                      )}
-                      type="button"
-                      onClick={() => onFormChange({ maturityMode: mode })}
-                    >
-                      {mode === "safe" ? "Safe" : "Mature"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-white/10 bg-surface-dim/60 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-on-surface">Cast in this scene</p>
-                  <p className="mt-1 text-xs text-on-surface-variant">Only selected characters are checked for mature-mode eligibility.</p>
-                </div>
-                <button
-                  aria-pressed={form.includeSecrets}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition",
-                    form.includeSecrets
-                      ? "bg-amber-300/15 text-amber-200"
-                      : "bg-white/[0.06] text-on-surface-variant hover:text-on-surface",
-                  )}
-                  type="button"
-                  onClick={() => onFormChange({ includeSecrets: !form.includeSecrets })}
-                >
-                  <ShieldCheck className="size-3.5" />
-                  {form.includeSecrets ? "Secrets included" : "Public canon only"}
-                </button>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {characters.map((character) => {
-                  const selected = form.activeCharacterIds.includes(character.id);
-                  return (
-                    <button
-                      key={character.id}
-                      aria-pressed={selected}
-                      className={cn(
-                        "inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
-                        selected
-                          ? "border-primary/50 bg-primary/15 text-primary"
-                          : "border-white/10 bg-surface text-on-surface-variant hover:border-white/25 hover:text-on-surface",
-                      )}
-                      type="button"
-                      onClick={() => {
-                        const activeCharacterIds = selected
-                          ? form.activeCharacterIds.filter((id) => id !== character.id)
-                          : [...form.activeCharacterIds, character.id];
-                        onFormChange({ activeCharacterIds });
-                      }}
-                    >
-                      <span className="grid size-5 place-items-center rounded-full bg-white/10 text-[10px] font-bold">
-                        {character.name.slice(0, 1).toUpperCase()}
-                      </span>
-                      {character.name}
-                      {character.ageConfirmed ? null : <AlertTriangle className="size-3 text-amber-200" />}
-                    </button>
-                  );
-                })}
-                {!characters.length ? <p className="text-sm text-on-surface-variant">Add a character before anchoring a scene.</p> : null}
-              </div>
-            </div>
-            {contextPreview ? <ContextPreview context={contextPreview} includeSecrets={form.includeSecrets} onClose={onCloseContextPreview} /> : null}
-          </div>
+          {contextPreview ? <ContextPreview context={contextPreview} includeSecrets={form.includeSecrets} onClose={onCloseContextPreview} /> : null}
+          {hardLimitReached && activeChapter ? <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300/25 bg-amber-300/[0.08] px-3 py-2.5 text-sm text-amber-100" role="alert"><span>Chapter hard limit reached. End this chapter before generating more prose.</span><button className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary" type="button" onClick={() => void onEndChapter?.(activeChapter.id)}>End chapter now</button></div> : null}
         </section>
-
-        {activeJob ? (
-          <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">LIVE RUN</p>
-                <h2 className="mt-1 text-lg font-semibold text-on-surface">{titleCase(activeJob.stage)}</h2>
-                <p className="mt-1 text-sm text-on-surface-variant">Started {formatRelativeDate(activeJob.startedAt ?? activeJob.createdAt)}</p>
-              </div>
-              <span className={cn("rounded-full border px-2.5 py-1 text-xs font-bold", jobTone(activeJob.status))}>
-                {titleCase(activeJob.status)}
-              </span>
-            </div>
-            <div
-              aria-label="Generation progress"
-              aria-valuemax={100}
-              aria-valuemin={0}
-              aria-valuenow={activeJob.progress}
-              className="mt-5 h-2 overflow-hidden rounded-full bg-white/[0.07]"
-              role="progressbar"
-            >
-              <div
-                className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
-                style={{ width: `${Math.max(activeJob.progress, isRunning ? 8 : 0)}%` }}
-              />
-            </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-on-surface-variant">
-              <span>{activeJob.progress}% complete</span>
-              {awaitingFallback ? (
-                <div className="w-full rounded-xl border border-amber-300/25 bg-amber-300/[0.08] p-4 text-sm leading-6 text-amber-50">
-                  <p className="font-semibold">The free model failed and generation is paused.</p>
-                  <p className="mt-1">Continue with {activeJob.fallbackModel ?? "qwen/qwen-2.5-72b-instruct"} may consume OpenRouter credits. No paid request is sent without confirmation; this job cancels automatically after the deadline.</p>
-                  <div className="mt-3 flex flex-wrap gap-2"><button disabled={isSubmitting} onClick={() => onFallback?.(activeJob.id, "approve")} className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary">Continue with Qwen</button><button disabled={isSubmitting} onClick={() => onFallback?.(activeJob.id, "decline")} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-on-surface">Stop generation</button></div>
-                </div>
-              ) : isRunning ? (
-                <button
-                  className="inline-flex items-center gap-1.5 text-rose-200 transition hover:text-rose-100"
-                  type="button"
-                  onClick={() => onCancel(activeJob.id)}
-                >
-                  <X className="size-3.5" /> Cancel job
-                </button>
-              ) : isRetryable ? (
-                <button
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-amber-100 transition hover:bg-amber-300/10 hover:text-amber-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                  type="button"
-                  onClick={() => onRetry(activeJob.id)}
-                >
-                  <RefreshCw className="size-3.5" /> Retry job
-                </button>
-              ) : null}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-white/[0.08] pt-4 text-xs text-on-surface-variant">
-              {activeRunDuration ? <span>Elapsed: <strong className="text-on-surface">{activeRunDuration}</strong></span> : null}
-              {activeJob.generationRun?.totalTokens ? <span>Total tokens: <strong className="text-on-surface">{activeJob.generationRun.totalTokens.toLocaleString()}</strong></span> : null}
-              {activeJob.generationRun?.model ? <span className="min-w-0 truncate">Model: <strong className="text-on-surface">{activeJob.generationRun.model}</strong></span> : null}
-            </div>
-            {writingHarnessAudit ? (
-              <WritingHarnessRunResult audit={writingHarnessAudit} />
-            ) : null}
-            {activeJob.error ? <p className="mt-4 rounded-lg bg-rose-300/10 p-3 text-sm leading-6 text-rose-100">{activeJob.error}</p> : null}
-          </section>
-        ) : null}
+        <aside className="space-y-4"><section className="rounded-xl border border-white/10 bg-surface-container-low p-4"><div className="flex items-center justify-between gap-3"><h2 className="text-sm font-semibold text-on-surface">New story facts</h2><span className="grid size-5 place-items-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">{proposedFacts.length}</span></div><p className="mt-1 text-xs leading-5 text-on-surface-variant">Facts introduced by this scene that may become part of your story.</p>{proposedFacts.length ? <ul className="mt-3 space-y-2 text-xs text-on-surface-variant">{proposedFacts.slice(0, 3).map((fact) => <li className="rounded-lg bg-surface-dim p-2" key={fact.id}>{fact.title}</li>)}</ul> : <p className="mt-4 rounded-lg border border-dashed border-white/10 px-3 py-5 text-center text-xs leading-5 text-on-surface-variant">Generate a scene to see potential story facts here.</p>}</section><section className="rounded-xl border border-white/10 bg-surface-container-low p-4"><h2 className="text-sm font-semibold text-on-surface">Scene context</h2><ul className="mt-3 space-y-2 text-xs leading-5 text-on-surface-variant"><li className="flex gap-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-200" />{activeChapter ? `Chapter ${String(activeChapter.number).padStart(2, "0")}: ${activeChapter.title}` : "Choose a chapter"}</li><li className="flex gap-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-200" />Selected characters ({selectedCharacters.length})</li><li className="flex gap-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-200" />Approved canon facts</li><li className="flex gap-2"><ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" />Story writing rules</li></ul></section></aside>
+      </div>
+      {activeJob && ["RUNNING", "QUEUED", "RETRYING"].includes(activeJob.status) ? <section className="rounded-xl border border-primary/20 bg-primary/[0.06] p-4" aria-live="polite"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-semibold text-on-surface">Generating scene</p><p className="mt-1 text-xs text-on-surface-variant">{activeJob.progress}% complete</p></div><Loader2 className="size-4 animate-spin text-primary" /></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.08]"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${Math.max(activeJob.progress, 8)}%` }} /></div><button className="mt-3 text-xs font-semibold text-rose-200 hover:text-rose-100" type="button" onClick={() => onCancel?.(activeJob.id)}>Cancel generation</button></section> : null}
+      {activeJob?.status === "AWAITING_FALLBACK_CONFIRMATION" ? <section className="rounded-xl border border-amber-300/25 bg-amber-300/[0.08] p-4"><p className="text-sm font-semibold text-amber-50">Generation is paused</p><p className="mt-1 text-xs leading-5 text-amber-100">Continue with {activeJob.fallbackModel ?? "the fallback model"} may consume credits. No paid request is sent without confirmation.</p><div className="mt-3 flex gap-2"><button className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary" type="button" onClick={() => onFallback?.(activeJob.id, "approve")}>Continue</button><button className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-on-surface" type="button" onClick={() => onFallback?.(activeJob.id, "decline")}>Stop</button></div></section> : null}
+      {activeJob?.status === "FAILED" ? <section className="rounded-xl border border-rose-300/20 bg-rose-300/[0.08] p-4" role="alert"><div aria-label="Generation progress" aria-valuemax={100} aria-valuemin={0} aria-valuenow={activeJob.progress} className="sr-only" role="progressbar" /><p className="text-sm font-semibold text-rose-100">Generation failed</p><p className="mt-1 text-sm text-rose-100/80">{activeJob.error ?? "The provider could not complete this generation."}</p><button className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-200/25 px-3 text-xs font-semibold text-rose-100" type="button" onClick={() => onRetry?.(activeJob.id)}><RefreshCw className="size-3.5" /> Retry job</button></section> : null}
+      {isLimitsOpen ? <Dialog title="Chapter limits" onClose={() => setIsLimitsOpen(false)}><form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); void onSaveChapterLength({ targetWords: Number(data.get("targetWords")), softLimitWords: Number(data.get("softLimitWords")), hardLimitWords: Number(data.get("hardLimitWords")), autoAdvance: data.get("autoAdvance") === "on" }).then(() => setIsLimitsOpen(false)); }}><div className="grid gap-3">{([["targetWords", "Target words", story.settings?.chapterTargetWords ?? 5000], ["softLimitWords", "Soft limit", story.settings?.chapterSoftLimitWords ?? 5500], ["hardLimitWords", "Hard limit", story.settings?.chapterHardLimitWords ?? 6000]] as const).map(([name, label, value]) => <label className="text-sm font-semibold text-on-surface" key={name}>{label}<input className="mt-2 h-10 w-full rounded-lg border border-white/10 bg-surface-dim px-3 text-on-surface outline-none focus:border-primary" defaultValue={value} min={1} name={name} type="number" /></label>)}</div><label className="mt-4 flex items-center gap-2 text-sm text-on-surface-variant"><input defaultChecked={story.settings?.chapterAutoAdvance ?? true} name="autoAdvance" type="checkbox" />Automatically advance after reaching target</label><div className="mt-6 flex justify-end gap-2"><button className="h-10 rounded-lg px-4 text-sm font-semibold text-on-surface-variant hover:text-on-surface" type="button" onClick={() => setIsLimitsOpen(false)}>Cancel</button><button className="h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-on-primary" type="submit">Save</button></div></form></Dialog> : null}
     </div>
   );
 }
 
 function ContextPreview({ context, includeSecrets, onClose }: { context: GenerationContext; includeSecrets: boolean; onClose: () => void }) {
-  const memories = context.memories.slice(0, 4);
-  const writingHarness = context.settings?.writingHarness;
-  const compiledHarness = writingHarness
-    ? compileWritingHarness(writingHarness, context.settings ?? {})
-    : null;
-  const omittedCount = context.budget
-    ? Object.values(context.budget.omitted).reduce((sum, value) => sum + value, 0)
-    : 0;
-
-  return (
-    <section className="rounded-xl border border-primary/25 bg-primary/[0.06] p-4" aria-labelledby="context-preview-title">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold tracking-[0.15em] text-primary">CONTEXT TO SEND</p>
-          <h3 id="context-preview-title" className="mt-1 text-base font-semibold text-on-surface">Review what will ground this draft</h3>
-          <p className="mt-1 text-sm leading-6 text-on-surface-variant">This is a preview only; it has not been sent to the model.</p>
-        </div>
-        <button className="rounded-lg px-2 py-1 text-xs font-semibold text-on-surface-variant transition hover:bg-white/[0.06] hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={onClose}>Close preview</button>
-      </div>
-      {context.budget ? (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-y border-white/[0.08] py-3 text-xs text-on-surface-variant">
-          <span className={context.budget.overBudget ? "text-amber-200" : undefined}>
-            Estimated context: <strong className="text-on-surface">{context.budget.estimatedTokens.toLocaleString()} / {context.budget.maxTokens.toLocaleString()} tokens</strong>
-          </span>
-          <span>{context.budget.overBudget ? "Selected character canon exceeds the target budget" : omittedCount ? `${omittedCount} lower-priority records omitted` : "All retrieved records fit"}</span>
-        </div>
-      ) : null}
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <ContextList title={`Characters (${context.characters.length})`} items={context.characters.map((character) => `${character.name} · ${character.status}`)} empty="No character profiles were retrieved." />
-        <ContextList title={`Memories (${context.memories.length})`} items={memories.map((memory) => memory.summary ?? memory.content)} empty="No ranked memories were retrieved." />
-        <ContextList title={`Plot threads (${context.plotThreads.length})`} items={context.plotThreads.slice(0, 4).map((thread) => thread.title)} empty="No active plot threads were retrieved." />
-      </div>
-      {compiledHarness ? (
-        <details className="mt-3 rounded-lg border border-white/[0.08] bg-surface-dim/60 p-3">
-          <summary className="cursor-pointer text-xs font-semibold text-on-surface">
-            Effective AI Writing Harness
-          </summary>
-          <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-xs leading-5 text-on-surface-variant">
-            {compiledHarness}
-          </pre>
-        </details>
-      ) : null}
-      <div className="mt-3 flex flex-wrap gap-2 text-xs text-on-surface-variant">
-        <span className="rounded-full bg-white/[0.06] px-2.5 py-1">{context.relationships.length} relationships</span>
-        <span className="rounded-full bg-white/[0.06] px-2.5 py-1">{context.recentEvents.length} recent events</span>
-        <span className="rounded-full bg-white/[0.06] px-2.5 py-1">{includeSecrets ? `${context.secrets.length} secrets included` : "Public canon only"}</span>
-      </div>
-    </section>
-  );
-}
-
-function WritingHarnessRunResult({ audit }: { audit: WritingHarnessAudit }) {
-  const { evaluation } = audit;
-  const findings = evaluation.repairAttempted
-    ? evaluation.findingsAfterRepair
-    : evaluation.findingsBeforeRepair;
-  const labels = {
-    passed: "Passed",
-    repaired_and_passed: "Repaired and passed",
-    needs_review: "Needs harness review",
-  } as const;
-  const passed = evaluation.status !== "needs_review";
-
-  return (
-    <div
-      className={cn(
-        "mt-4 rounded-xl border p-3 text-sm",
-        passed
-          ? "border-emerald-300/20 bg-emerald-300/[0.06] text-emerald-100"
-          : "border-amber-300/25 bg-amber-300/[0.08] text-amber-50",
-      )}
-    >
-      <p className="flex items-center gap-2 font-semibold">
-        {passed ? (
-          <CheckCircle2 className="size-4" />
-        ) : (
-          <AlertTriangle className="size-4" />
-        )}
-        {labels[evaluation.status]}
-      </p>
-      {!passed && findings.length ? (
-        <ul className="mt-2 space-y-1 text-xs leading-5">
-          {findings.slice(0, 3).map((finding) => (
-            <li key={`${finding.kind}-${finding.rule}`}>{finding.message}</li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  );
-}
-
-function ContextList({ title, items, empty }: { title: string; items: string[]; empty: string }) {
-  return <div className="rounded-lg border border-white/[0.08] bg-surface-dim/60 p-3"><p className="text-xs font-semibold text-on-surface">{title}</p>{items.length ? <ul className="mt-2 space-y-1.5 text-xs leading-5 text-on-surface-variant">{items.map((item, index) => <li className="line-clamp-2" key={`${item}-${index}`}>{item}</li>)}</ul> : <p className="mt-2 text-xs leading-5 text-on-surface-variant">{empty}</p>}</div>;
+  const omittedCount = context.budget ? Object.values(context.budget.omitted).reduce((sum, value) => sum + value, 0) : 0;
+  return <section className="mt-4 rounded-lg border border-primary/25 bg-primary/[0.06] p-4" aria-labelledby="context-preview-title"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 id="context-preview-title" className="text-sm font-semibold text-on-surface">Preview AI context</h2><p className="mt-1 text-xs leading-5 text-on-surface-variant">This information has not been sent until you generate.</p></div><button className="text-xs font-semibold text-on-surface-variant hover:text-on-surface" type="button" onClick={onClose}>Close</button></div><div className="mt-3 grid gap-2 text-xs text-on-surface-variant sm:grid-cols-2"><p>{context.characters.length} selected character records</p><p>{context.memories.length} relevant memories</p><p>{context.plotThreads.length} active plot threads</p><p>{includeSecrets ? `${context.secrets.length} secrets included` : "Public canon only"}</p></div>{context.budget ? <p className="mt-3 text-xs text-on-surface-variant">Estimated context: {context.budget.estimatedTokens.toLocaleString()} / {context.budget.maxTokens.toLocaleString()} tokens{omittedCount ? ` · ${omittedCount} lower-priority records omitted` : ""}</p> : null}</section>;
 }
