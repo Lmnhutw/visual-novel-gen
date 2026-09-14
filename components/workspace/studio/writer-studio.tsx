@@ -1,7 +1,11 @@
 "use client";
 
 import {
+  AlertTriangle,
+  ArrowRight,
   BookOpen,
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   Plus,
   Settings2,
@@ -104,6 +108,9 @@ export function WriterStudio() {
   const [isChapterLimitsOpen, setIsChapterLimitsOpen] = useState(false);
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
   const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
+  const [chapterToEndId, setChapterToEndId] = useState<string | null>(null);
+  const [nextChapterTitle, setNextChapterTitle] = useState("");
+  const [nextChapterDirection, setNextChapterDirection] = useState("");
   const [storyToDelete, setStoryToDelete] = useState<StorySummary | null>(null);
   const [templates, setTemplates] = useState<TemplateRecord[]>([]);
   const [templateQuery, setTemplateQuery] = useState("");
@@ -289,6 +296,29 @@ export function WriterStudio() {
           chapter.id === (activeGenerationJob?.chapterId ?? chapterId),
       ) ?? null,
     [activeGenerationJob?.chapterId, chapterId, chapters],
+  );
+  const chapterToEnd = useMemo(
+    () => chapters.find((chapter) => chapter.id === chapterToEndId) ?? null,
+    [chapterToEndId, chapters],
+  );
+  const latestChapterJob = chapterToEnd
+    ? jobs.find((job) => job.chapterId === chapterToEnd.id)
+    : undefined;
+  const chapterHasActiveGeneration = Boolean(
+    chapterToEnd &&
+      jobs.some(
+        (job) =>
+          job.chapterId === chapterToEnd.id &&
+          [
+            "QUEUED",
+            "RUNNING",
+            "RETRYING",
+            "AWAITING_FALLBACK_CONFIRMATION",
+          ].includes(job.status),
+      ),
+  );
+  const chapterHasUnacceptedDraft = Boolean(
+    latestChapterJob?.draftVersion?.status === "DRAFT",
   );
   const canonReviewProposals = useMemo<CanonReviewProposal[]>(
     () =>
@@ -787,18 +817,80 @@ export function WriterStudio() {
     setContextPreview(null);
   }, [commitSuccess]);
 
-  const endChapter = useCallback(async (currentChapterId: string) => {
-    const result = await requestJson<{ nextChapter: { id: string } }>(
-      `/api/chapters/${currentChapterId}/end`,
-      { method: "POST" },
-    );
-    setChapterId(result.nextChapter.id);
-    setCommitSuccess(null);
-    setSelectedJobId("");
-    setGoal("");
-    setMessage("Chapter completed. The next chapter is ready.");
-    if (storyId) await refreshCurrentWorkspace();
-  }, [refreshCurrentWorkspace, storyId]);
+  const changeChapter = useCallback(
+    (nextChapterId: string) => {
+      if (!nextChapterId || nextChapterId === chapterId) return;
+      setChapterId(nextChapterId);
+      setCommitSuccess(null);
+      setSelectedJobId("");
+      setContextPreview(null);
+      if (goal.trim()) {
+        setMessage("Chapter changed. Review the current direction before generating.");
+      }
+    },
+    [chapterId, goal],
+  );
+
+  const openChapterHandoff = useCallback(
+    (currentChapterId: string) => {
+      const currentChapter = chapters.find(
+        (chapter) => chapter.id === currentChapterId,
+      );
+      if (!currentChapter) return;
+      const existingNextChapter = chapters.find(
+        (chapter) => chapter.number === currentChapter.number + 1,
+      );
+
+      setChapterToEndId(currentChapter.id);
+      setNextChapterTitle(
+        existingNextChapter?.title ?? `Chapter ${currentChapter.number + 1}`,
+      );
+      setNextChapterDirection(
+        currentChapter.brief?.suggestedNextDirection ?? "",
+      );
+    },
+    [chapters],
+  );
+
+  const endChapter = useCallback(async () => {
+    if (!chapterToEnd || !nextChapterTitle.trim() || chapterHasActiveGeneration) return;
+    setIsLoading(true);
+    setError("");
+    try {
+      const result = await requestJson<{ nextChapter: { id: string } }>(
+        `/api/chapters/${chapterToEnd.id}/end`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            nextChapterTitle: nextChapterTitle.trim(),
+            openingDirection: nextChapterDirection.trim() || undefined,
+          }),
+        },
+      );
+      setChapterId(result.nextChapter.id);
+      setChapterToEndId(null);
+      setNextChapterTitle("");
+      setNextChapterDirection("");
+      setCommitSuccess(null);
+      setSelectedJobId("");
+      setGoal("");
+      setContextPreview(null);
+      setMessage("Chapter completed. Continuity was carried into the next chapter.");
+      if (storyId) await refreshCurrentWorkspace();
+    } catch (requestError) {
+      setError(formatRequestError(requestError, "Could not start the next chapter."));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    chapterHasActiveGeneration,
+    chapterToEnd,
+    nextChapterDirection,
+    nextChapterTitle,
+    refreshCurrentWorkspace,
+    storyId,
+  ]);
 
   const reviewProposal = useCallback(
     async (proposal: CanonProposal, decision: "accept" | "reject") => {
@@ -868,7 +960,10 @@ export function WriterStudio() {
       <CurrentStoryHeader
         story={story}
         chapter={currentStoryChapter}
-        isGenerating={Boolean(activeGenerationJob)}
+        chapters={chapters}
+        isGenerating={runningJob}
+        onChangeChapter={changeChapter}
+        onStartNextChapter={openChapterHandoff}
         onOpenCharacters={() => setActiveView("cast")}
         onOpenChapterSetup={() => setIsChapterLimitsOpen(true)}
         onRead={() =>
@@ -917,6 +1012,7 @@ export function WriterStudio() {
         onCancel={cancelGeneration}
         onRetry={retryGeneration}
         onFallback={decideFallback}
+        onEndChapter={openChapterHandoff}
       />
       <DraftReview
         job={selectedJob}
@@ -929,7 +1025,7 @@ export function WriterStudio() {
         onReviewProposal={reviewProposal}
         onSelectJob={setSelectedJobId}
         onContinueChapter={continueChapter}
-        onEndChapter={endChapter}
+        onEndChapter={openChapterHandoff}
       />
     </div>
   ) : activeView === "harness" ? (
@@ -1058,6 +1154,7 @@ export function WriterStudio() {
                         <SelectMenu
                           ariaLabel="Select chapter"
                           className="h-10"
+                          disabled={runningJob}
                           options={chapters.map((chapter) => ({
                             label: `${String(chapter.number).padStart(2, "0")} · ${chapter.title}`,
                             value: chapter.id,
@@ -1065,10 +1162,7 @@ export function WriterStudio() {
                           placeholder="Select a chapter"
                           showPlaceholderOption={false}
                           value={chapterId}
-                          onChange={(nextChapterId) => {
-                            setContextPreview(null);
-                            setChapterId(nextChapterId);
-                          }}
+                          onChange={changeChapter}
                         />
                       </div>
                       <p className="whitespace-nowrap text-xs font-semibold text-on-surface-variant">
@@ -1255,6 +1349,121 @@ export function WriterStudio() {
           </button>
         </Dialog>
       )}
+      {chapterToEnd && (
+        <Dialog
+          title="End chapter & start next"
+          onClose={() => setChapterToEndId(null)}
+        >
+          <p className="text-sm leading-6 text-on-surface-variant">
+            Chapter {String(chapterToEnd.number).padStart(2, "0")} will be
+            marked complete. Its approved continuity will seed the next
+            chapter&apos;s Living Brief.
+          </p>
+
+          <div className="my-5 border-y border-white/[0.08] py-4">
+            <p className="text-xs font-semibold tracking-[0.14em] text-primary/80">
+              CONTINUITY HANDOFF
+            </p>
+            {chapterToEnd.brief ? (
+              <div className="mt-3 space-y-3 text-sm leading-6 text-on-surface-variant">
+                <p>
+                  <strong className="text-on-surface">Latest progress:</strong>{" "}
+                  {chapterToEnd.brief.progress.at(-1) ??
+                    "No approved scene update yet."}
+                </p>
+                <p>
+                  <strong className="text-on-surface">Carried forward:</strong>{" "}
+                  {chapterToEnd.brief.openThreads.length} open threads,{" "}
+                  {Math.min(chapterToEnd.brief.characterChanges.length, 8)} character
+                  changes and {Math.min(chapterToEnd.brief.facts.length, 8)} facts.
+                </p>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm leading-6 text-on-surface-variant">
+                This chapter has no reviewed Living Brief yet. Story canon will
+                remain available, but the chapter-specific handoff is limited.
+              </p>
+            )}
+          </div>
+
+          {(chapterToEnd.progress?.targetWords ?? 5_000) >
+          chapterToEnd.wordCount ? (
+            <div className="mb-4 flex gap-2.5 text-sm leading-6 text-amber-100">
+              <AlertTriangle className="mt-1 size-4 shrink-0" />
+              <p>
+                This chapter has {chapterToEnd.wordCount.toLocaleString()} of{" "}
+                {(chapterToEnd.progress?.targetWords ?? 5_000).toLocaleString()} target
+                words. You can still end it if this is the right story boundary.
+              </p>
+            </div>
+          ) : null}
+
+          {chapterHasActiveGeneration ? (
+            <div className="mb-4 flex gap-2.5 text-sm leading-6 text-rose-100" role="alert">
+              <AlertTriangle className="mt-1 size-4 shrink-0" />
+              <p>
+                Wait for or cancel the active generation before ending this chapter.
+              </p>
+            </div>
+          ) : null}
+
+          {chapterHasUnacceptedDraft && !chapterHasActiveGeneration ? (
+            <div className="mb-4 flex gap-2.5 text-sm leading-6 text-amber-100">
+              <AlertTriangle className="mt-1 size-4 shrink-0" />
+              <p>
+                The latest draft has not been added to this chapter. It will stay
+                in Draft history, but only approved content will be carried forward.
+              </p>
+            </div>
+          ) : null}
+
+          <div className="grid gap-4">
+            <label className="text-sm font-semibold text-on-surface">
+              Next chapter title
+              <input
+                autoFocus
+                className="mt-2 h-11 w-full rounded-xl border border-white/10 bg-surface-dim px-3 font-normal text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                maxLength={200}
+                value={nextChapterTitle}
+                onChange={(event) => setNextChapterTitle(event.target.value)}
+              />
+            </label>
+            <label className="text-sm font-semibold text-on-surface">
+              Opening direction <span className="font-normal text-on-surface-variant">(optional)</span>
+              <textarea
+                className="mt-2 min-h-28 w-full rounded-xl border border-white/10 bg-surface-dim px-3 py-2.5 font-normal leading-6 text-on-surface outline-none placeholder:text-on-surface-variant/60 focus:border-primary focus:ring-2 focus:ring-primary/15"
+                maxLength={2_000}
+                placeholder="Leave blank to continue from the approved Chapter Brief."
+                value={nextChapterDirection}
+                onChange={(event) => setNextChapterDirection(event.target.value)}
+              />
+            </label>
+          </div>
+
+          <div className="mt-6 flex flex-wrap justify-end gap-2">
+            <button
+              className="h-10 rounded-xl px-4 text-sm font-semibold text-on-surface-variant transition hover:bg-white/[0.07] hover:text-on-surface"
+              type="button"
+              onClick={() => setChapterToEndId(null)}
+            >
+              Cancel
+            </button>
+            <button
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isLoading || chapterHasActiveGeneration || !nextChapterTitle.trim()}
+              type="button"
+              onClick={() => void endChapter()}
+            >
+              {isLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <ArrowRight className="size-4" />
+              )}
+              End chapter & start next
+            </button>
+          </div>
+        </Dialog>
+      )}
       {isCharacterModalOpen && (
         <ModalFrame
           label={isTemplateForm ? "Character Library" : "Character bible"}
@@ -1334,18 +1543,38 @@ export function WriterStudio() {
 function CurrentStoryHeader({
   story,
   chapter,
+  chapters,
   isGenerating,
+  onChangeChapter,
+  onStartNextChapter,
   onOpenCharacters,
   onOpenChapterSetup,
   onRead,
 }: {
   story: StoryDetail;
   chapter: ChapterRecord | null;
+  chapters: ChapterRecord[];
   isGenerating: boolean;
+  onChangeChapter: (chapterId: string) => void;
+  onStartNextChapter: (chapterId: string) => void;
   onOpenCharacters: () => void;
   onOpenChapterSetup: () => void;
   onRead: () => void;
 }) {
+  const orderedChapters = chapters.slice().sort((a, b) => a.number - b.number);
+  const chapterIndex = orderedChapters.findIndex(
+    (candidate) => candidate.id === chapter?.id,
+  );
+  const previousChapter =
+    chapterIndex > 0 ? orderedChapters[chapterIndex - 1] : undefined;
+  const nextChapter =
+    chapterIndex >= 0 && chapterIndex < orderedChapters.length - 1
+      ? orderedChapters[chapterIndex + 1]
+      : undefined;
+  const chapterClosed = chapter
+    ? ["COMPLETE", "ARCHIVED"].includes(chapter.status)
+    : false;
+
   return (
     <section aria-labelledby="current-story-title" className="border-b border-white/[0.08] pb-6">
       <div className="flex flex-wrap items-end justify-between gap-5">
@@ -1388,13 +1617,68 @@ function CurrentStoryHeader({
         </div>
       </div>
       {chapter ? (
-        <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/[0.06] pt-4">
-          <span className="text-xs font-semibold tracking-[0.14em] text-primary/80">
-            {isGenerating ? "GENERATING FOR" : "CURRENT CHAPTER"}
-          </span>
-          <p className="text-sm font-semibold text-on-surface">
-            Chapter {String(chapter.number).padStart(2, "0")} · {chapter.title}
-          </p>
+        <div className="mt-6 border-t border-white/10 pt-5">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold tracking-[0.14em] text-primary/80">
+                {isGenerating ? "GENERATING FOR" : "CURRENT CHAPTER"}
+              </p>
+              <div className="mt-2 flex max-w-2xl items-center gap-2">
+                <button
+                  aria-label={
+                    previousChapter
+                      ? `Go to Chapter ${previousChapter.number}: ${previousChapter.title}`
+                      : "No previous chapter"
+                  }
+                  className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/10 text-on-surface-variant transition hover:border-white/25 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  disabled={isGenerating || !previousChapter}
+                  title={previousChapter ? "Previous chapter" : "No previous chapter"}
+                  type="button"
+                  onClick={() => previousChapter && onChangeChapter(previousChapter.id)}
+                >
+                  <ChevronLeft aria-hidden="true" className="size-4" />
+                </button>
+                <div className="min-w-0 flex-1">
+                  <SelectMenu
+                    ariaLabel="Select current chapter"
+                    disabled={isGenerating}
+                    options={orderedChapters.map((item) => ({
+                      label: `Chapter ${String(item.number).padStart(2, "0")} · ${item.title}`,
+                      value: item.id,
+                    }))}
+                    placeholder="Select a chapter"
+                    showPlaceholderOption={false}
+                    value={chapter.id}
+                    onChange={onChangeChapter}
+                  />
+                </div>
+                <button
+                  aria-label={
+                    nextChapter
+                      ? `Go to Chapter ${nextChapter.number}: ${nextChapter.title}`
+                      : "No next chapter"
+                  }
+                  className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/10 text-on-surface-variant transition hover:border-white/25 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-35 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  disabled={isGenerating || !nextChapter}
+                  title={nextChapter ? "Next chapter" : "No next chapter"}
+                  type="button"
+                  onClick={() => nextChapter && onChangeChapter(nextChapter.id)}
+                >
+                  <ChevronRight aria-hidden="true" className="size-4" />
+                </button>
+              </div>
+            </div>
+            {!chapterClosed ? (
+              <button
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-primary/40 hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                disabled={isGenerating}
+                type="button"
+                onClick={() => onStartNextChapter(chapter.id)}
+              >
+                End chapter & start next <ArrowRight aria-hidden="true" className="size-4" />
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </section>

@@ -5,10 +5,12 @@ import { parseJsonString, toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
 import { WorkflowError } from "@/lib/http/api-response";
 import {
+  createChapterHandoffBrief,
   createInitialChapterBrief,
   mergeChapterBrief,
   parseChapterBrief,
   parseChapterBriefProposalMetadata,
+  type ChapterBrief,
   type ChapterBriefReview,
 } from "@/lib/chapters/chapter-brief";
 import {
@@ -118,6 +120,7 @@ async function upsertNextDraftChapter(
   tx: Prisma.TransactionClient,
   storyId: string,
   number: number,
+  options: { title?: string; brief?: ChapterBrief } = {},
 ) {
   const where = { storyId_number: { storyId, number } };
   const existing = await tx.chapter.findUnique({ where });
@@ -128,15 +131,24 @@ async function upsertNextDraftChapter(
       409,
     );
   }
+  const briefData =
+    options.brief && !existing?.brief
+      ? {
+          brief: toJsonString(options.brief),
+          briefVersion: 1,
+          briefUpdatedAt: new Date(),
+        }
+      : {};
   return tx.chapter.upsert({
     where,
     create: {
       storyId,
       number,
-      title: `Chapter ${number}`,
+      title: options.title?.trim() || `Chapter ${number}`,
       status: "DRAFT",
+      ...briefData,
     },
-    update: { status: "DRAFT" },
+    update: { status: "DRAFT", ...briefData },
   });
 }
 
@@ -387,10 +399,17 @@ export async function commitDraftToChapter(
 
         let nextChapter = null;
         if (shouldAdvance) {
+          const sourceBrief = approvedBrief ?? parseChapterBrief(chapter.brief);
           nextChapter = await upsertNextDraftChapter(
             tx,
             draft.storyId,
             chapter.number + 1,
+            {
+              brief: createChapterHandoffBrief({
+                source: sourceBrief,
+                sourceLabel: `Chapter ${String(chapter.number).padStart(2, "0")}: ${chapter.title}`,
+              }),
+            },
           );
         }
 
@@ -429,7 +448,15 @@ export async function commitDraftToChapter(
   );
 }
 
-export async function completeChapterAndStartNext(chapterId: string) {
+export type CompleteChapterInput = {
+  nextChapterTitle?: string;
+  openingDirection?: string;
+};
+
+export async function completeChapterAndStartNext(
+  chapterId: string,
+  input: CompleteChapterInput = {},
+) {
   return withSerializableRetry(() =>
     prisma.$transaction(
       async (tx) => {
@@ -437,14 +464,46 @@ export async function completeChapterAndStartNext(chapterId: string) {
         if (!chapter) {
           throw new WorkflowError("CHAPTER_NOT_FOUND", "Chapter not found.", 404);
         }
+        if (!["COMPLETE", "ARCHIVED"].includes(chapter.status)) {
+          const activeJob = await tx.generationJob.findFirst({
+            where: {
+              chapterId: chapter.id,
+              status: {
+                in: [
+                  "QUEUED",
+                  "RUNNING",
+                  "RETRYING",
+                  "AWAITING_FALLBACK_CONFIRMATION",
+                ],
+              },
+            },
+            select: { id: true },
+          });
+          if (activeJob) {
+            throw new WorkflowError(
+              "CHAPTER_HAS_PENDING_WORK",
+              "Wait for or cancel the active generation before ending this chapter.",
+              409,
+            );
+          }
+        }
         await tx.chapter.update({
           where: { id: chapter.id },
           data: { status: "COMPLETE" },
         });
+        const sourceBrief = parseChapterBrief(chapter.brief);
         const nextChapter = await upsertNextDraftChapter(
           tx,
           chapter.storyId,
           chapter.number + 1,
+          {
+            title: input.nextChapterTitle,
+            brief: createChapterHandoffBrief({
+              source: sourceBrief,
+              sourceLabel: `Chapter ${String(chapter.number).padStart(2, "0")}: ${chapter.title}`,
+              openingDirection: input.openingDirection,
+            }),
+          },
         );
         return { chapter: { ...chapter, status: "COMPLETE" }, nextChapter };
       },

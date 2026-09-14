@@ -39,6 +39,28 @@ export function createInitialChapterBrief(intent: string): ChapterBrief {
   return chapterBriefSchema.parse({ originalIntent: intent });
 }
 
+export function createChapterHandoffBrief(input: {
+  source: ChapterBrief | null;
+  sourceLabel: string;
+  openingDirection?: string;
+}): ChapterBrief {
+  const openingDirection =
+    input.openingDirection?.trim() ||
+    input.source?.suggestedNextDirection ||
+    `Continue naturally after ${input.sourceLabel}.`;
+  const latestProgress = input.source?.progress.at(-1);
+
+  return chapterBriefSchema.parse({
+    originalIntent: openingDirection,
+    progress: latestProgress
+      ? [`Handoff from ${input.sourceLabel}: ${latestProgress}`.slice(0, 320)]
+      : [],
+    characterChanges: input.source?.characterChanges.slice(-8) ?? [],
+    facts: input.source?.facts.slice(-8) ?? [],
+    openThreads: input.source?.openThreads ?? [],
+  });
+}
+
 export function parseChapterBrief(value: unknown): ChapterBrief | null {
   if (typeof value !== "string" || !value.trim()) return null;
 
@@ -121,4 +143,3 @@ export function mergeChapterBrief(
       update.suggestedNextDirection || current.suggestedNextDirection,
   });
 }
-

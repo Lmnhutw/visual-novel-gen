@@ -647,18 +647,39 @@ test("a normal Continue Anyway draft may reach the hard limit without auto-advan
 
 test("manual chapter end completes once and reuses the uniquely numbered next chapter", async () => {
   let upsertWhere: unknown;
+  let upsertCreate: Record<string, unknown> | undefined;
   let nextChapter: { id: string; number: number; status: string } | null = null;
   let nextChapterCreates = 0;
+  const currentBrief = {
+    ...createInitialChapterBrief("Find the royal alchemist."),
+    progress: ["Kaelen reached the sealed observatory."],
+    openThreads: ["Who poisoned Kaelen?"],
+    suggestedNextDirection: "Enter the observatory before sunrise.",
+  };
   const transaction =
     {
       chapter: {
         findUnique: async ({ where }: { where: { id?: string } }) =>
           where.id
-            ? { id: "chapter-1", storyId: "story-1", number: 1, status: "DRAFT" }
+            ? {
+                id: "chapter-1",
+                storyId: "story-1",
+                number: 1,
+                title: "The Poisoned Heir",
+                status: "DRAFT",
+                brief: JSON.stringify(currentBrief),
+              }
             : nextChapter,
         update: async () => ({ id: "chapter-1", status: "COMPLETE" }),
-        upsert: async ({ where }: { where: unknown }) => {
+        upsert: async ({
+          where,
+          create,
+        }: {
+          where: unknown;
+          create: Record<string, unknown>;
+        }) => {
           upsertWhere = where;
+          upsertCreate ??= create;
           if (!nextChapter) {
             nextChapterCreates += 1;
             nextChapter = { id: "chapter-2", number: 2, status: "DRAFT" };
@@ -666,10 +687,15 @@ test("manual chapter end completes once and reuses the uniquely numbered next ch
           return nextChapter;
         },
       },
+      generationJob: { findFirst: async () => null },
     };
   const result = await withTransaction(
     transaction,
-    () => completeChapterAndStartNext("chapter-1"),
+    () =>
+      completeChapterAndStartNext("chapter-1", {
+        nextChapterTitle: "Inside the Observatory",
+        openingDirection: "Open with Kaelen entering the observatory.",
+      }),
   );
   const repeated = await withTransaction(
     transaction,
@@ -681,4 +707,49 @@ test("manual chapter end completes once and reuses the uniquely numbered next ch
   assert.equal(result.nextChapter.id, "chapter-2");
   assert.equal(repeated.nextChapter.id, "chapter-2");
   assert.equal(nextChapterCreates, 1);
+  assert.equal(upsertCreate?.title, "Inside the Observatory");
+  const handoff = parseChapterBrief(upsertCreate?.brief);
+  assert.equal(
+    handoff?.originalIntent,
+    "Open with Kaelen entering the observatory.",
+  );
+  assert.deepEqual(handoff?.openThreads, ["Who poisoned Kaelen?"]);
+});
+
+test("manual chapter end refuses to skip an active generation", async () => {
+  let chapterUpdates = 0;
+
+  await assert.rejects(
+    withTransaction(
+      {
+        chapter: {
+          findUnique: async () => ({
+            id: "chapter-1",
+            storyId: "story-1",
+            number: 1,
+            title: "The Poisoned Heir",
+            status: "DRAFT",
+            brief: null,
+          }),
+          update: async () => {
+            chapterUpdates += 1;
+          },
+        },
+        generationJob: {
+          findFirst: async () => ({
+            status: "RUNNING",
+            draftVersion: null,
+          }),
+        },
+      },
+      () => completeChapterAndStartNext("chapter-1"),
+    ),
+    (error: unknown) =>
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "CHAPTER_HAS_PENDING_WORK",
+  );
+
+  assert.equal(chapterUpdates, 0);
 });

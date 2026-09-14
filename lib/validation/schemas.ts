@@ -125,6 +125,11 @@ export const commitDraftSchema = z.object({
   chapterBriefReview: chapterBriefReviewSchema.optional(),
 });
 
+export const endChapterSchema = z.object({
+  nextChapterTitle: z.string().trim().min(1).max(200).optional(),
+  openingDirection: z.string().trim().max(2_000).optional(),
+});
+
 export const fallbackDecisionSchema = z.object({
   decision: z.enum(["approve", "decline"]),
 });

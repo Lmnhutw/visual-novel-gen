@@ -123,7 +123,7 @@ export function DraftReview({
   ) => Promise<void>;
   onSelectJob: (jobId: string) => void;
   onContinueChapter: () => void;
-  onEndChapter: (chapterId: string) => Promise<void>;
+  onEndChapter: (chapterId: string) => void;
 }) {
   const draft = job?.draftVersion ?? null;
   const [content, setContent] = useState("");

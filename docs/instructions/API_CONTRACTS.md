@@ -24,6 +24,7 @@ API routes live under `app/api`. They validate input with Zod and call service m
 - `POST /api/canon-proposals/:proposalId`
 - `POST /api/chapters/:chapterId/summarize`
 - `POST /api/chapters/:chapterId/revise`
+- `POST /api/chapters/:chapterId/end`
 - `POST /api/memories/extract`
 - `GET /api/memories/search`
 - `POST /api/retrieval/context`
@@ -65,6 +66,18 @@ items are removed, bounds are enforced, empty entries and unknown versions are
 rejected, and unknown object keys are not accepted. Omitting the field preserves
 the existing/default setting. Reset sends the complete default object rather
 than deleting the stored value.
+
+## Chapter Transition
+
+`POST /api/chapters/:chapterId/end` accepts optional `nextChapterTitle` and
+`openingDirection` strings. It marks the current chapter complete and creates or
+reuses the next chapter. The next chapter's Living Chapter Brief is seeded from
+the reviewed opening direction plus unresolved continuity from the completed
+chapter; this handoff does not make another AI request.
+
+The transition is rejected while the current chapter has an active generation
+job. Unaccepted drafts remain available in version history, but only approved
+chapter continuity is carried into the next chapter.
 
 ## Response Rules
 
