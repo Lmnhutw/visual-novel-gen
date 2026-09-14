@@ -225,6 +225,9 @@ model Chapter {
   number     Int
   title      String
   summary    String?
+  brief      String?
+  briefVersion Int    @default(0) @map("brief_version")
+  briefUpdatedAt DateTime? @map("brief_updated_at")
   content    String?
   status     String   @default("OUTLINE")
   tokenCount Int      @default(0) @map("token_count")

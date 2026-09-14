@@ -122,6 +122,11 @@ export function normalizeWritingHarnessOutput(
     .trim();
 
   if (harness.enabled) {
+    normalized = harness.forbiddenCharacters.reduce(
+      (content, character) =>
+        content.split(character).join(character === "—" ? " - " : ""),
+      normalized,
+    );
     const maximumNewlines = harness.outputRules.maxConsecutiveBlankLines + 1;
     normalized = normalized.replace(
       new RegExp(`\\n{${maximumNewlines + 1},}`, "g"),

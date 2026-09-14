@@ -25,6 +25,7 @@ import studioStyles from "./studio.module.css";
 import { CharacterForm, type CharacterFormRecord } from "./character-form";
 import type { GenerationContext } from "@/lib/retrieval/types";
 import type { ChapterLengthConfig } from "@/lib/chapters/chapter-lifecycle";
+import type { ChapterBriefReview } from "@/lib/chapters/chapter-brief";
 import type {
   CreateCharacterInput,
   UpdateCharacterInput,
@@ -64,8 +65,7 @@ import {
   type WritingHarnessConfig,
 } from "@/lib/writing-harness/config";
 
-const defaultGoal =
-  "Write the next scene with a choice that shifts the relationship and creates a new consequence for the story.";
+const defaultGoal = "";
 
 function templateFormRecord(template: TemplateRecord): CharacterFormRecord {
   return {
@@ -562,7 +562,20 @@ export function WriterStudio() {
   }
 
   async function startGeneration() {
-    if (!storyId || goal.trim().length < 10) return;
+    const activeChapter = chapters.find((chapter) => chapter.id === chapterId);
+    const isContinuation = Boolean(
+      activeChapter?.brief && activeChapter.wordCount > 0,
+    );
+    const requestedDirection = goal.trim();
+    const generationGoal =
+      requestedDirection.length >= 10
+        ? requestedDirection
+        : requestedDirection.length === 0
+          ? activeChapter?.brief?.suggestedNextDirection ||
+            activeChapter?.brief?.originalIntent ||
+            ""
+          : "";
+    if (!storyId || generationGoal.length < 10) return;
     setIsLoading(true);
     setError("");
     try {
@@ -575,14 +588,15 @@ export function WriterStudio() {
           body: JSON.stringify({
             storyId,
             chapterId: chapterId || undefined,
-            goal,
-            sceneGoal: goal,
+            goal: generationGoal,
+            sceneGoal: requestedDirection || undefined,
             activeCharacterIds,
             maturityMode,
             includeSecrets,
             chapterMode,
             idempotencyKey,
             type: "scene",
+            continuation: isContinuation,
           }),
         },
       );
@@ -610,7 +624,17 @@ export function WriterStudio() {
   }
 
   const previewContext = useCallback(async () => {
-    if (!storyId || goal.trim().length < 10) return;
+    const activeChapter = chapters.find((chapter) => chapter.id === chapterId);
+    const requestedDirection = goal.trim();
+    const query =
+      requestedDirection.length >= 10
+        ? requestedDirection
+        : requestedDirection.length === 0
+          ? activeChapter?.brief?.suggestedNextDirection ||
+            activeChapter?.brief?.originalIntent ||
+            ""
+          : "";
+    if (!storyId || query.length < 10) return;
 
     setIsContextPreviewLoading(true);
     setError("");
@@ -623,7 +647,7 @@ export function WriterStudio() {
           body: JSON.stringify({
             storyId,
             chapterId: chapterId || undefined,
-            query: goal,
+            query,
             activeCharacterIds,
             includeSecrets,
           }),
@@ -643,7 +667,7 @@ export function WriterStudio() {
     } finally {
       setIsContextPreviewLoading(false);
     }
-  }, [activeCharacterIds, chapterId, goal, includeSecrets, storyId]);
+  }, [activeCharacterIds, chapterId, chapters, goal, includeSecrets, storyId]);
 
   async function cancelGeneration(jobId: string) {
     try {
@@ -712,6 +736,7 @@ export function WriterStudio() {
       draftVersionId: string,
       content: string,
       allowContinuityReview: boolean,
+      chapterBriefReview?: ChapterBriefReview,
     ) => {
       const result = await requestJson<{
         chapter: { id: string; number: number; title: string; wordCount: number };
@@ -724,6 +749,7 @@ export function WriterStudio() {
           content,
           action: "continue",
           allowContinuityReview,
+          chapterBriefReview,
         }),
       });
       setCommitSuccess({

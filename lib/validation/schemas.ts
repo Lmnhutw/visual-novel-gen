@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { chapterBriefReviewSchema } from "@/lib/chapters/chapter-brief";
 import { writingHarnessSchema } from "@/lib/writing-harness/config";
 export {
   characterRoleSchema,
@@ -99,6 +100,7 @@ export const generateSceneSchema = z.object({
   maxTokens: z.number().int().min(500).max(12000).default(2500),
   previewOnly: z.boolean().default(false),
   chapterMode: z.enum(["auto", "normal", "closing"]).default("auto"),
+  continuation: z.boolean().default(false),
 });
 
 export const createGenerationJobSchema = generateSceneSchema.extend({
@@ -120,6 +122,7 @@ export const commitDraftSchema = z.object({
   content: z.string().min(1).optional(),
   action: z.enum(["continue", "end_chapter"]).default("continue"),
   allowContinuityReview: z.boolean().default(false),
+  chapterBriefReview: chapterBriefReviewSchema.optional(),
 });
 
 export const fallbackDecisionSchema = z.object({

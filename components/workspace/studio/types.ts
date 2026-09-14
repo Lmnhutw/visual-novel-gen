@@ -1,4 +1,5 @@
 import type { WritingHarnessConfig } from "@/lib/writing-harness/config";
+import type { ChapterBrief } from "@/lib/chapters/chapter-brief";
 
 export type StorySettings = {
   genre: string[] | string;
@@ -73,6 +74,9 @@ export type ChapterRecord = {
   number: number;
   title: string;
   summary: string | null;
+  brief?: ChapterBrief | null;
+  briefVersion?: number;
+  briefUpdatedAt?: string | null;
   status: string;
   tokenCount: number;
   wordCount: number;

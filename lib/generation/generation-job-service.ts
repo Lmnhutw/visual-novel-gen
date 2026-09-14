@@ -7,6 +7,10 @@ import {
   type CommitDraftInput,
 } from "@/lib/chapters/chapter-service";
 import { chapterLengthConfig } from "@/lib/chapters/chapter-lifecycle";
+import {
+  createInitialChapterBrief,
+  parseChapterBrief,
+} from "@/lib/chapters/chapter-brief";
 import { OpenRouterRequestError } from "@/lib/ai/openrouter";
 import { generateText } from "@/lib/ai/provider";
 import { parseJsonString, toJsonString } from "@/lib/db/json";
@@ -39,6 +43,7 @@ export type GenerationJobInput = {
   type?: "scene" | "chapter" | "revision";
   primaryProtagonistIdUsed?: string;
   chapterMode?: "auto" | "normal" | "closing";
+  continuation?: boolean;
 };
 
 function proposalTitle(type: string, value: Record<string, unknown>) {
@@ -299,6 +304,17 @@ export async function createGenerationJob(input: GenerationJobInput) {
       },
     );
   }
+  if (!parseChapterBrief(chapter.brief)) {
+    const initialBrief = createInitialChapterBrief(focused.goal);
+    await prisma.chapter.updateMany({
+      where: { id: chapter.id, brief: null },
+      data: {
+        brief: toJsonString(initialBrief),
+        briefVersion: 1,
+        briefUpdatedAt: new Date(),
+      },
+    });
+  }
   const resolved = { ...focused, chapterId: chapter.id };
 
   if (resolved.idempotencyKey) {
@@ -540,6 +556,7 @@ export async function executeGenerationJob(jobId: string) {
       maxTokens: input.maxTokens ?? modelConfig.generationDefaults.maxTokens,
       repairPolicy: paidAttempt ? "explicit-paid" : "free-only",
       chapterMode: input.chapterMode,
+      continuation: input.continuation,
     });
     const { context, harness, prompt } = prepared;
     await setStage(jobId, "BUILDING_PROMPT", 22, {
@@ -609,7 +626,7 @@ export async function executeGenerationJob(jobId: string) {
       validating_harness: ["VALIDATING_HARNESS", 52],
       repairing_harness: ["REPAIRING_HARNESS", 57],
       checking_continuity: ["CHECKING_CONTINUITY", 70],
-      extracting_proposals: ["EXTRACTING_CANON_PROPOSALS", 82],
+      extracting_proposals: ["EXTRACTING_BRIEF_AND_CANON", 82],
     };
     const result = await executePreparedGenerationPipeline(prepared, {
       generationRunId: run.id,
@@ -643,6 +660,8 @@ export async function executeGenerationJob(jobId: string) {
             chapterMode: prepared.effectiveChapterMode,
             evaluation: result.evaluation,
             writingHarness: result.writingHarness,
+            chapterBriefProposal:
+              result.extraction?.chapterBriefUpdate ?? null,
           }),
         },
       });

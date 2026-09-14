@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { parseJsonString, parseStringArray } from "@/lib/db/json";
+import { parseChapterBrief } from "@/lib/chapters/chapter-brief";
 import { searchMemories } from "@/lib/memory/memory-service";
 import {
   applyContextBudget,
@@ -205,6 +206,8 @@ export async function retrieveContext(
           title: chapter.title,
           status: chapter.status,
           wordCount: chapter.wordCount,
+          brief: parseChapterBrief(chapter.brief),
+          briefVersion: chapter.briefVersion,
           progress: chapterProgress(
             chapter.wordCount,
             chapterLengthConfig(story.settings),

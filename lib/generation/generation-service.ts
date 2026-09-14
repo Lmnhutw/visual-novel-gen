@@ -22,6 +22,7 @@ export type GenerateSceneInput = {
   previewOnly?: boolean;
   mode?: "scene" | "chapter";
   chapterMode?: "auto" | "normal" | "closing";
+  continuation?: boolean;
 };
 
 async function prepareDirectGeneration(

@@ -5,6 +5,7 @@ import { optionalJsonString, toJsonString } from "@/lib/db/json";
 import { WorkflowError } from "@/lib/http/api-response";
 import type { WritingHarnessConfig } from "@/lib/writing-harness/config";
 import type { ChapterLengthConfig } from "@/lib/chapters/chapter-lifecycle";
+import { parseChapterBrief } from "@/lib/chapters/chapter-brief";
 
 export type CreateStoryInput = {
   ownerId?: string;
@@ -112,7 +113,13 @@ export async function getStory(storyId: string, ownerId?: string | null) {
     throw new Error("Story not found.");
   }
 
-  return story;
+  return {
+    ...story,
+    chapters: story.chapters.map((chapter) => ({
+      ...chapter,
+      brief: parseChapterBrief(chapter.brief),
+    })),
+  };
 }
 
 export async function getLibraryStory(storyId: string, ownerId?: string | null) {

@@ -5,6 +5,13 @@ import { parseJsonString, toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
 import { WorkflowError } from "@/lib/http/api-response";
 import {
+  createInitialChapterBrief,
+  mergeChapterBrief,
+  parseChapterBrief,
+  parseChapterBriefProposalMetadata,
+  type ChapterBriefReview,
+} from "@/lib/chapters/chapter-brief";
+import {
   parseWritingHarnessAuditMetadata,
   validateWritingHarnessOutput,
 } from "@/lib/writing-harness/evaluation";
@@ -190,6 +197,7 @@ export type CommitDraftInput = {
   content?: string;
   action?: "continue" | "end_chapter";
   allowContinuityReview?: boolean;
+  chapterBriefReview?: ChapterBriefReview;
 };
 
 export async function commitDraftToChapter(
@@ -214,10 +222,26 @@ export async function commitDraftToChapter(
           const chapter = await tx.chapter.findUniqueOrThrow({
             where: { id: draft.scene.chapterId },
           });
-          return { draft, scene: draft.scene, chapter, nextChapter: null, reused: true };
+          return {
+            draft,
+            scene: draft.scene,
+            chapter: { ...chapter, brief: parseChapterBrief(chapter.brief) },
+            nextChapter: null,
+            reused: true,
+          };
         }
 
         const content = input.content?.trim() || draft.content;
+        const chapterBriefProposal = parseChapterBriefProposalMetadata(
+          draft.metadata,
+        );
+        if (chapterBriefProposal && !input.chapterBriefReview) {
+          throw new WorkflowError(
+            "CHAPTER_BRIEF_REVIEW_REQUIRED",
+            "Review or discard the Chapter Brief update before adding this draft.",
+            409,
+          );
+        }
         const audit = parseWritingHarnessAuditMetadata(draft.metadata);
         const hasHarnessViolation = audit
           ? validateWritingHarnessOutput(
@@ -297,9 +321,37 @@ export async function commitDraftToChapter(
           },
         });
 
+        const approvedBrief =
+          input.chapterBriefReview?.decision === "approve"
+            ? mergeChapterBrief(
+                parseChapterBrief(chapter.brief) ??
+                  createInitialChapterBrief(
+                    draft.title || "Continue this chapter.",
+                  ),
+                input.chapterBriefReview.update,
+              )
+            : null;
+
+        const draftMetadata = parseJsonString<Record<string, unknown>>(
+          draft.metadata,
+          {},
+        );
+
         const claimed = await tx.draftVersion.updateMany({
           where: { id: draft.id, sceneId: null },
-          data: { content, status: "ACCEPTED", sceneId: scene.id },
+          data: {
+            content,
+            status: "ACCEPTED",
+            sceneId: scene.id,
+            ...(input.chapterBriefReview
+              ? {
+                  metadata: toJsonString({
+                    ...draftMetadata,
+                    chapterBriefReview: input.chapterBriefReview,
+                  }),
+                }
+              : {}),
+          },
         });
         if (claimed.count !== 1) {
           throw new Prisma.PrismaClientKnownRequestError(
@@ -323,6 +375,13 @@ export async function commitDraftToChapter(
             wordCount: budget.projectedWords,
             tokenCount: { increment: Math.ceil(content.length / 4) },
             status: shouldAdvance ? "COMPLETE" : "DRAFT",
+            ...(approvedBrief
+              ? {
+                  brief: toJsonString(approvedBrief),
+                  briefVersion: { increment: 1 },
+                  briefUpdatedAt: new Date(),
+                }
+              : {}),
           },
         });
 
@@ -356,7 +415,10 @@ export async function commitDraftToChapter(
         return {
           draft: { ...draft, content, status: "ACCEPTED", sceneId: scene.id },
           scene,
-          chapter: updatedChapter,
+          chapter: {
+            ...updatedChapter,
+            brief: parseChapterBrief(updatedChapter.brief),
+          },
           nextChapter,
           progress: chapterProgress(budget.projectedWords, config),
           reused: false,
@@ -411,6 +473,7 @@ export async function listChapters(storyId: string) {
   const config = chapterLengthConfig(settings);
   return chapters.map((chapter) => ({
     ...chapter,
+    brief: parseChapterBrief(chapter.brief),
     progress: chapterProgress(chapter.wordCount, config),
   }));
 }

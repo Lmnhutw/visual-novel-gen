@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertTriangle,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -15,11 +16,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { countWords } from "@/lib/chapters/chapter-lifecycle";
 import {
+  parseChapterBriefProposalMetadata,
+  type ChapterBriefReview as ChapterBriefReviewValue,
+  type ChapterBriefUpdate,
+} from "@/lib/chapters/chapter-brief";
+import {
   parseWritingHarnessAuditMetadata,
   validateWritingHarnessOutput,
+  type HarnessViolation,
+  type WritingHarnessAudit,
 } from "@/lib/writing-harness/evaluation";
 import styles from "./draft-review.module.css";
 import { titleCase } from "./api";
+import {
+  ChapterBriefReview,
+  type ChapterBriefDecision,
+} from "./chapter-brief";
 import type { CanonProposal, ChapterRecord, GenerationJob } from "./types";
 
 export type DraftCommitSuccess = {
@@ -31,6 +43,54 @@ export type DraftCommitSuccess = {
   hardLimitWords: number;
   activeChapterId: string;
 };
+
+function findHarnessViolationRange(
+  content: string,
+  audit: WritingHarnessAudit,
+  violation: HarnessViolation,
+) {
+  const findText = (needle: string, caseInsensitive = false) => {
+    const index = caseInsensitive
+      ? content.toLocaleLowerCase().indexOf(needle.toLocaleLowerCase())
+      : content.indexOf(needle);
+    return index < 0 ? null : { start: index, end: index + needle.length };
+  };
+
+  if (violation.kind === "forbidden_character") {
+    return audit.effectiveHarness.forbiddenCharacters
+      .map((character) => findText(character))
+      .find(Boolean) ?? null;
+  }
+  if (violation.kind === "forbidden_phrase") {
+    return audit.effectiveHarness.forbiddenPhrases
+      .map((phrase) => findText(phrase, true))
+      .find(Boolean) ?? null;
+  }
+  if (violation.kind === "markdown") {
+    const match = content.match(/^ {0,3}(?:#{1,6}[ \t]+.+|```|~~~)/m);
+    return match?.index === undefined
+      ? null
+      : { start: match.index, end: match.index + match[0].length };
+  }
+  if (violation.kind === "blank_lines") {
+    const match = content.match(
+      new RegExp(
+        `\\n{${audit.effectiveHarness.outputRules.maxConsecutiveBlankLines + 2},}`,
+      ),
+    );
+    return match?.index === undefined
+      ? null
+      : { start: match.index, end: match.index + match[0].length };
+  }
+  if (violation.kind === "prose_wrapper") {
+    const match = content.match(/^(?:here(?:'s| is)\b|draft\s*:|response\s*:|certainly[,.!]|as requested[:,])/i);
+    return match?.index === undefined
+      ? null
+      : { start: match.index, end: match.index + match[0].length };
+  }
+
+  return null;
+}
 
 export function DraftReview({
   job,
@@ -55,6 +115,7 @@ export function DraftReview({
     draftVersionId: string,
     content: string,
     allowContinuityReview: boolean,
+    chapterBriefReview?: ChapterBriefReviewValue,
   ) => Promise<void>;
   onReviewProposal: (
     proposal: CanonProposal,
@@ -69,16 +130,25 @@ export function DraftReview({
   const [isSaving, setIsSaving] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
   const [allowContinuityReview, setAllowContinuityReview] = useState(false);
+  const [briefUpdate, setBriefUpdate] = useState<ChapterBriefUpdate | null>(null);
+  const [briefDecision, setBriefDecision] =
+    useState<ChapterBriefDecision>("pending");
   const lastDraftId = useRef<string | null>(null);
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
   const committed = draft?.status === "ACCEPTED" || Boolean(draft?.sceneId);
+  const briefProposal = useMemo(
+    () => parseChapterBriefProposalMetadata(draft?.metadata),
+    [draft?.metadata],
+  );
 
   useEffect(() => {
     if (draft?.id !== lastDraftId.current) {
       setContent(draft?.content ?? "");
+      setBriefUpdate(briefProposal);
+      setBriefDecision("pending");
       lastDraftId.current = draft?.id ?? null;
     }
-  }, [draft]);
+  }, [briefProposal, draft]);
 
   useEffect(() => {
     if (!draft || committed || isAccepting || content === draft.content) return;
@@ -116,6 +186,19 @@ export function DraftReview({
   );
   const harnessNeedsReview = harnessViolations.length > 0;
   const continuityNeedsReview = job?.stage.includes("CONTINUITY") ?? false;
+  const briefNeedsReview = Boolean(
+    briefProposal && briefUpdate && briefDecision === "pending",
+  );
+
+  function showHarnessViolation(violation: HarnessViolation) {
+    if (!harnessAudit) return;
+    const range = findHarnessViolationRange(content, harnessAudit, violation);
+    const editor = editorRef.current;
+    if (!range || !editor) return;
+
+    editor.focus();
+    editor.setSelectionRange(range.start, range.end);
+  }
 
   if (commitSuccess) {
     const advanced = commitSuccess.activeChapterId !== commitSuccess.chapterId;
@@ -198,13 +281,13 @@ export function DraftReview({
             <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 border-t border-white/[0.06] pt-3 text-xs">
               <span>
                 Harness · {" "}
-                <strong className={harnessNeedsReview ? "text-amber-200" : "text-emerald-200"}>
+                <strong className={harnessNeedsReview ? styles["draft-review__check--warning"] : styles["draft-review__check--passed"]}>
                   {harnessNeedsReview ? "Review required" : "Passed"}
                 </strong>
               </span>
               <span>
                 Continuity · {" "}
-                <strong className={continuityNeedsReview ? "text-amber-200" : "text-emerald-200"}>
+                <strong className={continuityNeedsReview ? styles["draft-review__check--warning"] : styles["draft-review__check--passed"]}>
                   {continuityNeedsReview ? "Review required" : "Passed"}
                 </strong>
               </span>
@@ -216,21 +299,39 @@ export function DraftReview({
               </label>
             ) : null}
             {harnessNeedsReview ? (
-              <div
-                className="mt-3 rounded-lg border border-amber-300/20 bg-amber-300/[0.08] px-3 py-2 text-xs leading-5 text-amber-100"
-                role="alert"
-              >
-                <p className="font-semibold text-amber-50">
-                  Fix these Writing Harness violations to add this draft.
+              <div className={styles["draft-review__harness-alert"]} role="alert">
+                <div className={styles["draft-review__harness-alert-title"]}>
+                  <AlertTriangle className="size-4 shrink-0" />
+                  <p>Writing Harness needs attention</p>
+                </div>
+                <p className={styles["draft-review__harness-alert-copy"]}>
+                  Automatic repair has already run. Select an issue to jump to the exact text, then save your edit.
                 </p>
-                <ul className="mt-1 list-disc space-y-1 pl-4">
+                <ul className={styles["draft-review__harness-alert-list"]}>
                   {harnessViolations.map((finding) => (
                     <li key={`${finding.kind}-${finding.rule}`}>
-                      {finding.message}
+                      <button
+                        className={styles["draft-review__harness-alert-item"]}
+                        type="button"
+                        onClick={() => showHarnessViolation(finding)}
+                      >
+                        <span>{finding.message}</span>
+                        <span className={styles["draft-review__harness-alert-link"]}>Show in draft</span>
+                      </button>
                     </li>
                   ))}
                 </ul>
               </div>
+            ) : null}
+            {briefProposal && briefUpdate ? (
+              <ChapterBriefReview
+                proposal={briefProposal}
+                value={briefUpdate}
+                decision={briefDecision}
+                disabled={committed || isAccepting}
+                onChange={setBriefUpdate}
+                onDecision={setBriefDecision}
+              />
             ) : null}
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.08] pt-4">
               <button
@@ -246,18 +347,30 @@ export function DraftReview({
               </button>
               <button
                 className={cn(styles["draft-review__action"], styles["draft-review__action--accept"])}
-                disabled={committed || isAccepting || hardLimitExceeded || harnessNeedsReview}
+                disabled={committed || isAccepting || hardLimitExceeded || harnessNeedsReview || briefNeedsReview}
                 title={
                   hardLimitExceeded
                     ? "Shorten this draft before approving it."
                     : harnessNeedsReview
                       ? "Fix all Writing Harness violations before approving it."
+                      : briefNeedsReview
+                        ? "Approve or discard the Chapter Brief update first."
                       : undefined
                 }
                 type="button"
                 onClick={() => {
                   setIsAccepting(true);
-                  void onAcceptDraft(draft.id, content, allowContinuityReview).finally(() => setIsAccepting(false));
+                  const chapterBriefReview = briefProposal && briefUpdate
+                    ? briefDecision === "approve"
+                      ? { decision: "approve" as const, update: briefUpdate }
+                      : { decision: "discard" as const }
+                    : undefined;
+                  void onAcceptDraft(
+                    draft.id,
+                    content,
+                    allowContinuityReview,
+                    chapterBriefReview,
+                  ).finally(() => setIsAccepting(false));
                 }}
               >
                 <CheckCircle2 className="size-3.5" />{committed ? "Added to chapter" : "Add to chapter"}

@@ -8,6 +8,7 @@ import {
 import { getDefaultWritingHarness } from "@/lib/writing-harness/config";
 
 const emptyExtraction = {
+  chapterBriefUpdate: null,
   memories: [],
   events: [],
   relationshipChanges: [],
@@ -183,6 +184,8 @@ test("chapter generation caps output tokens to the remaining hard-limit budget",
           title: "Chapter 1",
           status: "DRAFT",
           wordCount: 5_650,
+          brief: null,
+          briefVersion: 0,
           progress: {
             currentWords: 5_650,
             targetWords: 5_000,
@@ -227,6 +230,8 @@ test("additive generation stops at the hard limit while revision remains availab
       title: "Chapter 1",
       status: "DRAFT",
       wordCount: 6_000,
+      brief: null,
+      briefVersion: 0,
       progress: {
         currentWords: 6_000,
         targetWords: 5_000,

@@ -1,5 +1,6 @@
 import type { WritingHarnessConfig } from "@/lib/writing-harness/config";
 import type { ChapterGenerationMode } from "@/lib/chapters/chapter-lifecycle";
+import type { ChapterBrief } from "@/lib/chapters/chapter-brief";
 
 export type RetrievedMemory = {
   id: string;
@@ -46,6 +47,8 @@ export type GenerationContext = {
     title: string;
     status: string;
     wordCount: number;
+    brief?: ChapterBrief | null;
+    briefVersion?: number;
     progress: {
       currentWords: number;
       targetWords: number;

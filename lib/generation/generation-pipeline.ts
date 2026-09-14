@@ -39,6 +39,7 @@ export type GenerationPipelineInput = {
   maxTokens: number;
   repairPolicy: RepairPolicy;
   chapterMode?: "auto" | "normal" | "closing";
+  continuation?: boolean;
 };
 
 export type GenerationPipelineStage =
@@ -106,6 +107,7 @@ export async function prepareGenerationPipeline(
     maturityMode: input.maturityMode,
     previousDraft: input.previousDraft,
     chapterMode: input.chapterMode,
+    continuation: input.continuation,
   });
   return {
     input,
@@ -199,6 +201,7 @@ export async function executePreparedGenerationPipeline(
       contextSummary: JSON.stringify({
         story: context.story,
         characters: context.characters,
+        currentChapterBrief: context.chapter?.brief,
       }),
     });
   } catch (error) {

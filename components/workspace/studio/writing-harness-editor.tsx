@@ -239,7 +239,7 @@ export function WritingHarnessEditor({
             />
             <ToggleRow
               checked={draft.repairOnViolation}
-              label="Repair one time on violation"
+              label="Automatically repair once on violation"
               onChange={(repairOnViolation) =>
                 setDraft((current) => ({ ...current, repairOnViolation }))
               }

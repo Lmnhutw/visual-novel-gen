@@ -140,6 +140,22 @@ test("safe normalization standardizes whitespace and bounds blank lines", () => 
   );
 });
 
+test("safe normalization replaces a forbidden em dash without an AI repair", () => {
+  const harness = getDefaultWritingHarness();
+  const normalized = normalizeWritingHarnessOutput(
+    "The door opened—then the room fell silent.",
+    harness,
+  );
+
+  assert.equal(normalized, "The door opened - then the room fell silent.");
+  assert.equal(
+    validateWritingHarnessOutput(normalized, harness).some(
+      (finding) => finding.severity === "error",
+    ),
+    false,
+  );
+});
+
 test("valid output never calls the repair function", async () => {
   let repairCalls = 0;
   const outcome = await enforceWritingHarness({
@@ -155,7 +171,7 @@ test("valid output never calls the repair function", async () => {
   assert.equal(repairCalls, 0);
 });
 
-test("repair is attempted at most once and successful output is revalidated", async () => {
+test("repair stops after the first successful automatic repair", async () => {
   let repairCalls = 0;
   const outcome = await enforceWritingHarness({
     draft: "A line—with a violation.",
@@ -171,7 +187,7 @@ test("repair is attempted at most once and successful output is revalidated", as
   assert.equal(outcome.repairModel, "free-model");
 });
 
-test("remaining violations after one repair require review", async () => {
+test("remaining violations after automatic repair require review", async () => {
   let repairCalls = 0;
   const outcome = await enforceWritingHarness({
     draft: "Still—invalid.",

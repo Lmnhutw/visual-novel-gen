@@ -23,6 +23,7 @@ export type BuildGenerationPromptInput = {
   maturityMode?: "safe" | "mature";
   previousDraft?: string;
   chapterMode?: RequestedChapterMode;
+  continuation?: boolean;
 };
 
 function block(title: string, value: unknown): string {
@@ -209,6 +210,11 @@ Approximately ${context.chapter.progress.remainingToHardLimit.toLocaleString("en
 
 Bring the current narrative beat to a natural chapter ending. Do not begin a major new scene. The approved Chapter must not exceed the remaining word budget; never cut prose mechanically.`
       : "";
+  const continuationInstruction =
+    input.continuation && context.chapter?.brief
+      ? `# Continuation Mode
+Continue directly from the end of the recent approved manuscript. Treat the Current Chapter Brief as the approved working state: preserve its original intent, advance its open threads, and use its suggested next direction when useful. Do not recap, restart, or retell approved scenes. Write one substantial next scene; do not try to finish the entire remaining chapter in one response.`
+      : "";
 
   return [
     `# System\n${GENERATION_SYSTEM_INSTRUCTIONS}`,
@@ -235,6 +241,7 @@ Bring the current narrative beat to a natural chapter ending. Do not begin a maj
     context.chapter ? block("Current Chapter", context.chapter) : "",
     input.previousDraft ? block("Previous Draft", input.previousDraft) : "",
     chapterInstruction,
+    continuationInstruction,
     `# Task
 Write a ${input.mode} for this story.
 Goal: ${input.goal}
@@ -262,6 +269,15 @@ Extract durable canon facts from this draft. Only include facts explicitly suppo
 
 Return this shape:
 {
+  "chapterBriefUpdate": {
+    "summary": "concise summary of what this draft actually adds",
+    "completedBeats": [],
+    "characterChanges": [],
+    "newFacts": [],
+    "openThreadsAdded": [],
+    "openThreadsResolved": [],
+    "suggestedNextDirection": "natural next direction supported by the draft"
+  },
   "memories": [
     {
       "content": "short durable memory",
@@ -289,6 +305,11 @@ Return this shape:
 
 Context:
 ${input.contextSummary ?? "No compact context provided."}
+
+The chapter brief update is a proposal for user review. Preserve the original
+chapter intent from context. Report only changes supported by this draft. Do
+not silently remove an open thread; list it in openThreadsResolved only when
+the draft clearly resolves it. Keep the proposal concise.
 
 Draft:
 ${input.draft}`;

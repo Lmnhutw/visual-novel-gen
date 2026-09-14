@@ -13,6 +13,10 @@ import {
   createWritingHarnessAudit,
   validateWritingHarnessOutput,
 } from "@/lib/writing-harness/evaluation";
+import {
+  createInitialChapterBrief,
+  parseChapterBrief,
+} from "@/lib/chapters/chapter-brief";
 
 async function withTransaction<T>(transaction: unknown, run: () => Promise<T>) {
   const client = prisma as unknown as { $transaction: unknown };
@@ -286,6 +290,129 @@ test("manual edits can resolve a stored Writing Harness violation before approva
   );
 
   assert.equal(sceneContent, "Clean final prose.");
+});
+
+test("a generated Chapter Brief proposal requires review before commit", async () => {
+  await assert.rejects(
+    withTransaction(
+      {
+        draftVersion: {
+          findUnique: async () => ({
+            id: "draft-1",
+            storyId: "story-1",
+            content: "Generated prose.",
+            metadata: JSON.stringify({
+              chapterBriefProposal: {
+                summary: "Kaelen found a clue.",
+                completedBeats: [],
+                characterChanges: [],
+                newFacts: [],
+                openThreadsAdded: [],
+                openThreadsResolved: [],
+                suggestedNextDirection: "Follow the clue.",
+              },
+            }),
+            scene: null,
+            job: null,
+            generationRun: { continuityIssues: [] },
+          }),
+        },
+      },
+      () => commitDraftToChapter("draft-1"),
+    ),
+    (error: unknown) =>
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "CHAPTER_BRIEF_REVIEW_REQUIRED",
+  );
+});
+
+test("approved Chapter Brief delta is merged atomically with the draft", async () => {
+  const initialBrief = {
+    ...createInitialChapterBrief("Kaelen must find an antidote."),
+    openThreads: ["Who poisoned Kaelen?"],
+  };
+  const proposal = {
+    summary: "Kaelen learned that moonlight activates the poison.",
+    completedBeats: ["The poison was identified as magical."],
+    characterChanges: [],
+    newFacts: ["Moonlight activates the poison."],
+    openThreadsAdded: ["Why did Mira hide this?"],
+    openThreadsResolved: [],
+    suggestedNextDirection: "Question Mira.",
+  };
+  let chapterUpdate: Record<string, unknown> | undefined;
+  let draftUpdate: Record<string, unknown> | undefined;
+
+  const result = await withTransaction(
+    {
+      draftVersion: {
+        findUnique: async () => ({
+          id: "draft-1",
+          storyId: "story-1",
+          chapterId: "chapter-1",
+          title: "Moonlit poison",
+          content: "Kaelen raised the vial into the moonlight.",
+          metadata: JSON.stringify({ chapterBriefProposal: proposal }),
+          scene: null,
+          job: { chapterId: "chapter-1" },
+          generationRun: { continuityIssues: [] },
+        }),
+        updateMany: async ({ data }: { data: Record<string, unknown> }) => {
+          draftUpdate = data;
+          return { count: 1 };
+        },
+      },
+      chapter: {
+        findFirst: async () => ({
+          id: "chapter-1",
+          storyId: "story-1",
+          number: 1,
+          title: "Chapter 1",
+          summary: null,
+          brief: JSON.stringify(initialBrief),
+          briefVersion: 1,
+          wordCount: 10,
+          status: "DRAFT",
+          story: { settings: null },
+        }),
+        update: async ({ data }: { data: Record<string, unknown> }) => {
+          chapterUpdate = data;
+          return {
+            id: "chapter-1",
+            number: 1,
+            title: "Chapter 1",
+            wordCount: 18,
+            brief: data.brief,
+            briefVersion: 2,
+          };
+        },
+        upsert: async () => {
+          throw new Error("should not advance");
+        },
+      },
+      scene: {
+        aggregate: async () => ({ _max: { number: 1 } }),
+        create: async ({ data }: { data: Record<string, unknown> }) => ({
+          id: "scene-2",
+          ...data,
+        }),
+      },
+      auditLog: { create: async () => ({ id: "audit-1" }) },
+    },
+    () =>
+      commitDraftToChapter("draft-1", {
+        chapterBriefReview: { decision: "approve", update: proposal },
+      }),
+  );
+
+  const merged = parseChapterBrief(chapterUpdate?.brief);
+  assert.equal(merged?.originalIntent, initialBrief.originalIntent);
+  assert.deepEqual(merged?.progress, [proposal.summary]);
+  assert.deepEqual(chapterUpdate?.briefVersion, { increment: 1 });
+  assert.equal(result.chapter.brief?.suggestedNextDirection, "Question Mira.");
+  assert.match(String(draftUpdate?.metadata), /chapterBriefReview/);
 });
 
 test("duplicate approval reuses its existing scene without appending", async () => {

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { getModelForTask } from "@/lib/ai/model-routing";
 import { generateStructuredObject } from "@/lib/ai/structured-output";
+import { chapterBriefUpdateSchema } from "@/lib/chapters/chapter-brief";
 import { buildMemoryExtractionPrompt } from "@/lib/prompts/prompt-builder";
 
 export const ExtractedMemorySchema = z.object({
@@ -13,6 +14,7 @@ export const ExtractedMemorySchema = z.object({
 });
 
 export const MemoryExtractionResultSchema = z.object({
+  chapterBriefUpdate: chapterBriefUpdateSchema.nullable().default(null),
   memories: z.array(ExtractedMemorySchema).default([]),
   events: z
     .array(
