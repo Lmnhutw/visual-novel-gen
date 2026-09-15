@@ -91,6 +91,7 @@ export function WriterStudio() {
   const searchParams = useSearchParams();
   const storyReference = searchParams.get("story");
   const [stories, setStories] = useState<StorySummary[]>([]);
+  const [isStoriesLoading, setIsStoriesLoading] = useState(true);
   const storyId =
     stories.find((entry) => entry.slug === storyReference)?.id ??
     storyIdFromQuery(storyReference);
@@ -110,7 +111,6 @@ export function WriterStudio() {
     useState<GenerationContext | null>(null);
   const [isContextPreviewLoading, setIsContextPreviewLoading] = useState(false);
   const [isWorkspaceLoading, setIsWorkspaceLoading] = useState(Boolean(storyReference));
-  const [pendingStoryId, setPendingStoryId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -165,7 +165,6 @@ export function WriterStudio() {
     setActiveView(resolvedView);
     if (nextStoryId === storyId) return;
 
-    setPendingStoryId(nextStoryId);
     setContextPreview(null);
     setStory(null);
     setChapters([]);
@@ -250,10 +249,11 @@ export function WriterStudio() {
   );
 
   useEffect(() => {
+    setIsStoriesLoading(true);
     void loadStories().catch((loadError: unknown) => {
       setError(formatRequestError(loadError, "Could not load stories."));
       setMessage("");
-    });
+    }).finally(() => setIsStoriesLoading(false));
   }, [loadStories]);
 
   useEffect(() => {
@@ -265,11 +265,17 @@ export function WriterStudio() {
       setStory(null);
       setChapters([]);
       setJobs([]);
-      setPendingStoryId("");
       setIsWorkspaceLoading(false);
       return;
     }
-    if (!storyId) return;
+    if (!storyId) {
+      if (!isStoriesLoading) {
+        setIsWorkspaceLoading(false);
+        setError("This story is unavailable or no longer exists.");
+        setMessage("");
+      }
+      return;
+    }
     setMessage("");
     setError("");
     setStory(null);
@@ -285,10 +291,9 @@ export function WriterStudio() {
         setMessage("");
       })
       .finally(() => {
-        setPendingStoryId("");
         setIsWorkspaceLoading(false);
       });
-  }, [loadWorkspace, storyId, storyReference]);
+  }, [isStoriesLoading, loadWorkspace, storyId, storyReference]);
 
   useEffect(() => {
     if (!story || storyReference === storyQueryValue(story)) return;
@@ -981,7 +986,6 @@ export function WriterStudio() {
       stories={stories}
       canonProposalCount={canonReviewProposals.length}
       isStoryLoading={isWorkspaceLoading}
-      pendingStoryId={pendingStoryId}
       onSelectStory={(selectedStory) => {
         selectStory(selectedStory, "story");
       }}
@@ -1124,7 +1128,7 @@ export function WriterStudio() {
   );
 
   return (
-    <main className={studioStyles.workspace}>
+    <main aria-busy={isWorkspaceLoading} className={studioStyles.workspace} inert={isWorkspaceLoading}>
       <div className="flex min-h-screen w-full">
         <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.08] bg-surface-dim/65 px-4 py-5 lg:flex">
           <div className="flex items-center gap-3 px-2">
@@ -1321,6 +1325,9 @@ export function WriterStudio() {
           </button>
         </Dialog>
       )}
+      {isWorkspaceLoading ? (
+        <div aria-hidden="true" className={studioStyles["workspace__loading-overlay"]} />
+      ) : null}
       {isChapterLimitsOpen && story && (
         <Dialog title="Chapter setup" onClose={() => setIsChapterLimitsOpen(false)}>
           <form

@@ -6,7 +6,6 @@ import {
   CircleAlert,
   ExternalLink,
   FilePlus2,
-  Loader2,
   MoreHorizontal,
   Plus,
   Trash2,
@@ -29,7 +28,6 @@ export function StoryLedger({
   stories,
   canonProposalCount,
   isStoryLoading,
-  pendingStoryId,
   onSelectStory,
   onOpenInStudio,
   onNewStory,
@@ -42,7 +40,6 @@ export function StoryLedger({
   stories: StorySummary[];
   canonProposalCount: number;
   isStoryLoading: boolean;
-  pendingStoryId: string;
   onSelectStory: (story: StorySummary) => void;
   onOpenInStudio: (story: StorySummary) => void;
   onNewStory: () => void;
@@ -51,8 +48,11 @@ export function StoryLedger({
   onAddCharacter: (story: StorySummary) => void;
   onDeleteStory: (story: StorySummary) => void;
 }) {
-  const pendingStory = stories.find((entry) => entry.id === pendingStoryId);
-  const headingStory = story ?? pendingStory;
+  if (isStoryLoading) {
+    return <StoryLedgerSkeleton />;
+  }
+
+  const headingStory = story;
 
   return (
     <div className="space-y-6">
@@ -66,18 +66,11 @@ export function StoryLedger({
               {headingStory?.title ?? (stories.length ? "Select a story to continue" : "Your story library is empty")}
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-on-surface-variant">
-              {isStoryLoading && pendingStory
-                ? "Loading this story's workspace, chapters, cast, and canon…"
-                : story?.description ??
+              {story?.description ??
                 (stories.length
                   ? "Please select a story to review its workspace, chapters, cast, and canon."
                   : "Create a story workspace to begin outlining your narrative world.")}
             </p>
-            {isStoryLoading && pendingStory ? (
-              <p aria-live="polite" className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary">
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" /> Loading workspace
-              </p>
-            ) : null}
             <div className="mt-6 flex flex-wrap gap-2">
               {story ? (
                 <>
@@ -137,13 +130,12 @@ export function StoryLedger({
               key={entry.id}
               className={`group relative flex flex-wrap items-start justify-between gap-4 px-1 py-5 first:pt-2 last:pb-2 sm:px-3 ${story?.id === entry.id ? "bg-primary/[0.04]" : ""}`}
             >
-              <button aria-busy={pendingStoryId === entry.id} aria-pressed={story?.id === entry.id} className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary disabled:cursor-wait disabled:opacity-70" disabled={isStoryLoading} type="button" onClick={() => onSelectStory(entry)}>
+              <button aria-pressed={story?.id === entry.id} className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary" type="button" onClick={() => onSelectStory(entry)}>
                 <p className="font-semibold text-on-surface transition group-hover:text-primary">{entry.title}</p>
                 <p className="mt-1.5 max-w-3xl text-sm leading-6 text-on-surface-variant">{entry.description ?? "No story description yet."}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-on-surface-variant">
                   <span>{entry._count?.chapters ?? 0} chapters</span>
                   <StoryStatus status={entry.status} />
-                  {pendingStoryId === entry.id ? <span className="inline-flex items-center gap-1.5 text-primary"><Loader2 aria-hidden="true" className="size-3.5 animate-spin" /> Loading</span> : null}
                 </div>
               </button>
               <details className="relative shrink-0">
@@ -160,6 +152,45 @@ export function StoryLedger({
             </article>
           ))}
           {!stories.length ? <Empty icon={<BookOpen className="size-5" />} text="Create your first story to begin building a library." /> : null}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function StoryLedgerSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading story library" className="animate-pulse space-y-6">
+      <div className="sr-only" role="status">Loading story workspace</div>
+      <section className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low">
+        <div className="grid gap-8 p-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.6fr)] lg:p-8">
+          <div className="space-y-4">
+            <div className="h-3 w-16 rounded bg-white/[0.1]" />
+            <div className="h-9 w-2/3 max-w-md rounded bg-white/[0.1]" />
+            <div className="space-y-2 pt-2">
+              <div className="h-4 w-full max-w-xl rounded bg-white/[0.06]" />
+              <div className="h-4 w-4/5 max-w-lg rounded bg-white/[0.06]" />
+            </div>
+            <div className="flex gap-2 pt-3">
+              <div className="h-10 w-24 rounded-xl bg-white/[0.08]" />
+              <div className="h-10 w-32 rounded-xl bg-white/[0.06]" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 self-end">
+            {[0, 1, 2, 3].map((index) => <div className="h-20 rounded-xl bg-white/[0.06]" key={index} />)}
+          </div>
+        </div>
+      </section>
+      <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
+        <div className="h-5 w-28 rounded bg-white/[0.1]" />
+        <div className="mt-4 divide-y divide-white/[0.08] border-y border-white/[0.08]">
+          {[0, 1, 2].map((index) => (
+            <div className="space-y-3 px-3 py-5" key={index}>
+              <div className="h-4 w-48 rounded bg-white/[0.1]" />
+              <div className="h-3 w-3/4 rounded bg-white/[0.06]" />
+              <div className="h-3 w-24 rounded bg-white/[0.06]" />
+            </div>
+          ))}
         </div>
       </section>
     </div>
