@@ -5,16 +5,18 @@ import { SelectMenu } from "@/components/ui/select-menu";
 import type { StorySummary } from "./types";
 
 type StoryPickerProps = {
+  disabled?: boolean;
   stories: StorySummary[];
   value: string;
   onChange: (storyId: string) => void;
 };
 
-export function StoryPicker({ stories, value, onChange }: StoryPickerProps) {
+export function StoryPicker({ disabled = false, stories, value, onChange }: StoryPickerProps) {
   return (
     <SelectMenu
       ariaLabel="Select story"
       className="h-11 bg-surface-dim/70 text-lg font-semibold tracking-tight"
+      disabled={disabled}
       options={stories.map((story) => ({
         label: story.title,
         value: story.id,

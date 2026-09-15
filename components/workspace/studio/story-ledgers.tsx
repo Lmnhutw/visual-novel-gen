@@ -27,7 +27,8 @@ export function StoryLedger({
   story,
   stories,
   canonProposalCount,
-  isStoryLoading,
+  isInitialLoading,
+  isPreviewLoading,
   onSelectStory,
   onOpenInStudio,
   onNewStory,
@@ -39,7 +40,8 @@ export function StoryLedger({
   story: StoryDetail | null;
   stories: StorySummary[];
   canonProposalCount: number;
-  isStoryLoading: boolean;
+  isInitialLoading: boolean;
+  isPreviewLoading: boolean;
   onSelectStory: (story: StorySummary) => void;
   onOpenInStudio: (story: StorySummary) => void;
   onNewStory: () => void;
@@ -48,14 +50,15 @@ export function StoryLedger({
   onAddCharacter: (story: StorySummary) => void;
   onDeleteStory: (story: StorySummary) => void;
 }) {
-  if (isStoryLoading) {
+  if (isInitialLoading) {
     return <StoryLedgerSkeleton />;
   }
 
   const headingStory = story;
 
   return (
-    <div className="space-y-6">
+    <div className="relative space-y-6">
+      {isPreviewLoading ? <StoryPreviewSkeleton /> : (
       <section className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low">
         <div className="grid gap-8 p-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.6fr)] lg:p-8">
           <div>
@@ -113,7 +116,8 @@ export function StoryLedger({
           )}
         </div>
       </section>
-      <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
+      )}
+      <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6" inert={isPreviewLoading}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-lg font-semibold text-on-surface">
@@ -154,6 +158,12 @@ export function StoryLedger({
           {!stories.length ? <Empty icon={<BookOpen className="size-5" />} text="Create your first story to begin building a library." /> : null}
         </div>
       </section>
+      {isPreviewLoading ? (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 z-10 cursor-wait rounded-2xl bg-background/25 backdrop-blur-[1px]"
+        />
+      ) : null}
     </div>
   );
 }
@@ -194,6 +204,30 @@ function StoryLedgerSkeleton() {
         </div>
       </section>
     </div>
+  );
+}
+
+function StoryPreviewSkeleton() {
+  return (
+    <section aria-busy="true" aria-label="Loading story preview" className="mt-5 animate-pulse overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low">
+      <div className="grid gap-8 p-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.6fr)] lg:p-8">
+        <div className="space-y-4">
+          <div className="h-3 w-16 rounded bg-white/[0.1]" />
+          <div className="h-9 w-2/3 max-w-md rounded bg-white/[0.1]" />
+          <div className="space-y-2 pt-2">
+            <div className="h-4 w-full max-w-xl rounded bg-white/[0.06]" />
+            <div className="h-4 w-4/5 max-w-lg rounded bg-white/[0.06]" />
+          </div>
+          <div className="flex gap-2 pt-3">
+            <div className="h-10 w-24 rounded-xl bg-white/[0.08]" />
+            <div className="h-10 w-32 rounded-xl bg-white/[0.06]" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 self-end">
+          {[0, 1, 2, 3].map((index) => <div className="h-20 rounded-xl bg-white/[0.06]" key={index} />)}
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -4,15 +4,6 @@
   background: rgb(var(--color-background) / 1);
 }
 
-.workspace__loading-overlay {
-  position: fixed;
-  z-index: 40;
-  inset: 0;
-  cursor: wait;
-  background: rgb(var(--color-background) / 0.42);
-  backdrop-filter: blur(1px);
-}
-
 .workspace__toast {
   position: fixed;
   top: 1rem;

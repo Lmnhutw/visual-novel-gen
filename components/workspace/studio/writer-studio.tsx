@@ -979,13 +979,16 @@ export function WriterStudio() {
   const showWorkspaceNavbar =
     activeView !== "studio" || !story || hasScrolledPastStoryIntro;
   const chapterTargetWords = story?.settings?.chapterTargetWords ?? 5000;
+  const isInitialLibraryLoading = isStoriesLoading && stories.length === 0;
+  const isStoryPreviewLoading = isWorkspaceLoading && !isInitialLibraryLoading;
 
   const body = activeView === "story" ? (
     <StoryLedger
       story={story}
       stories={stories}
       canonProposalCount={canonReviewProposals.length}
-      isStoryLoading={isWorkspaceLoading}
+      isInitialLoading={isInitialLibraryLoading}
+      isPreviewLoading={isStoryPreviewLoading}
       onSelectStory={(selectedStory) => {
         selectStory(selectedStory, "story");
       }}
@@ -1128,7 +1131,7 @@ export function WriterStudio() {
   );
 
   return (
-    <main aria-busy={isWorkspaceLoading} className={studioStyles.workspace} inert={isWorkspaceLoading}>
+    <main className={studioStyles.workspace}>
       <div className="flex min-h-screen w-full">
         <aside className="hidden w-64 shrink-0 flex-col border-r border-white/[0.08] bg-surface-dim/65 px-4 py-5 lg:flex">
           <div className="flex items-center gap-3 px-2">
@@ -1196,6 +1199,7 @@ export function WriterStudio() {
                     <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
                       <div className="w-[min(24rem,calc(100vw-10rem))] min-w-0">
                         <StoryPicker
+                          disabled={isWorkspaceLoading}
                           stories={stories}
                           value={storyId}
                           onChange={selectStory}
@@ -1223,6 +1227,7 @@ export function WriterStudio() {
                   ) : (
                     <div className="w-[min(34rem,calc(100vw-10rem))] min-w-0">
                       <StoryPicker
+                        disabled={isWorkspaceLoading}
                         stories={stories}
                         value={storyId}
                         onChange={selectStory}
@@ -1234,6 +1239,7 @@ export function WriterStudio() {
               <button
                 className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 type="button"
+                disabled={isWorkspaceLoading}
                 onClick={() => setIsStoryModalOpen(true)}
               >
                 <Plus className="size-4" /> New story
@@ -1325,9 +1331,6 @@ export function WriterStudio() {
           </button>
         </Dialog>
       )}
-      {isWorkspaceLoading ? (
-        <div aria-hidden="true" className={studioStyles["workspace__loading-overlay"]} />
-      ) : null}
       {isChapterLimitsOpen && story && (
         <Dialog title="Chapter setup" onClose={() => setIsChapterLimitsOpen(false)}>
           <form
