@@ -26,6 +26,13 @@ npm run prisma:generate
 npm run prisma:migrate
 ```
 
+`npm run prisma:migrate` is the interactive local-development command. In a
+deployment environment, apply committed migrations without creating a new one:
+
+```bash
+node run-with-project-env.mjs prisma migrate deploy
+```
+
 ## Docker (recommended for local development)
 
 Docker Compose starts the Next.js app, a local PostgreSQL database with pgvector,
@@ -105,6 +112,31 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
 Do not commit real `env/.env`, `env/.env.local`, or production secret files.
 
+## Stories, Library, and Reader URLs
+
+Each Story has a unique, human-readable `slug` stored in `stories.slug`. A slug
+is generated from the title, for example `the-last-heir-of-the-forgotten-realm`.
+If a title would produce a duplicate slug, the next available suffix is used,
+such as `test2-2`. The database CUID remains an internal identifier and is not
+shown in new Library or Reader URLs.
+
+Reader links use the story slug and, when relevant, the chapter number:
+
+```text
+/library/story?story=the-last-heir-of-the-forgotten-realm
+/library/story?story=the-last-heir-of-the-forgotten-realm&chapter=2
+```
+
+Legacy CUID-based and earlier title-plus-ID links remain accepted; the Reader
+redirects them to the canonical slug URL after resolving the Story. Migration
+`0013_story_slugs` backfills existing Stories and adds the unique slug index.
+
+Library loading is intentionally split into two states: the initial visit shows
+a full content skeleton while stories are first retrieved; switching to another
+Story keeps the list visible but temporarily blocks it and replaces only the
+Story preview with a skeleton. A failed Story request clears the loading state
+and shows an error toast rather than leaving the workspace blocked.
+
 ## Retrieval
 
 Supabase PostgreSQL is the source of truth. pgvector columns are available for semantic memory retrieval when embeddings are enabled. With `ENABLE_EMBEDDINGS=false`, retrieval falls back to structured canon plus keyword, salience, recency, and emotional-weight ranking.
@@ -162,6 +194,10 @@ Key modules:
 - `lib/generation/generation-job-service.ts`: persisted, cancellable generation
   jobs, versioned drafts, reviewable canon proposals, and worker execution.
 - `lib/continuity/continuity-service.ts`: deterministic and LLM-assisted continuity checks.
+- `lib/stories/story-service.ts`: Story creation, slug allocation, and Library
+  lookup.
+- `lib/stories/story-url.ts`: canonical slug URL construction and legacy-link
+  parsing.
 - `docs/instructions/`: project rules and architecture docs.
 
 ## Generation jobs and ownership
@@ -181,6 +217,21 @@ Routes accept a Supabase bearer token and scope every story-bound request to
 `stories.owner_id`. Set `REQUIRE_AUTH=true` outside local development to reject
 anonymous requests. Public tables retain deny-by-default RLS; application data
 is accessed through server-side Prisma routes.
+
+## Canon and continuity review
+
+The Canon view separates three review queues:
+
+- **Canon & Continuity** contains detected contradictions against established
+  facts such as character state, timeline, relationships, and prior events.
+  P0 issues block draft acceptance until resolved or dismissed. P1 issues must
+  be resolved or explicitly overridden during draft review.
+- **Canon Proposals** contains new facts extracted from a draft. Accepting one
+  commits it to canon, making it available to future retrieval, generation, and
+  continuity checks. Proposals are non-blocking and can be accepted only after
+  their draft is accepted.
+- **Advisories** are non-blocking editorial notes. They do not prevent draft
+  acceptance but can be reviewed to improve clarity or consistency.
 
 ## Character Library and primary protagonist
 
