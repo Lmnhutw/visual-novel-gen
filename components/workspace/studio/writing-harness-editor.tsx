@@ -63,7 +63,7 @@ export function WritingHarnessEditor({
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low shadow-panel">
+    <section className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low shadow-panel">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 px-5 py-4 sm:px-6">
         <div className="max-w-3xl">
           <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">

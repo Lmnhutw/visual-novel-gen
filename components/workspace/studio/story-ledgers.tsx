@@ -56,7 +56,7 @@ export function StoryLedger({
 
   return (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low">
+      <section className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low">
         <div className="grid gap-8 p-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.6fr)] lg:p-8">
           <div>
             <p className="text-xs font-semibold tracking-[0.16em] text-primary/80">
@@ -123,11 +123,11 @@ export function StoryLedger({
       <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">
-              LIBRARY
-            </p>
-            <h3 className="mt-1 text-lg font-semibold text-on-surface">
+            <p className="text-lg font-semibold tracking-[0.14em] text-on-surface">
               Your stories
+            </p>
+            <h3 className="mt-1 text-xs font-semibold text-on-surface-variant">
+              Select to view or edit your story...
             </h3>
           </div>
         </div>
@@ -196,7 +196,7 @@ export function CastLedger({
   primaryProtagonistId?: string | null;
 }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
+    <section className="mt-5 rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">
@@ -283,7 +283,7 @@ export function CanonLedger({
   );
   return (
     <div className="space-y-5">
-      <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
+      <section className="mt-5 rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
         <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">CANON & CONTINUITY</p>
         <div className="mt-1 flex flex-wrap items-baseline justify-between gap-3">
           <h2 className="text-xl font-semibold text-on-surface">Needs attention</h2>
