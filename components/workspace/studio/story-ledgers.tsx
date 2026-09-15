@@ -6,6 +6,7 @@ import {
   CircleAlert,
   ExternalLink,
   FilePlus2,
+  Loader2,
   MoreHorizontal,
   Plus,
   Trash2,
@@ -27,6 +28,8 @@ export function StoryLedger({
   story,
   stories,
   canonProposalCount,
+  isStoryLoading,
+  pendingStoryId,
   onSelectStory,
   onOpenInStudio,
   onNewStory,
@@ -38,7 +41,9 @@ export function StoryLedger({
   story: StoryDetail | null;
   stories: StorySummary[];
   canonProposalCount: number;
-  onSelectStory: (storyId: string) => void;
+  isStoryLoading: boolean;
+  pendingStoryId: string;
+  onSelectStory: (story: StorySummary) => void;
   onOpenInStudio: (story: StorySummary) => void;
   onNewStory: () => void;
   onReadStory: (story: StorySummary) => void;
@@ -46,6 +51,9 @@ export function StoryLedger({
   onAddCharacter: (story: StorySummary) => void;
   onDeleteStory: (story: StorySummary) => void;
 }) {
+  const pendingStory = stories.find((entry) => entry.id === pendingStoryId);
+  const headingStory = story ?? pendingStory;
+
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-2xl border border-white/10 bg-surface-container-low">
@@ -55,14 +63,21 @@ export function StoryLedger({
               LIBRARY
             </p>
             <h2 className="mt-2 text-3xl font-semibold tracking-tight text-on-surface">
-              {story?.title ?? (stories.length ? "Select a story to continue" : "Your story library is empty")}
+              {headingStory?.title ?? (stories.length ? "Select a story to continue" : "Your story library is empty")}
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-on-surface-variant">
-              {story?.description ??
+              {isStoryLoading && pendingStory
+                ? "Loading this story's workspace, chapters, cast, and canon…"
+                : story?.description ??
                 (stories.length
                   ? "Please select a story to review its workspace, chapters, cast, and canon."
                   : "Create a story workspace to begin outlining your narrative world.")}
             </p>
+            {isStoryLoading && pendingStory ? (
+              <p aria-live="polite" className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary">
+                <Loader2 aria-hidden="true" className="size-4 animate-spin" /> Loading workspace
+              </p>
+            ) : null}
             <div className="mt-6 flex flex-wrap gap-2">
               {story ? (
                 <>
@@ -122,12 +137,13 @@ export function StoryLedger({
               key={entry.id}
               className={`group relative flex flex-wrap items-start justify-between gap-4 px-1 py-5 first:pt-2 last:pb-2 sm:px-3 ${story?.id === entry.id ? "bg-primary/[0.04]" : ""}`}
             >
-              <button aria-pressed={story?.id === entry.id} className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary" type="button" onClick={() => onSelectStory(entry.id)}>
+              <button aria-busy={pendingStoryId === entry.id} aria-pressed={story?.id === entry.id} className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary disabled:cursor-wait disabled:opacity-70" disabled={isStoryLoading} type="button" onClick={() => onSelectStory(entry)}>
                 <p className="font-semibold text-on-surface transition group-hover:text-primary">{entry.title}</p>
                 <p className="mt-1.5 max-w-3xl text-sm leading-6 text-on-surface-variant">{entry.description ?? "No story description yet."}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-on-surface-variant">
                   <span>{entry._count?.chapters ?? 0} chapters</span>
                   <StoryStatus status={entry.status} />
+                  {pendingStoryId === entry.id ? <span className="inline-flex items-center gap-1.5 text-primary"><Loader2 aria-hidden="true" className="size-3.5 animate-spin" /> Loading</span> : null}
                 </div>
               </button>
               <details className="relative shrink-0">

@@ -6,6 +6,7 @@ import { WorkflowError } from "@/lib/http/api-response";
 import type { WritingHarnessConfig } from "@/lib/writing-harness/config";
 import type { ChapterLengthConfig } from "@/lib/chapters/chapter-lifecycle";
 import { parseChapterBrief } from "@/lib/chapters/chapter-brief";
+import { storyIdFromQuery, storySlug } from "@/lib/stories/story-url";
 
 export type CreateStoryInput = {
   ownerId?: string;
@@ -22,35 +23,58 @@ export type CreateStoryInput = {
 };
 
 export async function createStory(input: CreateStoryInput) {
-  return prisma.story.create({
-    data: {
-      ownerId: input.ownerId,
-      title: input.title,
-      description: input.description,
-      settings: {
-        create: {
-          genre: toJsonString(input.genre ?? []),
-          tone: input.tone,
-          pov: input.pov,
-          tense: input.tense,
-          styleGuide: input.styleGuide,
-          writingHarness: input.writingHarness
-            ? toJsonString(input.writingHarness)
-            : undefined,
-          nsfwPolicy: toJsonString(input.nsfwPolicy, {
-            matureModeAllowed: true,
-            requireAdultCharacters: true,
-            requireConsentContinuity: true,
-          }),
-          chapterTargetWords: input.chapterLength?.targetWords,
-          chapterSoftLimitWords: input.chapterLength?.softLimitWords,
-          chapterHardLimitWords: input.chapterLength?.hardLimitWords,
-          chapterAutoAdvance: input.chapterLength?.autoAdvance,
+  const baseSlug = storySlug(input.title);
+
+  for (let duplicateNumber = 1; duplicateNumber <= 100; duplicateNumber += 1) {
+    const slug =
+      duplicateNumber === 1 ? baseSlug : `${baseSlug}-${duplicateNumber}`;
+    try {
+      return await prisma.story.create({
+        data: {
+          ownerId: input.ownerId,
+          slug,
+          title: input.title,
+          description: input.description,
+          settings: {
+            create: {
+              genre: toJsonString(input.genre ?? []),
+              tone: input.tone,
+              pov: input.pov,
+              tense: input.tense,
+              styleGuide: input.styleGuide,
+              writingHarness: input.writingHarness
+                ? toJsonString(input.writingHarness)
+                : undefined,
+              nsfwPolicy: toJsonString(input.nsfwPolicy, {
+                matureModeAllowed: true,
+                requireAdultCharacters: true,
+                requireConsentContinuity: true,
+              }),
+              chapterTargetWords: input.chapterLength?.targetWords,
+              chapterSoftLimitWords: input.chapterLength?.softLimitWords,
+              chapterHardLimitWords: input.chapterLength?.hardLimitWords,
+              chapterAutoAdvance: input.chapterLength?.autoAdvance,
+            },
+          },
         },
-      },
-    },
-    include: { settings: true },
-  });
+        include: { settings: true },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new WorkflowError(
+    "STORY_SLUG_UNAVAILABLE",
+    "Could not reserve a unique story URL.",
+    409,
+  );
 }
 
 export async function listStories(ownerId?: string | null) {
@@ -122,9 +146,16 @@ export async function getStory(storyId: string, ownerId?: string | null) {
   };
 }
 
-export async function getLibraryStory(storyId: string, ownerId?: string | null) {
+export async function getLibraryStory(storyReference: string, ownerId?: string | null) {
+  const legacyStoryId = storyIdFromQuery(storyReference);
   const story = await prisma.story.findFirst({
-    where: { id: storyId, ownerId: ownerId ?? undefined },
+    where: {
+      ownerId: ownerId ?? undefined,
+      OR: [
+        { slug: storyReference },
+        ...(legacyStoryId ? [{ id: legacyStoryId }] : []),
+      ],
+    },
     include: {
       chapters: {
         orderBy: { number: "asc" },

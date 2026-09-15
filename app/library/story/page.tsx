@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import styles from "./story.module.css";
 
 import { composeChapterManuscript } from "@/lib/chapters/chapter-lifecycle";
+import { libraryStoryHref } from "@/lib/stories/story-url";
 import { getLibraryStory } from "@/lib/stories/story-service";
 
 type LibraryStoryPageProps = {
@@ -18,12 +19,12 @@ function statusLabel(status: string) {
 }
 
 export default async function LibraryStoryPage({ searchParams }: LibraryStoryPageProps) {
-  const { story: storyId, chapter } = await searchParams;
-  if (!storyId) notFound();
+  const { story: storyReference, chapter } = await searchParams;
+  if (!storyReference) notFound();
 
   let story;
   try {
-    story = await getLibraryStory(storyId);
+    story = await getLibraryStory(storyReference);
   } catch {
     notFound();
   }
@@ -34,6 +35,15 @@ export default async function LibraryStoryPage({ searchParams }: LibraryStoryPag
 
   if (chapter && !selectedChapter) notFound();
 
+  if (storyReference !== story.slug) {
+    redirect(
+      libraryStoryHref(story, {
+        chapter: selectedChapter?.number,
+        view: chapter ? undefined : "detail",
+      }),
+    );
+  }
+
   if (selectedChapter) {
     const manuscript = composeChapterManuscript(selectedChapter);
     const content =
@@ -43,7 +53,7 @@ export default async function LibraryStoryPage({ searchParams }: LibraryStoryPag
     return (
       <main className={styles["story-reader"]}>
         <article className={styles["story-reader__article"]}>
-          <Link className={styles["story-reader__back-link"]} href={`/library/story?story=${encodeURIComponent(story.id)}&view=detail`}>
+          <Link className={styles["story-reader__back-link"]} href={libraryStoryHref(story, { view: "detail" })}>
             ← {story.title}
           </Link>
           <header className={styles["story-reader__header"]}>
@@ -81,7 +91,7 @@ export default async function LibraryStoryPage({ searchParams }: LibraryStoryPag
           <ol className={styles["story-library__chapter-list"]}>
             {story.chapters.map((entry) => (
               <li className={styles["story-library__chapter-item"]} key={entry.id}>
-                <Link className={styles["story-library__chapter-link"]} href={`/library/story?story=${encodeURIComponent(story.id)}&chapter=${entry.number}`}>
+                <Link className={styles["story-library__chapter-link"]} href={libraryStoryHref(story, { chapter: entry.number })}>
                   <span className={styles["story-library__chapter-number"]}>{String(entry.number).padStart(2, "0")}</span>
                   <span className={styles["story-library__chapter-copy"]}>
                     <span className={styles["story-library__chapter-title"]}>{entry.title}</span>

@@ -16,6 +16,7 @@ export type StorySettings = {
 
 export type StorySummary = {
   id: string;
+  slug?: string;
   title: string;
   description: string | null;
   status: string;

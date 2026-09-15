@@ -12,6 +12,7 @@ datasource db {
 
 model Story {
   id          String   @id @default(cuid())
+  slug        String   @unique
   ownerId     String?  @map("owner_id")
   primaryProtagonistId String? @unique @map("primary_protagonist_id")
   title       String

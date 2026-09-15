@@ -23,6 +23,12 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { SelectMenu } from "@/components/ui/select-menu";
+import {
+  libraryStoryHref,
+  storyIdFromQuery,
+  storyQueryValue,
+  type StoryUrlIdentity,
+} from "@/lib/stories/story-url";
 import { cn } from "@/lib/utils";
 import studioStyles from "./studio.module.css";
 
@@ -83,9 +89,12 @@ function templateFormRecord(template: TemplateRecord): CharacterFormRecord {
 export function WriterStudio() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const storyId = searchParams.get("story") ?? "";
-  const [activeView, setActiveView] = useState<WorkspaceView>(() => storyId ? "studio" : "story");
+  const storyReference = searchParams.get("story");
   const [stories, setStories] = useState<StorySummary[]>([]);
+  const storyId =
+    stories.find((entry) => entry.slug === storyReference)?.id ??
+    storyIdFromQuery(storyReference);
+  const [activeView, setActiveView] = useState<WorkspaceView>(() => storyReference ? "studio" : "story");
   const [story, setStory] = useState<StoryDetail | null>(null);
   const [chapters, setChapters] = useState<StoryDetail["chapters"]>([]);
   const [jobs, setJobs] = useState<GenerationJob[]>([]);
@@ -100,7 +109,8 @@ export function WriterStudio() {
   const [contextPreview, setContextPreview] =
     useState<GenerationContext | null>(null);
   const [isContextPreviewLoading, setIsContextPreviewLoading] = useState(false);
-  const [isWorkspaceLoading, setIsWorkspaceLoading] = useState(Boolean(storyId));
+  const [isWorkspaceLoading, setIsWorkspaceLoading] = useState(Boolean(storyReference));
+  const [pendingStoryId, setPendingStoryId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -145,10 +155,17 @@ export function WriterStudio() {
     return () => window.clearTimeout(timeoutId);
   }, [error, message]);
 
-  const selectStory = useCallback((nextStoryId: string, nextView: WorkspaceView = nextStoryId ? "studio" : "story") => {
-    setActiveView(nextView);
+  const selectStory = useCallback((nextStory: string | StoryUrlIdentity, nextView?: WorkspaceView) => {
+    const nextStoryId = typeof nextStory === "string" ? nextStory : nextStory.id;
+    const selectedStory = typeof nextStory === "string"
+      ? stories.find((entry) => entry.id === nextStoryId)
+      : nextStory;
+    const resolvedView = nextView ?? (nextStoryId ? "studio" : "story");
+
+    setActiveView(resolvedView);
     if (nextStoryId === storyId) return;
 
+    setPendingStoryId(nextStoryId);
     setContextPreview(null);
     setStory(null);
     setChapters([]);
@@ -158,11 +175,16 @@ export function WriterStudio() {
     setIsWorkspaceLoading(Boolean(nextStoryId));
 
     const nextParams = new URLSearchParams(searchParams.toString());
-    if (nextStoryId) nextParams.set("story", nextStoryId);
+    if (nextStoryId) {
+      nextParams.set(
+        "story",
+        selectedStory ? storyQueryValue(selectedStory) : nextStoryId,
+      );
+    }
     else nextParams.delete("story");
     const query = nextParams.toString();
     router.push(query ? `/library?${query}` : "/library");
-  }, [router, searchParams, storyId]);
+  }, [router, searchParams, stories, storyId]);
 
   const loadStories = useCallback(async () => {
     const payload = await requestJson<{ stories: StorySummary[] }>(
@@ -235,17 +257,19 @@ export function WriterStudio() {
   }, [loadStories]);
 
   useEffect(() => {
-    if (!storyId) setActiveView("story");
-  }, [storyId]);
+    if (!storyReference) setActiveView("story");
+  }, [storyReference]);
 
   useEffect(() => {
-    if (!storyId) {
+    if (!storyReference) {
       setStory(null);
       setChapters([]);
       setJobs([]);
+      setPendingStoryId("");
       setIsWorkspaceLoading(false);
       return;
     }
+    if (!storyId) return;
     setMessage("");
     setError("");
     setStory(null);
@@ -260,8 +284,19 @@ export function WriterStudio() {
         );
         setMessage("");
       })
-      .finally(() => setIsWorkspaceLoading(false));
-  }, [loadWorkspace, storyId]);
+      .finally(() => {
+        setPendingStoryId("");
+        setIsWorkspaceLoading(false);
+      });
+  }, [loadWorkspace, storyId, storyReference]);
+
+  useEffect(() => {
+    if (!story || storyReference === storyQueryValue(story)) return;
+
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set("story", storyQueryValue(story));
+    router.replace(`/library?${nextParams.toString()}`);
+  }, [router, searchParams, story, storyReference]);
 
   useEffect(() => {
     if (activeView === "cast" || isTemplatePickerOpen) {
@@ -383,7 +418,7 @@ export function WriterStudio() {
       setIsStoryModalOpen(false);
       setMessage("Story workspace created.");
       await loadStories();
-      selectStory(payload.story.id);
+      selectStory(payload.story);
     } catch (requestError) {
       setError(formatRequestError(requestError, "Could not create story."));
     } finally {
@@ -945,18 +980,20 @@ export function WriterStudio() {
       story={story}
       stories={stories}
       canonProposalCount={canonReviewProposals.length}
-      onSelectStory={(selectedStoryId) => {
-        selectStory(selectedStoryId, "story");
+      isStoryLoading={isWorkspaceLoading}
+      pendingStoryId={pendingStoryId}
+      onSelectStory={(selectedStory) => {
+        selectStory(selectedStory, "story");
       }}
-      onOpenInStudio={(selectedStory) => selectStory(selectedStory.id, "studio")}
+      onOpenInStudio={(selectedStory) => selectStory(selectedStory, "studio")}
       onNewStory={() => setIsStoryModalOpen(true)}
-      onReadStory={(selectedStory) => window.location.assign(`/library/story?story=${encodeURIComponent(selectedStory.id)}&view=detail`)}
+      onReadStory={(selectedStory) => window.location.assign(libraryStoryHref(selectedStory, { view: "detail" }))}
       onAddChapter={(selectedStory) => {
-        selectStory(selectedStory.id);
+        selectStory(selectedStory);
         setIsChapterModalOpen(true);
       }}
       onAddCharacter={(selectedStory) => {
-        selectStory(selectedStory.id);
+        selectStory(selectedStory);
         openCreateCharacter();
       }}
       onDeleteStory={setStoryToDelete}
@@ -978,7 +1015,7 @@ export function WriterStudio() {
         onOpenChapterSetup={() => setIsChapterLimitsOpen(true)}
         onRead={() =>
           window.location.assign(
-            `/library/story?story=${encodeURIComponent(story.id)}&view=detail`,
+            libraryStoryHref(story, { view: "detail" }),
           )
         }
       />
