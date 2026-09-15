@@ -524,12 +524,30 @@ test("an approved closing draft can complete the chapter and reuse Chapter 2", a
 
   assert.equal(result.chapter.status, "COMPLETE");
   assert.equal(result.nextChapter?.id, "chapter-2");
-  assert.deepEqual(nextChapterCreate, {
-    storyId: "story-1",
-    number: 2,
-    title: "Chapter 2",
-    status: "DRAFT",
-  });
+  assert.ok(nextChapterCreate);
+  assert.deepEqual(
+    {
+      storyId: nextChapterCreate.storyId,
+      number: nextChapterCreate.number,
+      title: nextChapterCreate.title,
+      status: nextChapterCreate.status,
+      briefVersion: nextChapterCreate.briefVersion,
+    },
+    {
+      storyId: "story-1",
+      number: 2,
+      title: "Chapter 2",
+      status: "DRAFT",
+      briefVersion: 1,
+    },
+  );
+  assert.deepEqual(
+    parseChapterBrief(nextChapterCreate.brief),
+    createInitialChapterBrief(
+      "Continue naturally after Chapter 01: Chapter 1.",
+    ),
+  );
+  assert.ok(nextChapterCreate.briefUpdatedAt instanceof Date);
 });
 
 test("approval rejects an edited draft that would exceed the chapter hard limit", async () => {

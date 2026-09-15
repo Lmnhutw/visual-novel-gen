@@ -173,9 +173,13 @@ test("valid output never calls the repair function", async () => {
 
 test("repair stops after the first successful automatic repair", async () => {
   let repairCalls = 0;
+  const harness = {
+    ...getDefaultWritingHarness(),
+    forbiddenPhrases: ["forbidden phrase"],
+  };
   const outcome = await enforceWritingHarness({
-    draft: "A line—with a violation.",
-    harness: getDefaultWritingHarness(),
+    draft: "A line with a forbidden phrase.",
+    harness,
     repair: async () => {
       repairCalls += 1;
       return { text: "A line with no violation.", model: "free-model" };
@@ -189,12 +193,19 @@ test("repair stops after the first successful automatic repair", async () => {
 
 test("remaining violations after automatic repair require review", async () => {
   let repairCalls = 0;
+  const harness = {
+    ...getDefaultWritingHarness(),
+    forbiddenPhrases: ["forbidden phrase"],
+  };
   const outcome = await enforceWritingHarness({
-    draft: "Still—invalid.",
-    harness: getDefaultWritingHarness(),
+    draft: "Still contains a forbidden phrase.",
+    harness,
     repair: async () => {
       repairCalls += 1;
-      return { text: "Still—invalid.", model: "free-model" };
+      return {
+        text: "Still contains a forbidden phrase.",
+        model: "free-model",
+      };
     },
   });
 
@@ -222,9 +233,12 @@ test("paid repair requires explicit approval", () => {
 });
 
 test("audit snapshot persists schema, prompt version, findings, and repair model", async () => {
-  const harness = getDefaultWritingHarness();
+  const harness = {
+    ...getDefaultWritingHarness(),
+    forbiddenPhrases: ["forbidden phrase"],
+  };
   const outcome = await enforceWritingHarness({
-    draft: "Draft—with a violation.",
+    draft: "Draft with a forbidden phrase.",
     harness,
     repair: async () => ({
       text: "Draft without a violation.",

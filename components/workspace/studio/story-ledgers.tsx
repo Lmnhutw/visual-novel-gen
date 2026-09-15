@@ -26,7 +26,9 @@ import type {
 export function StoryLedger({
   story,
   stories,
+  canonProposalCount,
   onSelectStory,
+  onOpenInStudio,
   onNewStory,
   onReadStory,
   onAddChapter,
@@ -35,7 +37,9 @@ export function StoryLedger({
 }: {
   story: StoryDetail | null;
   stories: StorySummary[];
+  canonProposalCount: number;
   onSelectStory: (storyId: string) => void;
+  onOpenInStudio: (story: StorySummary) => void;
   onNewStory: () => void;
   onReadStory: (story: StorySummary) => void;
   onAddChapter: (story: StorySummary) => void;
@@ -65,6 +69,9 @@ export function StoryLedger({
                   <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => onReadStory(story)}>
                     <BookOpen className="size-4" /> Read
                   </button>
+                  <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => onOpenInStudio(story)}>
+                    <ExternalLink className="size-4" /> Open in Studio
+                  </button>
                   <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => onAddChapter(story)}>
                     <Plus className="size-4" /> Add chapter
                   </button>
@@ -83,8 +90,13 @@ export function StoryLedger({
             <div className="grid grid-cols-2 gap-3 self-end">
               <Metric label="Characters" value={story.characters.length} />
               <Metric label="Chapters" value={story.chapters.length} />
-              <Metric label="Relationships" value={story.relationships.length} />
-              <Metric label="Open issues" value={story.continuityIssues.length} tone="warn" />
+              <Metric label="Canon proposals" value={canonProposalCount} detail="Awaiting approval" />
+              <Metric
+                label="Continuity issues"
+                value={story.continuityIssues.length}
+                detail="Potential canon conflicts"
+                tone={story.continuityIssues.length > 0 ? "warn" : undefined}
+              />
             </div>
           ) : (
             <div className="self-end border-l border-white/[0.1] pl-5 text-sm leading-6 text-on-surface-variant">
@@ -108,9 +120,9 @@ export function StoryLedger({
           {stories.map((entry) => (
             <article
               key={entry.id}
-              className="group relative flex flex-wrap items-start justify-between gap-4 px-1 py-5 first:pt-2 last:pb-2 sm:px-3"
+              className={`group relative flex flex-wrap items-start justify-between gap-4 px-1 py-5 first:pt-2 last:pb-2 sm:px-3 ${story?.id === entry.id ? "bg-primary/[0.04]" : ""}`}
             >
-              <button className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary" type="button" onClick={() => onSelectStory(entry.id)}>
+              <button aria-pressed={story?.id === entry.id} className="min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary" type="button" onClick={() => onSelectStory(entry.id)}>
                 <p className="font-semibold text-on-surface transition group-hover:text-primary">{entry.title}</p>
                 <p className="mt-1.5 max-w-3xl text-sm leading-6 text-on-surface-variant">{entry.description ?? "No story description yet."}</p>
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-on-surface-variant">
@@ -123,7 +135,7 @@ export function StoryLedger({
                   <MoreHorizontal className="size-5" />
                 </summary>
                 <div className="absolute right-0 z-20 mt-2 w-48 rounded-xl border border-white/10 bg-surface-container-high p-1.5 shadow-2xl shadow-black/35">
-                  <MenuAction icon={<ExternalLink className="size-4" />} label="View in Studio" onClick={() => onSelectStory(entry.id)} />
+                  <MenuAction icon={<ExternalLink className="size-4" />} label="Open in Studio" onClick={() => onOpenInStudio(entry)} />
                   <MenuAction icon={<FilePlus2 className="size-4" />} label="Add chapter" onClick={() => onAddChapter(entry)} />
                   <MenuAction icon={<UserPlus className="size-4" />} label="Add character" onClick={() => onAddCharacter(entry)} />
                   <MenuAction danger icon={<Trash2 className="size-4" />} label="Delete story" onClick={() => onDeleteStory(entry)} />
@@ -380,10 +392,12 @@ function proposalPreview(value: string): string | null {
 function Metric({
   label,
   value,
+  detail,
   tone,
 }: {
   label: string;
   value: number;
+  detail?: string;
   tone?: "warn";
 }) {
   return (
@@ -394,6 +408,11 @@ function Metric({
       >
         {value}
       </p>
+      {detail ? (
+        <p className="mt-1 text-[11px] leading-4 text-on-surface-variant">
+          {detail}
+        </p>
+      ) : null}
     </div>
   );
 }

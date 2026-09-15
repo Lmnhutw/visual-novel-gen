@@ -20,7 +20,10 @@ const emptyExtraction = {
 };
 
 test("shared pipeline performs at most one repair and preserves stage order", async () => {
-  const harness = getDefaultWritingHarness();
+  const harness = {
+    ...getDefaultWritingHarness(),
+    forbiddenPhrases: ["forbidden phrase"],
+  };
   const prepared: PreparedGenerationPipeline = {
     input: {
       storyId: "story-1",
@@ -55,7 +58,10 @@ test("shared pipeline performs at most one repair and preserves stage order", as
     generate: async () => {
       calls += 1;
       return {
-        text: calls === 1 ? "A bad — draft." : "A repaired draft.",
+        text:
+          calls === 1
+            ? "A draft with a forbidden phrase."
+            : "A repaired draft.",
         model: "free-model",
       };
     },
@@ -75,7 +81,10 @@ test("shared pipeline performs at most one repair and preserves stage order", as
 });
 
 test("paid pipeline repair remains disabled without explicit consent", async () => {
-  const harness = getDefaultWritingHarness();
+  const harness = {
+    ...getDefaultWritingHarness(),
+    forbiddenPhrases: ["forbidden phrase"],
+  };
   let calls = 0;
   const result = await executePreparedGenerationPipeline(
     {
@@ -104,7 +113,10 @@ test("paid pipeline repair remains disabled without explicit consent", async () 
     {
       generate: async () => {
         calls += 1;
-        return { text: "Still — invalid.", model: "paid-model" };
+        return {
+          text: "This still contains a forbidden phrase.",
+          model: "paid-model",
+        };
       },
       check: async () => [],
       extract: async () => emptyExtraction,

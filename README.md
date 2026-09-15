@@ -74,6 +74,11 @@ npm run lint
 
 ## Environment
 
+Local npm scripts load `env/.env.local` first, then fall back to `env/.env`.
+Variables already supplied by the shell, CI, or Docker keep precedence.
+The test runner loads only the database connection variables to keep tests isolated
+from local feature configuration.
+
 `env/.env.example` intentionally documents placeholders only:
 
 ```env

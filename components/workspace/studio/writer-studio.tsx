@@ -134,6 +134,17 @@ export function WriterStudio() {
     return () => window.removeEventListener("scroll", updateScrollState);
   }, []);
 
+  useEffect(() => {
+    if (!error && !message) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setError("");
+      setMessage("");
+    }, error ? 7000 : 4000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [error, message]);
+
   const selectStory = useCallback((nextStoryId: string, nextView: WorkspaceView = nextStoryId ? "studio" : "story") => {
     setActiveView(nextView);
     if (nextStoryId === storyId) return;
@@ -657,14 +668,11 @@ export function WriterStudio() {
     const activeChapter = chapters.find((chapter) => chapter.id === chapterId);
     const requestedDirection = goal.trim();
     const query =
-      requestedDirection.length >= 10
-        ? requestedDirection
-        : requestedDirection.length === 0
-          ? activeChapter?.brief?.suggestedNextDirection ||
-            activeChapter?.brief?.originalIntent ||
-            ""
-          : "";
-    if (!storyId || query.length < 10) return;
+      requestedDirection ||
+      activeChapter?.brief?.suggestedNextDirection ||
+      activeChapter?.brief?.originalIntent ||
+      "";
+    if (!storyId) return;
 
     setIsContextPreviewLoading(true);
     setError("");
@@ -677,7 +685,7 @@ export function WriterStudio() {
           body: JSON.stringify({
             storyId,
             chapterId: chapterId || undefined,
-            query,
+            query: query || undefined,
             activeCharacterIds,
             includeSecrets,
           }),
@@ -936,9 +944,11 @@ export function WriterStudio() {
     <StoryLedger
       story={story}
       stories={stories}
+      canonProposalCount={canonReviewProposals.length}
       onSelectStory={(selectedStoryId) => {
-        selectStory(selectedStoryId);
+        selectStory(selectedStoryId, "story");
       }}
+      onOpenInStudio={(selectedStory) => selectStory(selectedStory.id, "studio")}
       onNewStory={() => setIsStoryModalOpen(true)}
       onReadStory={(selectedStory) => window.location.assign(`/library/story?story=${encodeURIComponent(selectedStory.id)}&view=detail`)}
       onAddChapter={(selectedStory) => {
@@ -1201,14 +1211,24 @@ export function WriterStudio() {
               />
             </div>
           </header>
-          <div aria-live="polite" className="sr-only">
-            {error || message}
-          </div>
           {(error || message) && (
             <div
-              className={`${studioStyles["workspace__feedback"]} ${error ? studioStyles["workspace__feedback--error"] : ""}`}
+              aria-live={error ? "assertive" : "polite"}
+              className={`${studioStyles["workspace__toast"]} ${error ? studioStyles["workspace__toast--error"] : ""}`}
+              role={error ? "alert" : "status"}
             >
-              {error || message}
+              <span>{error || message}</span>
+              <button
+                aria-label="Dismiss notification"
+                className={studioStyles["workspace__toast-dismiss"]}
+                type="button"
+                onClick={() => {
+                  setError("");
+                  setMessage("");
+                }}
+              >
+                <X aria-hidden="true" className="size-4" />
+              </button>
             </div>
           )}
           <div
