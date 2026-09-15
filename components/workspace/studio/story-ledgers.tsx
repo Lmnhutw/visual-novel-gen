@@ -354,7 +354,10 @@ export function CanonLedger({
           <h2 className="text-xl font-semibold text-on-surface">Needs attention</h2>
           <span className="text-sm font-semibold text-amber-200">{requiredIssues.length} blocking</span>
         </div>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant">Resolve an explicit conflict in the draft or dismiss a false positive before accepting its draft.</p>
+        <div className="mt-2 max-w-2xl space-y-1 text-sm leading-6 text-on-surface-variant">
+          <p>Continuity checks compare the current draft with facts already established in your story, such as character state, timeline, and prior events.</p>
+          <p>Blocking issues must be resolved or dismissed before accepting the draft, so contradictions do not become part of the approved manuscript.</p>
+        </div>
         <div className="mt-5 space-y-3">
           {requiredIssues.map((issue) => (
             <ContinuityIssueRow key={issue.id} issue={issue} onReview={onReviewIssue} />
@@ -371,6 +374,10 @@ export function CanonLedger({
           </div>
           <span className="text-sm font-semibold text-primary">{proposals.length} pending</span>
         </div>
+        <div className="mt-2 max-w-2xl space-y-1 text-sm leading-6 text-on-surface-variant">
+          <p>These are new facts the system found in a draft that may deserve a permanent place in your story canon.</p>
+          <p>Approve a proposal only if future chapters should treat it as true; dismiss it if it is temporary, inaccurate, or not part of the intended story.</p>
+        </div>
         <div className="mt-5 space-y-3">
           {proposals.map((entry) => (
             <CanonProposalRow key={entry.proposal.id} entry={entry} onReview={onReviewProposal} />
@@ -383,6 +390,7 @@ export function CanonLedger({
         <section className="rounded-2xl border border-white/10 bg-surface-container-low p-5 sm:p-6">
           <p className="text-xs font-semibold tracking-[0.14em] text-on-surface-variant">ADVISORIES</p>
           <h2 className="mt-1 text-xl font-semibold text-on-surface">Optional editorial notes</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-on-surface-variant">These are non-blocking suggestions. They do not prevent draft acceptance, but reviewing them can improve clarity and consistency before the next chapter.</p>
           <div className="mt-5 space-y-3">
             {advisories.map((issue) => (
               <ContinuityIssueRow key={issue.id} issue={issue} onReview={onReviewIssue} />
