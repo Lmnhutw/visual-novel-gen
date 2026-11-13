@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 759.7079999999999 868.1369999999998" width="759.7079999999999" height="868.1369999999998" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="Start" data-to="Brief" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="301.55599999999987,306.437 301.55599999999987,346.437" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Brief" data-to="Mode" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="301.55599999999987,383.337 301.5559999999998,423.337" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Mode" data-to="Generate" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="301.5559999999998,460.23699999999997 301.55599999999987,500.23699999999997" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Generate" data-to="Review" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="301.55599999999987,537.137 301.55599999999987,577.137" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Review" data-to="Commit" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="301.55599999999987,614.0369999999999 301.55599999999987,642.0369999999999 212.12266666666656,642.0369999999999 212.12266666666656,654.0369999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Commit" data-to="Finish" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="129.47333333333324,654.0369999999999 129.47333333333324,642.0369999999999 40.039999999999964,642.0369999999999 40.039999999999964,245.53700000000003 109.24391666666662,245.53700000000003 109.24391666666662,148.92775000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Finish" data-to="Mode" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No: Continue" points="145.55316666666664,185.237 145.55316666666664,257.53700000000003 85.53999999999996,257.53700000000003 85.53999999999996,411.337 220.48824999999988,411.337 220.48824999999988,423.337" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Finish" data-to="Complete" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="end_chapter or eligible auto-advance" points="181.8624166666666,148.92775000000003 181.8624166666666,197.23700000000002 591.2879999999998,197.23700000000002 591.2879999999998,269.53700000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Complete" data-to="Handoff" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="591.2879999999998,306.437 591.2879999999998,346.437" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Handoff" data-to="Mode" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="591.2879999999998,383.337 591.2879999999998,411.337 382.6237499999998,411.337 382.6237499999998,423.337" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Commit" data-to="Summary" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="Separate summarize command" points="170.7979999999999,690.9369999999999 170.7979999999999,791.2369999999999" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="Finish" data-to="Mode" data-label="No: Continue">
+  <rect x="47.03999999999997" y="374.03700000000003" width="76.456" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="85.26799999999997" y="389.187" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">No: Continue</text>
+</g>
+<g class="edge-label" data-from="Finish" data-to="Complete" data-label="end_chapter or eligible auto-advance">
+  <rect x="494.7879999999998" y="204.23700000000002" width="192.28600000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="590.9309999999998" y="219.38700000000003" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">end_chapter or eligible auto-advance</text>
+</g>
+<g class="edge-label" data-from="Commit" data-to="Summary" data-label="Separate summarize command">
+  <rect x="90.29799999999989" y="725.9369999999999" width="160.20999999999998" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="170.40299999999988" y="741.0869999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Separate summarize command</text>
+</g>
+<g class="node" data-id="Start" data-label="ensureActiveChapter: reuse or create Chapter" data-shape="rectangle">
+  <rect x="143.49599999999992" y="269.53700000000003" width="316.1199999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="301.55599999999987" y="287.987" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">ensureActiveChapter: reuse or create Chapter</text>
+</g>
+<g class="node" data-id="Brief" data-label="Initialize missing Brief from goal" data-shape="rectangle">
+  <rect x="190.9199999999999" y="346.437" width="221.27199999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="301.55599999999987" y="364.887" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Initialize missing Brief from goal</text>
+</g>
+<g class="node" data-id="Mode" data-label="Resolve NORMAL or CLOSING from word budget" data-shape="rectangle">
+  <rect x="139.4204999999999" y="423.337" width="324.2709999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="301.5559999999998" y="441.787" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Resolve NORMAL or CLOSING from word budget</text>
+</g>
+<g class="node" data-id="Generate" data-label="Generate with Brief and up to 3 recent Scenes" data-shape="rectangle">
+  <rect x="149.42399999999986" y="500.23699999999997" width="304.264" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="301.55599999999987" y="518.687" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Generate with Brief and up to 3 recent Scenes</text>
+</g>
+<g class="node" data-id="Review" data-label="Review draft and Brief update" data-shape="rectangle">
+  <rect x="196.10699999999989" y="577.137" width="210.898" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="301.55599999999987" y="595.587" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Review draft and Brief update</text>
+</g>
+<g class="node" data-id="Commit" data-label="Commit Scene; increase word count" data-shape="rectangle">
+  <rect x="46.8239999999999" y="654.0369999999999" width="247.94799999999998" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="170.7979999999999" y="672.487" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Commit Scene; increase word count</text>
+</g>
+<g class="node" data-id="Finish" data-label="End chapter?" data-shape="diamond">
+  <polygon points="145.5531666666666,40 218.17166666666662,112.61850000000001 145.5531666666666,185.23700000000002 72.9346666666666,112.61850000000001" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="145.5531666666666" y="112.61850000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">End chapter?</text>
+</g>
+<g class="node" data-id="Complete" data-label="COMPLETE and next chapter" data-shape="rectangle">
+  <rect x="483.6159999999998" y="269.53700000000003" width="215.34399999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="591.2879999999998" y="287.987" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">COMPLETE and next chapter</text>
+</g>
+<g class="node" data-id="Handoff" data-label="Handoff Brief carries context forward" data-shape="rectangle">
+  <rect x="462.86799999999977" y="346.437" width="256.84000000000003" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="591.2879999999998" y="364.887" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Handoff Brief carries context forward</text>
+</g>
+<g class="node" data-id="Summary" data-label="LLM summary stored in Chapter" data-shape="rectangle">
+  <rect x="56.08649999999989" y="791.2369999999999" width="229.423" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="170.7979999999999" y="809.6869999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">LLM summary stored in Chapter</text>
+</g>
+</svg>

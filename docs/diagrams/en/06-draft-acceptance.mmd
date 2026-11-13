@@ -1,0 +1,14 @@
+flowchart TB
+    Review["Edit draft; review findings and Brief proposal"] --> Accept["POST /api/draft-versions/:id/accept"]
+    Accept --> Tx["Serializable transaction"]
+    Tx --> Existing{"Already committed?"}
+    Existing -->|"Yes"| Reuse["Return existing Scene; no duplicate"]
+    Existing -->|"No"| Gates{"Commit validation"}
+    Gates -->|"Unreviewed Brief, hard Harness, P0 or P1 gate"| Block["409: resolve review or chapter conflict"]
+    Gates -->|"Closed chapter or hard limit exceeded"| Block
+    Gates -->|"Content has no words"| Empty["422: empty draft"]
+    Gates -->|"Valid"| Scene["Create Scene; mark DraftVersion ACCEPTED"]
+    Scene --> Update["Update word count and approved Brief"]
+    Update --> Advance{"End or eligible auto-advance?"}
+    Advance -->|"No"| Continue["Keep Chapter DRAFT"]
+    Advance -->|"Yes"| Next["Chapter COMPLETE; create or reuse next chapter"]

@@ -1,0 +1,12 @@
+flowchart TB
+    Extraction["Draft extraction"] --> Pending["CanonChangeProposal PENDING"]
+    Pending --> Decision{"Writer decision"}
+    Decision -->|"Reject"| Rejected["REJECTED and audit log"]
+    Decision -->|"Accept"| Accepted{"Draft ACCEPTED?"}
+    Accepted -->|"No"| Block["409: accept draft first"]
+    Accepted -->|"Yes"| Type{"Proposal type"}
+    Type -->|"Memory or Event: AUTO_APPLY"| Commit["Transaction: canon write, ACCEPTED, audit"]
+    Type -->|"State, relationship, secret, lore, thread"| Manual["NEEDS_MANUAL_APPLICATION"]
+    Manual --> Apply["Writer manually applies supported changes"]
+    Commit --> Future["Later retrieval and continuity read updated data"]
+    Apply -.->|"Only after data is saved"| Future

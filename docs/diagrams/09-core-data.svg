@@ -33,7 +33,7 @@
 <polyline class="er-relationship" data-entity1="GENERATION_JOB" data-entity2="DRAFT_VERSION" data-cardinality1="zero-one" data-cardinality2="zero-one" data-identifying="true" data-label="result" points="567.762,446 587.762,446 587.762,337.7 1317.5959999999998,337.7" fill="none" stroke="var(--_line)" stroke-width="1" />
 <polyline class="er-relationship" data-entity1="GENERATION_JOB" data-entity2="CANON_CHANGE_PROPOSAL" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="proposes" points="567.762,432 577.762,432 577.762,239.7 831.068,239.7" fill="none" stroke="var(--_line)" stroke-width="1" />
 <polyline class="er-relationship" data-entity1="GENERATION_JOB" data-entity2="GENERATION_RUN" data-cardinality1="zero-one" data-cardinality2="zero-one" data-identifying="true" data-label="current_attempt" points="567.762,460 864.413,460" fill="none" stroke="var(--_line)" stroke-width="1" />
-<polyline class="er-relationship" data-entity1="GENERATION_RUN" data-entity2="CONTINUITY_ISSUE" data-cardinality1="one" data-cardinality2="zero-many" data-identifying="true" data-label="detects" points="1011.441,460 1317.5959999999998,460" fill="none" stroke="var(--_line)" stroke-width="1" />
+<polyline class="er-relationship" data-entity1="GENERATION_RUN" data-entity2="CONTINUITY_ISSUE" data-cardinality1="zero-one" data-cardinality2="zero-many" data-identifying="true" data-label="detects" points="1011.441,460 1317.5959999999998,460" fill="none" stroke="var(--_line)" stroke-width="1" />
 <polyline class="er-relationship" data-entity1="SCENE" data-entity2="DRAFT_VERSION" data-cardinality1="zero-one" data-cardinality2="zero-many" data-identifying="true" data-label="accepted_history" points="1007.9269999999999,68 1237.5959999999998,68 1237.5959999999998,319.03333333333336 1317.5959999999998,319.03333333333336" fill="none" stroke="var(--_line)" stroke-width="1" />
 <g class="entity" data-id="STORY" data-label="STORY">
   <rect x="40" y="656" width="140" height="56" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
@@ -192,6 +192,7 @@
 <circle cx="852.413" cy="460" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
 <line x1="1015.441" y1="454" x2="1015.441" y2="466" stroke="var(--_line)" stroke-width="1.25" />
 <line x1="1019.441" y1="454" x2="1019.441" y2="466" stroke="var(--_line)" stroke-width="1.25" />
+<circle cx="1023.441" cy="460" r="4" fill="var(--bg)" stroke="var(--_line)" stroke-width="1.25" />
 <line x1="1313.5959999999998" y1="467" x2="1301.5959999999998" y2="460" stroke="var(--_line)" stroke-width="1.25" />
 <line x1="1313.5959999999998" y1="460" x2="1301.5959999999998" y2="460" stroke="var(--_line)" stroke-width="1.25" />
 <line x1="1313.5959999999998" y1="453" x2="1301.5959999999998" y2="460" stroke="var(--_line)" stroke-width="1.25" />

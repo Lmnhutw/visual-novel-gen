@@ -1,0 +1,14 @@
+flowchart TB
+    Input["Story, goal, chapter, active IDs, secrets flag"] --> Read["Load relational canon and Chapter Brief"]
+    Input --> Search["searchMemories by Story and query"]
+    Search --> Enabled{"Embeddings enabled?"}
+    Enabled -->|"No"| Rank["Keyword, salience, recency, emotional weight"]
+    Enabled -->|"Yes"| Vector["Attempt embedding and pgvector search"]
+    Vector -->|"Current adapter unsupported: fallback"| Rank
+    Read --> Budget["Context selection: 6000 estimated tokens by default"]
+    Rank --> Budget
+    Budget --> Preview["Preview: estimate, omitted, overBudget"]
+    Budget --> Prompt["System and safety; Harness; canon; task; output"]
+    Prompt --> Generation["generateText: prose"]
+    Generation --> Validate["Harness and continuity checks"]
+    Validate --> Extract["Extraction JSON validated with Zod"]

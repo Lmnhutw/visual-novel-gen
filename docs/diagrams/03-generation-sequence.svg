@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 957.569 1173" width="957.569" height="1173" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 997.367 1393" width="997.367" height="1393" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Arial', system-ui, sans-serif; }
@@ -27,16 +27,16 @@
   </marker>
 </defs>
 <g class="block" data-type="opt" data-label="Có lỗi và chính sách cho phép repair">
-  <rect x="649.2499999999999" y="593" width="253.23000000000002" height="100" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
-  <rect x="649.2499999999999" y="593" width="234.13000000000005" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
-  <text x="655.2499999999999" y="602" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">opt [Có lỗi và chính sách cho phép repair]</text>
+  <rect x="649.2499999999999" y="673" width="253.23000000000002" height="100" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="649.2499999999999" y="673" width="234.13000000000005" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="655.2499999999999" y="682" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">opt [Có lỗi và chính sách cho phép repair]</text>
 </g>
-<line class="lifeline" data-actor="UI" x1="83.65450000000001" y1="70" x2="83.65450000000001" y2="1143" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
-<line class="lifeline" data-actor="API" x1="225.77650000000003" y1="70" x2="225.77650000000003" y2="1143" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
-<line class="lifeline" data-actor="DB" x1="368.269" y1="70" x2="368.269" y2="1143" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
-<line class="lifeline" data-actor="W" x1="540.7719999999999" y1="70" x2="540.7719999999999" y2="1143" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
-<line class="lifeline" data-actor="P" x1="699.9369999999999" y1="70" x2="699.9369999999999" y2="1143" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
-<line class="lifeline" data-actor="AI" x1="839.9369999999999" y1="70" x2="839.9369999999999" y2="1143" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="UI" x1="83.65450000000001" y1="70" x2="83.65450000000001" y2="1363" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="API" x1="225.77650000000003" y1="70" x2="225.77650000000003" y2="1363" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="DB" x1="368.269" y1="70" x2="368.269" y2="1363" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="W" x1="540.7719999999999" y1="70" x2="540.7719999999999" y2="1363" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="P" x1="699.9369999999999" y1="70" x2="699.9369999999999" y2="1363" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="AI" x1="839.9369999999999" y1="70" x2="839.9369999999999" y2="1363" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
 <g class="message" data-from="UI" data-to="API" data-label="POST /api/generation/jobs" data-line-style="solid" data-arrow-head="filled" data-self="false">
   <line x1="83.65450000000001" y1="90" x2="225.77650000000003" y2="90" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
   <text x="154.71550000000002" y="80" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">POST /api/generation/jobs</text>
@@ -65,69 +65,85 @@
   <line x1="699.9369999999999" y1="375" x2="368.269" y2="375" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
   <text x="534.103" y="365" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Đọc canon, Chapter Brief, Scene và memory</text>
 </g>
+<g class="message" data-from="P" data-to="W" data-label="Context và prompt đã chuẩn bị" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="699.9369999999999" y1="415" x2="540.7719999999999" y2="415" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="620.3544999999999" y="405" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Context và prompt đã chuẩn bị</text>
+</g>
 <g class="message" data-from="W" data-to="DB" data-label="Lưu context snapshot, prompt, GenerationRun" data-line-style="solid" data-arrow-head="filled" data-self="false">
-  <line x1="540.7719999999999" y1="415" x2="368.269" y2="415" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
-  <text x="454.52049999999997" y="405" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Lưu context snapshot, prompt, GenerationRun</text>
+  <line x1="540.7719999999999" y1="455" x2="368.269" y2="455" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="454.52049999999997" y="445" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Lưu context snapshot, prompt, GenerationRun</text>
+</g>
+<g class="message" data-from="W" data-to="P" data-label="Thực thi pipeline đã chuẩn bị" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="540.7719999999999" y1="495" x2="699.9369999999999" y2="495" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="620.3544999999999" y="485" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Thực thi pipeline đã chuẩn bị</text>
 </g>
 <g class="message" data-from="P" data-to="AI" data-label="Sinh prose" data-line-style="solid" data-arrow-head="filled" data-self="false">
-  <line x1="699.9369999999999" y1="455" x2="839.9369999999999" y2="455" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
-  <text x="769.9369999999999" y="445" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Sinh prose</text>
+  <line x1="699.9369999999999" y1="535" x2="839.9369999999999" y2="535" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="769.9369999999999" y="525" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Sinh prose</text>
 </g>
 <g class="message" data-from="AI" data-to="P" data-label="Draft và usage" data-line-style="dashed" data-arrow-head="filled" data-self="false">
-  <line x1="839.9369999999999" y1="495" x2="699.9369999999999" y2="495" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
-  <text x="769.9369999999999" y="485" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Draft và usage</text>
+  <line x1="839.9369999999999" y1="575" x2="699.9369999999999" y2="575" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="769.9369999999999" y="565" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Draft và usage</text>
 </g>
 <g class="message" data-from="P" data-to="P" data-label="Chuẩn hóa và kiểm tra Writing Harness" data-line-style="solid" data-arrow-head="filled" data-self="true">
-  <polyline points="699.9369999999999,535 729.9369999999999,535 729.9369999999999,555 699.9369999999999,555" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
-  <text x="737.9369999999999" y="545" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Chuẩn hóa và kiểm tra Writing Harness</text>
+  <polyline points="699.9369999999999,615 729.9369999999999,615 729.9369999999999,635 699.9369999999999,635" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="737.9369999999999" y="625" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Chuẩn hóa và kiểm tra Writing Harness</text>
 </g>
 <g class="message" data-from="P" data-to="AI" data-label="Một lần sửa theo lỗi đã phát hiện" data-line-style="solid" data-arrow-head="filled" data-self="false">
-  <line x1="699.9369999999999" y1="633" x2="839.9369999999999" y2="633" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
-  <text x="769.9369999999999" y="623" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Một lần sửa theo lỗi đã phát hiện</text>
+  <line x1="699.9369999999999" y1="713" x2="839.9369999999999" y2="713" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="769.9369999999999" y="703" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Một lần sửa theo lỗi đã phát hiện</text>
 </g>
 <g class="message" data-from="AI" data-to="P" data-label="Draft đã sửa" data-line-style="dashed" data-arrow-head="filled" data-self="false">
-  <line x1="839.9369999999999" y1="673" x2="699.9369999999999" y2="673" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
-  <text x="769.9369999999999" y="663" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Draft đã sửa</text>
+  <line x1="839.9369999999999" y1="753" x2="699.9369999999999" y2="753" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="769.9369999999999" y="743" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Draft đã sửa</text>
 </g>
 <g class="message" data-from="P" data-to="P" data-label="Chạy continuity rules" data-line-style="solid" data-arrow-head="filled" data-self="true">
-  <polyline points="699.9369999999999,713 729.9369999999999,713 729.9369999999999,733 699.9369999999999,733" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
-  <text x="737.9369999999999" y="723" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Chạy continuity rules</text>
+  <polyline points="699.9369999999999,793 729.9369999999999,793 729.9369999999999,813 699.9369999999999,813" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="737.9369999999999" y="803" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Chạy continuity rules</text>
 </g>
-<g class="message" data-from="P" data-to="AI" data-label="Review continuity với JSON và Zod" data-line-style="solid" data-arrow-head="filled" data-self="false">
-  <line x1="699.9369999999999" y1="783" x2="839.9369999999999" y2="783" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
-  <text x="769.9369999999999" y="773" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Review continuity với JSON và Zod</text>
+<g class="message" data-from="P" data-to="AI" data-label="Yêu cầu continuity JSON" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="699.9369999999999" y1="863" x2="839.9369999999999" y2="863" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="769.9369999999999" y="853" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Yêu cầu continuity JSON</text>
 </g>
-<g class="message" data-from="AI" data-to="P" data-label="Issues hoặc cảnh báo checker nếu lỗi" data-line-style="dashed" data-arrow-head="filled" data-self="false">
-  <line x1="839.9369999999999" y1="823" x2="699.9369999999999" y2="823" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
-  <text x="769.9369999999999" y="813" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Issues hoặc cảnh báo checker nếu lỗi</text>
+<g class="message" data-from="AI" data-to="P" data-label="Output của model hoặc request error" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="839.9369999999999" y1="903" x2="699.9369999999999" y2="903" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="769.9369999999999" y="893" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Output của model hoặc request error</text>
+</g>
+<g class="message" data-from="P" data-to="P" data-label="Parse và validate; tạo cảnh báo checker nếu lỗi" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="699.9369999999999,943 729.9369999999999,943 729.9369999999999,963 699.9369999999999,963" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="737.9369999999999" y="953" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Parse và validate; tạo cảnh báo checker nếu lỗi</text>
 </g>
 <g class="message" data-from="P" data-to="AI" data-label="Trích xuất canon và Chapter Brief update" data-line-style="solid" data-arrow-head="filled" data-self="false">
-  <line x1="699.9369999999999" y1="863" x2="839.9369999999999" y2="863" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
-  <text x="769.9369999999999" y="853" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Trích xuất canon và Chapter Brief update</text>
+  <line x1="699.9369999999999" y1="1013" x2="839.9369999999999" y2="1013" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="769.9369999999999" y="1003" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Trích xuất canon và Chapter Brief update</text>
 </g>
-<g class="message" data-from="AI" data-to="P" data-label="Dữ liệu đã validate hoặc extraction error" data-line-style="dashed" data-arrow-head="filled" data-self="false">
-  <line x1="839.9369999999999" y1="903" x2="699.9369999999999" y2="903" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
-  <text x="769.9369999999999" y="893" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Dữ liệu đã validate hoặc extraction error</text>
+<g class="message" data-from="AI" data-to="P" data-label="Output của model hoặc request error" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="839.9369999999999" y1="1053" x2="699.9369999999999" y2="1053" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="769.9369999999999" y="1043" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Output của model hoặc request error</text>
 </g>
-<g class="message" data-from="P" data-to="W" data-label="Draft, findings, evaluation, proposals" data-line-style="dashed" data-arrow-head="filled" data-self="false">
-  <line x1="699.9369999999999" y1="943" x2="540.7719999999999" y2="943" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
-  <text x="620.3544999999999" y="933" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Draft, findings, evaluation, proposals</text>
+<g class="message" data-from="P" data-to="P" data-label="Parse và validate; giữ extraction error nếu lỗi" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="699.9369999999999,1093 729.9369999999999,1093 729.9369999999999,1113 699.9369999999999,1113" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="737.9369999999999" y="1103" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Parse và validate; giữ extraction error nếu lỗi</text>
+</g>
+<g class="message" data-from="P" data-to="W" data-label="Draft, findings, evaluation, kết quả extraction" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="699.9369999999999" y1="1163" x2="540.7719999999999" y2="1163" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="620.3544999999999" y="1153" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Draft, findings, evaluation, kết quả extraction</text>
 </g>
 <g class="message" data-from="W" data-to="DB" data-label="Transaction lưu kết quả và READY_FOR_REVIEW" data-line-style="solid" data-arrow-head="filled" data-self="false">
-  <line x1="540.7719999999999" y1="983" x2="368.269" y2="983" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
-  <text x="454.52049999999997" y="973" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Transaction lưu kết quả và READY_FOR_REVIEW</text>
+  <line x1="540.7719999999999" y1="1203" x2="368.269" y2="1203" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="454.52049999999997" y="1193" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Transaction lưu kết quả và READY_FOR_REVIEW</text>
 </g>
 <g class="message" data-from="UI" data-to="API" data-label="GET /api/generation/jobs?storyId=..." data-line-style="solid" data-arrow-head="filled" data-self="false">
-  <line x1="83.65450000000001" y1="1023" x2="225.77650000000003" y2="1023" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
-  <text x="154.71550000000002" y="1013" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">GET /api/generation/jobs?storyId=...</text>
+  <line x1="83.65450000000001" y1="1243" x2="225.77650000000003" y2="1243" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="154.71550000000002" y="1233" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">GET /api/generation/jobs?storyId=...</text>
 </g>
 <g class="message" data-from="API" data-to="DB" data-label="Đọc job, draft và findings" data-line-style="solid" data-arrow-head="filled" data-self="false">
-  <line x1="225.77650000000003" y1="1063" x2="368.269" y2="1063" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
-  <text x="297.02275000000003" y="1053" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Đọc job, draft và findings</text>
+  <line x1="225.77650000000003" y1="1283" x2="368.269" y2="1283" stroke="var(--_line)" stroke-width="1" marker-end="url(#seq-arrow)" />
+  <text x="297.02275000000003" y="1273" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Đọc job, draft và findings</text>
 </g>
 <g class="message" data-from="API" data-to="UI" data-label="Kết quả để duyệt" data-line-style="dashed" data-arrow-head="filled" data-self="false">
-  <line x1="225.77650000000003" y1="1103" x2="83.65450000000001" y2="1103" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
-  <text x="154.71550000000002" y="1093" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Kết quả để duyệt</text>
+  <line x1="225.77650000000003" y1="1323" x2="83.65450000000001" y2="1323" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#seq-arrow)" />
+  <text x="154.71550000000002" y="1313" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Kết quả để duyệt</text>
 </g>
 <g class="note" data-position="over" data-actors="UI,API">
   <polygon points="52.49350000000001,248 250.9375,248 256.9375,254 256.9375,271 52.49350000000001,271" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="0.75" />

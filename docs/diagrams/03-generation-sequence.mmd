@@ -13,7 +13,9 @@ sequenceDiagram
     W->>DB: Claim QUEUED hoặc RETRYING bằng update có điều kiện
     W->>P: Chuẩn bị context và prompt
     P->>DB: Đọc canon, Chapter Brief, Scene và memory
+    P-->>W: Context và prompt đã chuẩn bị
     W->>DB: Lưu context snapshot, prompt, GenerationRun
+    W->>P: Thực thi pipeline đã chuẩn bị
     P->>AI: Sinh prose
     AI-->>P: Draft và usage
     P->>P: Chuẩn hóa và kiểm tra Writing Harness
@@ -22,11 +24,13 @@ sequenceDiagram
         AI-->>P: Draft đã sửa
     end
     P->>P: Chạy continuity rules
-    P->>AI: Review continuity với JSON và Zod
-    AI-->>P: Issues hoặc cảnh báo checker nếu lỗi
+    P->>AI: Yêu cầu continuity JSON
+    AI-->>P: Output của model hoặc request error
+    P->>P: Parse và validate; tạo cảnh báo checker nếu lỗi
     P->>AI: Trích xuất canon và Chapter Brief update
-    AI-->>P: Dữ liệu đã validate hoặc extraction error
-    P-->>W: Draft, findings, evaluation, proposals
+    AI-->>P: Output của model hoặc request error
+    P->>P: Parse và validate; giữ extraction error nếu lỗi
+    P-->>W: Draft, findings, evaluation, kết quả extraction
     W->>DB: Transaction lưu kết quả và READY_FOR_REVIEW
     UI->>API: GET /api/generation/jobs?storyId=...
     API->>DB: Đọc job, draft và findings

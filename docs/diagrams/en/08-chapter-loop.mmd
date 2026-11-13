@@ -1,0 +1,12 @@
+flowchart TB
+    Start["ensureActiveChapter: reuse or create Chapter"] --> Brief["Initialize missing Brief from goal"]
+    Brief --> Mode["Resolve NORMAL or CLOSING from word budget"]
+    Mode --> Generate["Generate with Brief and up to 3 recent Scenes"]
+    Generate --> Review["Review draft and Brief update"]
+    Review --> Commit["Commit Scene; increase word count"]
+    Commit --> Finish{"End chapter?"}
+    Finish -->|"No: Continue"| Mode
+    Finish -->|"end_chapter or eligible auto-advance"| Complete["COMPLETE and next chapter"]
+    Complete --> Handoff["Handoff Brief carries context forward"]
+    Handoff --> Mode
+    Commit -.->|"Separate summarize command"| Summary["LLM summary stored in Chapter"]

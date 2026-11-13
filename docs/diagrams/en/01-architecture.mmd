@@ -1,0 +1,15 @@
+flowchart TB
+    Author["Writer"] --> UI["Library and WriterStudio"]
+    UI -->|"JSON over HTTP"| API["Next.js Route Handlers"]
+    API --> Guard["Input validation and ownership"]
+    Guard --> Services["Story, Character, Chapter, Generation services"]
+    Services --> DB["Prisma / PostgreSQL"]
+    Worker["Generation worker"] -->|"Poll and claim jobs"| DB
+    Worker --> Pipeline["Shared generation pipeline"]
+    Services -->|"Direct generation API"| Pipeline
+    Pipeline -->|"Canon and memory"| DB
+    Pipeline --> Provider["OpenRouter adapter / server-side fetch"]
+    Provider --> LLM["Writing, review, and extraction models"]
+    Reader["Reader Server Component"] -->|"Prisma through Story service"| DB
+    Author --> Reader
+    Guard -.->|"Verify bearer token when supplied"| Auth["Supabase Auth"]

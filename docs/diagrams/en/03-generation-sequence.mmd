@@ -1,0 +1,37 @@
+sequenceDiagram
+    participant UI as WriterStudio
+    participant API as Next.js API
+    participant DB as PostgreSQL
+    participant W as Worker or API run
+    participant P as Pipeline
+    participant AI as OpenRouter
+    UI->>API: POST /api/generation/jobs
+    API->>API: Validation, ownership, preflight, active chapter
+    API->>DB: Persist or reuse job by idempotencyKey
+    API-->>UI: Job id
+    Note over UI,API: UI polls every 1.8 seconds while jobs are active
+    W->>DB: Conditionally claim QUEUED or RETRYING
+    W->>P: Prepare context and prompt
+    P->>DB: Read canon, Brief, Scenes, and memory
+    P-->>W: Prepared context and prompt
+    W->>DB: Save snapshots, prompt, GenerationRun
+    W->>P: Execute prepared pipeline
+    P->>AI: Generate prose
+    AI-->>P: Draft and usage
+    P->>P: Normalize and validate Writing Harness
+    opt Violations and repair allowed
+        P->>AI: One focused repair
+        AI-->>P: Repaired draft
+    end
+    P->>P: Run continuity rules
+    P->>AI: Request continuity JSON
+    AI-->>P: Model output or request error
+    P->>P: Parse and validate; add checker warning on failure
+    P->>AI: Extract canon and Brief update
+    AI-->>P: Model output or request error
+    P->>P: Parse and validate; retain extraction error on failure
+    P-->>W: Draft, findings, evaluation, extraction result
+    W->>DB: Transaction: save results and READY_FOR_REVIEW
+    UI->>API: GET /api/generation/jobs?storyId=...
+    API->>DB: Read jobs, draft, and findings
+    API-->>UI: Results for review

@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 905.1289999999999 713.7" width="905.1289999999999" height="713.7" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="_start" data-to="QUEUED" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="599.2855,68 599.2855,108" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="QUEUED" data-to="RUNNING" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="claim succeeds" points="583.4018333333332,144.9 583.4018333333332,156.9 389.0550833333333,156.9 389.0550833333333,229.20000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RETRYING" data-to="RUNNING" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="claim succeeds" points="366.16249999999997,503.6000000000001 366.16249999999997,491.6000000000001 81.5,491.6000000000001 81.5,282.1 356.29974999999996,282.1 356.29974999999996,266.1" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RUNNING" data-to="READY_FOR_REVIEW" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="results saved" points="372.67741666666666,266.1 372.67741666666666,294.1 235.48849999999996,294.1 235.4885,374.7000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RUNNING" data-to="FAILED" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="error without fallback" points="389.0550833333333,266.1 389.0550833333333,294.1 392.952,294.1 392.952,374.40000000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RUNNING" data-to="AWAITING_FALLBACK_CONFIRMATION" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="eligible free-model failure" points="405.43275,266.1 405.43275,294.1 604.8789999999999,294.1 604.8789999999999,374.40000000000003" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="AWAITING_FALLBACK_CONFIRMATION" data-to="RETRYING" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="paid approval within 5 minutes" points="557.1323333333333,411.3 557.1323333333332,491.6000000000001 419.7415,491.6000000000001 419.7415,503.6000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="AWAITING_FALLBACK_CONFIRMATION" data-to="CANCELLED" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="declined or worker processes expiry" points="652.6256666666666,411.3 652.6256666666666,636.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="QUEUED" data-to="CANCELLED" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="user cancels" points="615.1691666666666,144.9 615.1691666666666,270.1 805.6189999999999,270.1 805.6189999999999,624.8 693.2849999999999,624.8 693.2849999999999,636.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RETRYING" data-to="CANCELLED" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="user cancels" points="375.09233333333333,540.5 375.09233333333333,580.5 349.942,580.5 349.942,624.8 611.9663333333332,624.8 611.9663333333332,636.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="RUNNING" data-to="CANCELLED" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="user cancels" points="421.81041666666664,266.1 421.81041666666664,282.1 758.1189999999999,282.1 758.1189999999999,612.8 672.9553333333332,612.8 672.9553333333332,636.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="FAILED" data-to="RETRYING" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="retry same job" points="392.952,411.3 392.952,503.6000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="CANCELLED" data-to="RETRYING" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="retry same job" points="632.2959999999998,636.8 632.2959999999998,612.8 435.962,612.8 435.962,568.5 410.81166666666667,568.5 410.81166666666667,540.5" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="READY_FOR_REVIEW" data-to="_end" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="235.4885,411.6000000000001 235.48849999999996,451.6000000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="QUEUED" data-to="RUNNING" data-label="claim succeeds">
+  <rect x="343.5550833333333" y="163.9" width="90.71200000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="388.9110833333333" y="179.05" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">claim succeeds</text>
+</g>
+<g class="edge-label" data-from="RETRYING" data-to="RUNNING" data-label="claim succeeds">
+  <rect x="36" y="454.30000000000007" width="90.71200000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="81.35600000000001" y="469.45000000000005" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">claim succeeds</text>
+</g>
+<g class="edge-label" data-from="RUNNING" data-to="READY_FOR_REVIEW" data-label="results saved">
+  <rect x="193.98849999999996" y="309.4000000000001" width="82.39600000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="235.18649999999997" y="324.55000000000007" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">results saved</text>
+</g>
+<g class="edge-label" data-from="RUNNING" data-to="FAILED" data-label="error without fallback">
+  <rect x="334.452" y="301.1" width="116.25400000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="392.579" y="316.25" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">error without fallback</text>
+</g>
+<g class="edge-label" data-from="RUNNING" data-to="AWAITING_FALLBACK_CONFIRMATION" data-label="eligible free-model failure">
+  <rect x="537.8789999999999" y="317.1" width="133.48000000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="604.6189999999999" y="332.25" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">eligible free-model failure</text>
+</g>
+<g class="edge-label" data-from="AWAITING_FALLBACK_CONFIRMATION" data-to="RETRYING" data-label="paid approval within 5 minutes">
+  <rect x="479.1323333333333" y="454.30000000000007" width="155.458" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="556.8613333333333" y="469.45000000000005" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">paid approval within 5 minutes</text>
+</g>
+<g class="edge-label" data-from="AWAITING_FALLBACK_CONFIRMATION" data-to="CANCELLED" data-label="declined or worker processes expiry">
+  <rect x="555.6256666666666" y="571.5" width="193.47400000000005" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="652.3626666666667" y="586.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">declined or worker processes expiry</text>
+</g>
+<g class="edge-label" data-from="QUEUED" data-to="CANCELLED" data-label="user cancels">
+  <rect x="765.1189999999999" y="506.9000000000001" width="80.02000000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="805.1289999999999" y="522.0500000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">user cancels</text>
+</g>
+<g class="edge-label" data-from="RETRYING" data-to="CANCELLED" data-label="user cancels">
+  <rect x="309.442" y="587.5" width="80.02000000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="349.452" y="602.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">user cancels</text>
+</g>
+<g class="edge-label" data-from="RUNNING" data-to="CANCELLED" data-label="user cancels">
+  <rect x="717.6189999999999" y="539.2" width="80.02000000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="757.6289999999999" y="554.35" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">user cancels</text>
+</g>
+<g class="edge-label" data-from="FAILED" data-to="RETRYING" data-label="retry same job">
+  <rect x="350.452" y="438.30000000000007" width="84.17800000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="392.541" y="453.45000000000005" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">retry same job</text>
+</g>
+<g class="edge-label" data-from="CANCELLED" data-to="RETRYING" data-label="retry same job">
+  <rect x="393.462" y="575.5" width="84.17800000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="435.551" y="590.65" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">retry same job</text>
+</g>
+<g class="node" data-id="_start" data-label="" data-shape="state-start">
+  <circle cx="599.2855" cy="54" r="12" fill="var(--_text)" stroke="none" />
+</g>
+<g class="node" data-id="QUEUED" data-label="QUEUED" data-shape="rounded">
+  <rect x="551.6344999999999" y="108" width="95.30199999999999" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="599.2854999999998" y="126.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">QUEUED</text>
+</g>
+<g class="node" data-id="RUNNING" data-label="RUNNING" data-shape="rounded">
+  <rect x="339.9220833333333" y="229.20000000000002" width="98.266" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="389.0550833333333" y="247.65000000000003" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">RUNNING</text>
+</g>
+<g class="node" data-id="RETRYING" data-label="RETRYING" data-shape="rounded">
+  <rect x="339.373" y="503.6000000000001" width="107.158" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="392.952" y="522.0500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">RETRYING</text>
+</g>
+<g class="node" data-id="READY_FOR_REVIEW" data-label="READY_FOR_REVIEW" data-shape="rounded">
+  <rect x="146.712" y="374.7000000000001" width="177.55299999999997" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="235.4885" y="393.1500000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">READY_FOR_REVIEW</text>
+</g>
+<g class="node" data-id="FAILED" data-label="FAILED" data-shape="rounded">
+  <rect x="348.265" y="374.40000000000003" width="89.374" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="392.952" y="392.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">FAILED</text>
+</g>
+<g class="node" data-id="AWAITING_FALLBACK_CONFIRMATION" data-label="AWAITING_FALLBACK_CONFIRMATION" data-shape="rounded">
+  <rect x="461.639" y="374.40000000000003" width="286.4799999999999" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="604.8789999999999" y="392.85" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">AWAITING_FALLBACK_CONFIRMATION</text>
+</g>
+<g class="node" data-id="CANCELLED" data-label="CANCELLED" data-shape="rounded">
+  <rect x="591.6366666666665" y="636.8" width="121.97799999999998" height="36.900000000000006" rx="6" ry="6" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="652.6256666666666" y="655.25" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">CANCELLED</text>
+</g>
+<g class="node" data-id="_end" data-label="" data-shape="state-end">
+  <circle cx="235.48849999999996" cy="465.6000000000001" r="12" fill="none" stroke="var(--_text)" stroke-width="1.5" />
+  <circle cx="235.48849999999996" cy="465.6000000000001" r="8" fill="var(--_text)" stroke="none" />
+</g>
+</svg>

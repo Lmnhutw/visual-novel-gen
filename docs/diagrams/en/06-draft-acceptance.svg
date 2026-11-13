@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1130.9594166666666 1353.47" width="1130.9594166666666" height="1353.47" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="Review" data-to="Accept" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="344.0949166666667,76.9 344.0949166666667,116.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Accept" data-to="Tx" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="344.0949166666667,153.8 344.0949166666667,193.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Tx" data-to="Existing" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="344.0949166666667,230.70000000000002 344.0949166666667,270.70000000000005" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Existing" data-to="Reuse" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" points="314.20775000000003,420.1358333333334 314.20775000000003,589.6260000000001 229.35266666666666,589.6260000000001 229.35266666666666,661.926" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Existing" data-to="Gates" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" points="373.9820833333333,420.1358333333334 373.9820833333333,462.023 458.8371666666667,462.023 458.8371666666667,534.323" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gates" data-to="Block" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Unreviewed Brief, hard Harness, P0 or P1 gate" points="409.48626666666667,649.4751 409.48626666666667,714.826 152.5,714.826 152.5,787.126 277.91206666666676,787.126 277.91206666666676,791.126" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gates" data-to="Block" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Closed chapter or hard limit exceeded" points="442.38686666666666,682.3756999999999 442.38686666666666,726.826 369.58400000000006,726.826 369.58400000000006,787.126 366.2424000000001,787.126 366.2424000000001,791.126" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gates" data-to="Empty" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Content has no words" points="475.28746666666666,682.3757 475.28746666666666,1111.37 544.7487333333333,1111.37 544.7487333333333,1183.6699999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gates" data-to="Scene" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Valid" points="508.1880666666667,649.4750999999999 508.1880666666667,710.826 789.2797333333334,710.826 789.2797333333334,791.126" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Scene" data-to="Update" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="789.2797333333334,828.026 789.2797333333334,860.026" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Update" data-to="Advance" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="789.2797333333334,896.9259999999999 789.2797333333334,936.9259999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Advance" data-to="Continue" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="No" points="749.3890666666667,1136.3793333333333 749.3890666666667,1188.27 644.6494166666668,1188.27 644.6494166666668,1268.57" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Advance" data-to="Next" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Yes" points="829.1704000000001,1136.3793333333333 829.1704000000001,1204.27 922.1549166666666,1204.27 922.1549166666666,1268.57" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="Existing" data-to="Reuse" data-label="Yes">
+  <rect x="210.85266666666666" y="596.6260000000001" width="36.658" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="229.18166666666667" y="611.7760000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Yes</text>
+</g>
+<g class="edge-label" data-from="Existing" data-to="Gates" data-label="No">
+  <rect x="443.3371666666667" y="469.023" width="30.718000000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="458.69616666666667" y="484.173" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">No</text>
+</g>
+<g class="edge-label" data-from="Gates" data-to="Block" data-label="Unreviewed Brief, hard Harness, P0 or P1 gate">
+  <rect x="36.000000000000014" y="733.826" width="232.08400000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="152.04200000000003" y="748.976" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Unreviewed Brief, hard Harness, P0 or P1 gate</text>
+</g>
+<g class="edge-label" data-from="Gates" data-to="Block" data-label="Closed chapter or hard limit exceeded">
+  <rect x="272.08400000000006" y="733.826" width="194.06799999999998" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="369.11800000000005" y="748.976" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Closed chapter or hard limit exceeded</text>
+</g>
+<g class="edge-label" data-from="Gates" data-to="Empty" data-label="Content has no words">
+  <rect x="485.24873333333335" y="1118.37" width="118.03600000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="544.2667333333334" y="1133.52" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Content has no words</text>
+</g>
+<g class="edge-label" data-from="Gates" data-to="Scene" data-label="Valid">
+  <rect x="768.2797333333334" y="717.826" width="41.41" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="788.9847333333335" y="732.976" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Valid</text>
+</g>
+<g class="edge-label" data-from="Advance" data-to="Continue" data-label="No">
+  <rect x="629.1494166666668" y="1195.27" width="30.718000000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="644.5084166666668" y="1210.42" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">No</text>
+</g>
+<g class="edge-label" data-from="Advance" data-to="Next" data-label="Yes">
+  <rect x="903.6549166666666" y="1211.27" width="36.658" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="921.9839166666666" y="1226.42" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Yes</text>
+</g>
+<g class="node" data-id="Review" data-label="Edit draft; review findings and Brief proposal" data-shape="rectangle">
+  <rect x="195.6679166666667" y="40" width="296.854" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="344.0949166666667" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Edit draft; review findings and Brief proposal</text>
+</g>
+<g class="node" data-id="Accept" data-label="POST /api/draft-versions/:id/accept" data-shape="rectangle">
+  <rect x="219.3799166666667" y="116.9" width="249.42999999999995" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="344.0949166666667" y="135.35000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">POST /api/draft-versions/:id/accept</text>
+</g>
+<g class="node" data-id="Tx" data-label="Serializable transaction" data-shape="rectangle">
+  <rect x="253.09541666666672" y="193.8" width="181.99899999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="344.0949166666667" y="212.25" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Serializable transaction</text>
+</g>
+<g class="node" data-id="Existing" data-label="Already committed?" data-shape="diamond">
+  <polygon points="344.0949166666667,270.70000000000005 433.75641666666667,360.36150000000004 344.0949166666667,450.023 254.4334166666667,360.36150000000004" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="344.0949166666667" y="360.36150000000004" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Already committed?</text>
+</g>
+<g class="node" data-id="Reuse" data-label="Return existing Scene; no duplicate" data-shape="rectangle">
+  <rect x="106.11966666666672" y="661.926" width="246.46599999999995" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="229.3526666666667" y="680.3760000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Return existing Scene; no duplicate</text>
+</g>
+<g class="node" data-id="Gates" data-label="Commit validation" data-shape="diamond">
+  <polygon points="458.8371666666667,534.323 541.0886666666667,616.5745 458.8371666666667,698.8259999999999 376.58566666666667,616.5745" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="458.8371666666667" y="616.5745" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Commit validation</text>
+</g>
+<g class="node" data-id="Block" data-label="409: resolve review or chapter conflict" data-shape="rectangle">
+  <rect x="189.58173333333343" y="791.126" width="264.991" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="322.0772333333334" y="809.576" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">409: resolve review or chapter conflict</text>
+</g>
+<g class="node" data-id="Empty" data-label="422: empty draft" data-shape="rectangle">
+  <rect x="478.57273333333336" y="1183.6699999999998" width="132.352" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="544.7487333333333" y="1202.12" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">422: empty draft</text>
+</g>
+<g class="node" data-id="Scene" data-label="Create Scene; mark DraftVersion ACCEPTED" data-shape="rectangle">
+  <rect x="634.9247333333334" y="791.126" width="308.71000000000004" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="789.2797333333334" y="809.576" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Create Scene; mark DraftVersion ACCEPTED</text>
+</g>
+<g class="node" data-id="Update" data-label="Update word count and approved Brief" data-shape="rectangle">
+  <rect x="656.7842333333334" y="860.026" width="264.991" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="789.2797333333334" y="878.476" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Update word count and approved Brief</text>
+</g>
+<g class="node" data-id="Advance" data-label="End or eligible auto-advance?" data-shape="diamond">
+  <polygon points="789.2797333333334,936.9259999999999 908.9517333333334,1056.598 789.2797333333334,1176.27 669.6077333333334,1056.598" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="789.2797333333334" y="1056.598" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">End or eligible auto-advance?</text>
+</g>
+<g class="node" data-id="Continue" data-label="Keep Chapter DRAFT" data-shape="rectangle">
+  <rect x="559.9484166666667" y="1268.57" width="169.402" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="644.6494166666668" y="1287.02" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Keep Chapter DRAFT</text>
+</g>
+<g class="node" data-id="Next" data-label="Chapter COMPLETE; create or reuse next chapter" data-shape="rectangle">
+  <rect x="753.3504166666667" y="1268.57" width="337.6089999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="922.1549166666666" y="1287.02" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Chapter COMPLETE; create or reuse next chapter</text>
+</g>
+</svg>

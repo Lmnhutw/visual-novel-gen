@@ -1,0 +1,14 @@
+erDiagram
+    STORY ||--o| STORY_SETTINGS : configures
+    STORY ||--o{ CHARACTER : owns
+    CHARACTER ||--o| CHARACTER_PROFILE : describes
+    CHARACTER ||--o{ CHARACTER_STATE : records
+    STORY ||--o{ CHAPTER : contains
+    CHAPTER ||--o{ SCENE : orders
+    STORY ||--o{ MEMORY : recalls
+    STORY ||--o{ GENERATION_JOB : queues
+    GENERATION_JOB |o--o| DRAFT_VERSION : result
+    GENERATION_JOB ||--o{ CANON_CHANGE_PROPOSAL : proposes
+    GENERATION_JOB |o--o| GENERATION_RUN : current_attempt
+    GENERATION_RUN |o--o{ CONTINUITY_ISSUE : detects
+    SCENE |o--o{ DRAFT_VERSION : accepted_history

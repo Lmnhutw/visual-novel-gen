@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1093.62 847.8509999999999" width="1093.62" height="847.8509999999999" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="Library" data-to="Settings" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="240.2975,76.9 240.2975,116.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Settings" data-to="Characters" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="240.2975,153.8 240.2975,193.80000000000007" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Characters" data-to="Profile" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Manual or local random profile" points="209.4223333333333,348.1758333333334 209.4223333333333,407.05100000000004 124.70100000000001,407.05100000000004 124.701,487.651" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Characters" data-to="Copy" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Select Character Template" points="271.17266666666666,348.17583333333334 271.17266666666666,407.05100000000004 355.894,407.05100000000004 355.894,487.651" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Profile" data-to="Story" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="124.701,524.551 124.701,540.4010000000001 240.2975,540.4010000000001 240.2975,556.251" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Copy" data-to="Story" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="355.894,524.551 355.894,540.4010000000001 240.2975,540.4010000000001 240.2975,556.251" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Story" data-to="Goal" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="240.2975,593.151 240.2975,621.151 353.75666666666666,621.151 353.75666666666666,633.151" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Goal" data-to="Preview" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="402.8618333333334,670.0509999999999 402.8618333333334,710.0509999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Preview" data-to="Generate" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="402.8618333333334,746.9509999999999 402.8618333333334,758.9509999999999 607.761,758.9509999999999 607.761,770.9509999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Generate" data-to="Review" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="663.7343333333333,770.9509999999999 663.7343333333333,758.9509999999999 1045.62,758.9509999999999 1045.62,686.0509999999999 905.4487499999999,686.0509999999999 905.4487499999999,379.05100000000004" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Review" data-to="Manuscript" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="808.4734166666666,379.05100000000004 808.4734166666666,407.05100000000004 768.262,407.05100000000004 768.262,419.05100000000004" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Manuscript" data-to="Canon" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="768.262,455.951 768.262,471.80100000000004 628.9535,471.80100000000004 628.9535,487.651" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Canon" data-to="Goal" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Continue with updated context" points="628.9535,524.5509999999999 628.9535,621.151 451.967,621.151 451.967,633.151" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Manuscript" data-to="Reader" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="768.262,455.951 768.262,471.80100000000004 907.5704999999999,471.80100000000004 907.5704999999999,710.0509999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="Characters" data-to="Profile" data-label="Manual or local random profile">
+  <rect x="45.20100000000001" y="414.05100000000004" width="158.428" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="124.415" y="429.201" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Manual or local random profile</text>
+</g>
+<g class="edge-label" data-from="Characters" data-to="Copy" data-label="Select Character Template">
+  <rect x="284.394" y="414.05100000000004" width="142.39" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="355.589" y="429.201" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Select Character Template</text>
+</g>
+<g class="edge-label" data-from="Canon" data-to="Goal" data-label="Continue with updated context">
+  <rect x="551.4535" y="567.851" width="154.864" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="628.8855" y="583.001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Continue with updated context</text>
+</g>
+<g class="node" data-id="Library" data-label="Library: select or create Story" data-shape="rectangle">
+  <rect x="130.40249999999997" y="40" width="219.79" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="240.29749999999996" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Library: select or create Story</text>
+</g>
+<g class="node" data-id="Settings" data-label="Configure style and Writing Harness" data-shape="rectangle">
+  <rect x="114.47100000000005" y="116.9" width="251.65299999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="240.2975" y="135.35000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Configure style and Writing Harness</text>
+</g>
+<g class="node" data-id="Characters" data-label="Prepare characters" data-shape="diamond">
+  <polygon points="240.29749999999996,193.8 332.92299999999994,286.4255 240.29749999999996,379.051 147.67199999999997,286.4255" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="240.29749999999996" y="286.4255" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Prepare characters</text>
+</g>
+<g class="node" data-id="Profile" data-label="Character profile form" data-shape="rectangle">
+  <rect x="40" y="487.651" width="169.402" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="124.701" y="506.101" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Character profile form</text>
+</g>
+<g class="node" data-id="Copy" data-label="Copy independent profile into Story" data-shape="rectangle">
+  <rect x="233.40200000000004" y="487.651" width="244.98399999999992" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="355.894" y="506.101" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Copy independent profile into Story</text>
+</g>
+<g class="node" data-id="Story" data-label="Characters, relationships, primary protagonist" data-shape="rectangle">
+  <rect x="84.09000000000002" y="556.251" width="312.41499999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="240.2975" y="574.701" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Characters, relationships, primary protagonist</text>
+</g>
+<g class="node" data-id="Goal" data-label="Choose chapter, POV, characters, and goal" data-shape="rectangle">
+  <rect x="255.54633333333334" y="633.151" width="294.631" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="402.8618333333333" y="651.601" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Choose chapter, POV, characters, and goal</text>
+</g>
+<g class="node" data-id="Preview" data-label="Optional context preview" data-shape="rectangle">
+  <rect x="310.75083333333333" y="710.0509999999999" width="184.22199999999998" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="402.8618333333333" y="728.501" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Optional context preview</text>
+</g>
+<g class="node" data-id="Generate" data-label="Create generation job" data-shape="rectangle">
+  <rect x="551.7876666666666" y="770.9509999999999" width="167.92" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="635.7476666666666" y="789.401" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Create generation job</text>
+</g>
+<g class="node" data-id="Review" data-label="Edit draft; review findings and Chapter Brief" data-shape="rectangle">
+  <rect x="711.4980833333333" y="342.15100000000007" width="290.926" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="856.9610833333332" y="360.60100000000006" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Edit draft; review findings and Chapter Brief</text>
+</g>
+<g class="node" data-id="Manuscript" data-label="Accept: append Scene to Chapter" data-shape="rectangle">
+  <rect x="650.216" y="419.05100000000004" width="236.09199999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="768.262" y="437.50100000000003" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Accept: append Scene to Chapter</text>
+</g>
+<g class="node" data-id="Canon" data-label="Review canon proposals separately" data-shape="rectangle">
+  <rect x="502.38599999999997" y="487.651" width="253.13499999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="628.9535" y="506.101" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Review canon proposals separately</text>
+</g>
+<g class="node" data-id="Reader" data-label="Reader: ordered manuscript Scenes" data-shape="rectangle">
+  <rect x="779.521" y="710.0509999999999" width="256.09899999999993" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="907.5704999999999" y="728.501" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Reader: ordered manuscript Scenes</text>
+</g>
+</svg>

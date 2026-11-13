@@ -1,0 +1,15 @@
+flowchart TB
+    Library["Library: select or create Story"] --> Settings["Configure style and Writing Harness"]
+    Settings --> Characters{"Prepare characters"}
+    Characters -->|"Manual or local random profile"| Profile["Character profile form"]
+    Characters -->|"Select Character Template"| Copy["Copy independent profile into Story"]
+    Profile --> Story["Characters, relationships, primary protagonist"]
+    Copy --> Story
+    Story --> Goal["Choose chapter, POV, characters, and goal"]
+    Goal --> Preview["Optional context preview"]
+    Preview --> Generate["Create generation job"]
+    Generate --> Review["Edit draft; review findings and Chapter Brief"]
+    Review --> Manuscript["Accept: append Scene to Chapter"]
+    Manuscript --> Canon["Review canon proposals separately"]
+    Canon -->|"Continue with updated context"| Goal
+    Manuscript --> Reader["Reader: ordered manuscript Scenes"]

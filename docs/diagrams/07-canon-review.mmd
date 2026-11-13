@@ -7,6 +7,6 @@ flowchart TB
     Accepted -->|"Rồi"| Type{"Loại proposal"}
     Type -->|"Memory hoặc Event: AUTO_APPLY"| Commit["Transaction ghi canon, ACCEPTED và audit"]
     Type -->|"State, relationship, secret, lore, thread"| Manual["NEEDS_MANUAL_APPLICATION"]
-    Manual --> Editor["Người viết áp dụng thủ công vào dữ liệu tương ứng"]
+    Manual --> Apply["Người viết áp dụng thủ công thay đổi được hỗ trợ"]
     Commit --> Future["Retrieval và continuity lần sau đọc dữ liệu mới"]
-    Editor -.->|"Sau khi được ghi vào DB"| Future
+    Apply -.->|"Chỉ sau khi dữ liệu được lưu"| Future

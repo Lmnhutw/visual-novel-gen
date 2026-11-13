@@ -10,5 +10,5 @@ erDiagram
     GENERATION_JOB |o--o| DRAFT_VERSION : result
     GENERATION_JOB ||--o{ CANON_CHANGE_PROPOSAL : proposes
     GENERATION_JOB |o--o| GENERATION_RUN : current_attempt
-    GENERATION_RUN ||--o{ CONTINUITY_ISSUE : detects
+    GENERATION_RUN |o--o{ CONTINUITY_ISSUE : detects
     SCENE |o--o{ DRAFT_VERSION : accepted_history

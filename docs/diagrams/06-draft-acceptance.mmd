@@ -1,12 +1,13 @@
 flowchart TB
-    Review["Sửa draft và review findings"] --> Brief["Approve hoặc discard Chapter Brief proposal nếu có"]
-    Brief --> Accept["POST draft-versions / id / accept"]
-    Accept --> Gates{"Kiểm tra khi commit"}
-    Gates -->|"Hard Harness lỗi, P0 mở hoặc P1 chưa override"| Block["409: xử lý lỗi rồi thử lại"]
-    Gates -->|"Chapter đóng, draft rỗng hoặc vượt hard limit"| Block
-    Gates -->|"Đã commit trước đó"| Reuse["Trả Scene đã có; không thêm lần nữa"]
-    Gates -->|"Hợp lệ"| Tx["Serializable transaction"]
-    Tx --> Scene["Tạo Scene và đánh dấu DraftVersion ACCEPTED"]
+    Review["Sửa draft; review findings và Brief proposal"] --> Accept["POST /api/draft-versions/:id/accept"]
+    Accept --> Tx["Serializable transaction"]
+    Tx --> Existing{"Đã commit trước đó?"}
+    Existing -->|"Rồi"| Reuse["Trả Scene đã có; không thêm lần nữa"]
+    Existing -->|"Chưa"| Gates{"Kiểm tra khi commit"}
+    Gates -->|"Brief chưa duyệt, hard Harness, P0 hoặc P1 gate"| Block["409: xử lý xung đột review hoặc chương"]
+    Gates -->|"Chapter đóng hoặc vượt hard limit"| Block
+    Gates -->|"Nội dung không có từ"| Empty["422: draft rỗng"]
+    Gates -->|"Hợp lệ"| Scene["Tạo Scene và đánh dấu DraftVersion ACCEPTED"]
     Scene --> Update["Cập nhật số từ và Chapter Brief đã được duyệt"]
     Update --> Advance{"Kết thúc hoặc auto-advance đủ điều kiện?"}
     Advance -->|"Chưa"| Continue["Giữ Chapter DRAFT"]

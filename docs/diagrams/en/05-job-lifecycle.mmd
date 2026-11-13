@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> QUEUED
+    QUEUED --> RUNNING: claim succeeds
+    RETRYING --> RUNNING: claim succeeds
+    RUNNING --> READY_FOR_REVIEW: results saved
+    RUNNING --> FAILED: error without fallback
+    RUNNING --> AWAITING_FALLBACK_CONFIRMATION: eligible free-model failure
+    AWAITING_FALLBACK_CONFIRMATION --> RETRYING: paid approval within 5 minutes
+    AWAITING_FALLBACK_CONFIRMATION --> CANCELLED: declined or worker processes expiry
+    QUEUED --> CANCELLED: user cancels
+    RETRYING --> CANCELLED: user cancels
+    RUNNING --> CANCELLED: user cancels
+    FAILED --> RETRYING: retry same job
+    CANCELLED --> RETRYING: retry same job
+    READY_FOR_REVIEW --> [*]

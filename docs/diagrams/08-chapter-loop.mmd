@@ -1,12 +1,12 @@
 flowchart TB
     Start["ensureActiveChapter: dùng hoặc tạo Chapter"] --> Brief["Khởi tạo Brief từ goal nếu chưa có"]
-    Brief --> Generate["Generate scene với Brief và tối đa 3 Scene gần nhất"]
+    Brief --> Mode["Xác định NORMAL hoặc CLOSING theo word budget"]
+    Mode --> Generate["Generate scene với Brief và tối đa 3 Scene gần nhất"]
     Generate --> Review["Duyệt draft và cập nhật Brief"]
     Review --> Commit["Commit Scene; tăng word count"]
     Commit --> Finish{"Kết thúc chương?"}
-    Finish -->|"Chưa"| Mode["NORMAL hoặc CLOSING theo word budget"]
-    Mode -->|"Continue"| Generate
-    Finish -->|"end_chapter hoặc auto-advance"| Complete["COMPLETE và chương kế tiếp"]
+    Finish -->|"Chưa: Continue"| Mode
+    Finish -->|"end_chapter hoặc đủ điều kiện auto-advance"| Complete["COMPLETE và chương kế tiếp"]
     Complete --> Handoff["Handoff Brief: mang context cần thiết sang chương mới"]
-    Handoff --> Generate
+    Handoff --> Mode
     Commit -.->|"Lệnh summarize riêng"| Summary["LLM tạo summary để lưu vào Chapter"]

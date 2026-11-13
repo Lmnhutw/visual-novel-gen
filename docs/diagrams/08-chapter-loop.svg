@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1018.1164999999999 812.7259999999999" width="1018.1164999999999" height="812.7259999999999" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 837.1664999999998 889.6259999999999" width="837.1664999999998" height="889.6259999999999" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
   text { font-family: 'Arial', system-ui, sans-serif; }
@@ -26,71 +26,67 @@
     <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
   </marker>
 </defs>
-<polyline class="edge" data-from="Start" data-to="Brief" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="203.9129999999999,351.926 203.91299999999984,391.926" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="Brief" data-to="Generate" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="203.91299999999984,428.82599999999996 203.91299999999984,448.82599999999996 440.92049999999983,448.82599999999996 440.92049999999983,460.82599999999996" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="Generate" data-to="Review" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="525.5079999999998,497.72599999999994 525.5079999999998,537.7259999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="Review" data-to="Commit" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="525.5079999999998,574.626 525.5079999999998,586.626 319.40566666666655,586.626 319.40566666666655,598.626" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="Commit" data-to="Finish" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="246.14233333333323,598.626 246.14233333333323,586.626 40.039999999999964,586.626 40.039999999999964,295.026 483.82649999999984,295.026 483.82649999999984,165.0445" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="Finish" data-to="Mode" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Chưa" points="525.5079999999998,206.726 525.5079999999998,315.026" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="Mode" data-to="Generate" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Continue" points="525.5079999999998,351.926 525.5079999999998,460.82599999999996" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="Finish" data-to="Complete" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="end_chapter hoặc auto-advance" points="567.1894999999998,165.0445 567.1894999999998,234.726 803.7544999999998,234.726 803.7544999999998,315.026" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="Complete" data-to="Handoff" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="803.7544999999998,351.926 803.7544999999998,391.926" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="Handoff" data-to="Generate" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="803.7544999999998,428.82599999999996 803.7544999999998,448.82599999999996 610.0954999999998,448.82599999999996 610.0954999999998,460.82599999999996" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
-<polyline class="edge" data-from="Commit" data-to="Summary" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="Lệnh summarize riêng" points="282.7739999999999,635.5259999999998 282.7739999999999,735.8259999999998" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
-<g class="edge-label" data-from="Finish" data-to="Mode" data-label="Chưa">
-  <rect x="504.0079999999999" y="241.72599999999997" width="42.598" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="525.3069999999999" y="256.876" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Chưa</text>
+<polyline class="edge" data-from="Start" data-to="Brief" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="308.2489999999999,327.92600000000004 308.2489999999999,367.92600000000004" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Brief" data-to="Mode" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="308.2489999999999,404.826 308.2489999999999,432.826 312.5344166666665,432.826 312.5344166666665,444.826" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Mode" data-to="Generate" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="312.5344166666665,481.726 312.5344166666666,521.726" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Generate" data-to="Review" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="312.5344166666666,558.626 312.5344166666666,598.626" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Review" data-to="Commit" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="312.5344166666666,635.526 312.5344166666666,663.526 210.7761666666666,663.526 210.7761666666666,675.526" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Commit" data-to="Finish" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="137.51283333333328,675.526 137.51283333333328,663.526 40.039999999999964,663.526 40.039999999999964,267.026 114.18391666666656,267.026 114.18391666666656,165.04449999999997" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Finish" data-to="Mode" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Chưa: Continue" points="155.8654166666666,206.726 155.8654166666666,279.026 91.53999999999996,279.026 91.53999999999996,432.826 225.72391666666658,432.826 225.72391666666658,444.826" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Finish" data-to="Complete" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="end_chapter hoặc đủ điều kiện auto-advance" points="197.5469166666666,165.0445 197.5469166666666,218.726 622.8044999999998,218.726 622.8044999999998,291.026" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Complete" data-to="Handoff" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="622.8044999999998,327.92600000000004 622.8044999999998,367.92600000000004" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Handoff" data-to="Mode" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="622.8044999999998,404.826 622.8044999999998,432.826 399.3449166666665,432.826 399.3449166666665,444.826" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Commit" data-to="Summary" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="Lệnh summarize riêng" points="174.14449999999994,712.4259999999999 174.14449999999994,812.7259999999999" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="Finish" data-to="Mode" data-label="Chưa: Continue">
+  <rect x="47.03999999999996" y="379.52599999999995" width="88.33600000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="91.20799999999997" y="394.67599999999993" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Chưa: Continue</text>
 </g>
-<g class="edge-label" data-from="Mode" data-to="Generate" data-label="Continue">
-  <rect x="495.5079999999998" y="395.52599999999995" width="59.230000000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="525.1229999999998" y="410.67599999999993" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Continue</text>
-</g>
-<g class="edge-label" data-from="Finish" data-to="Complete" data-label="end_chapter hoặc auto-advance">
-  <rect x="718.2544999999998" y="241.72599999999997" width="170.30800000000005" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="803.4084999999998" y="256.876" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">end_chapter hoặc auto-advance</text>
+<g class="edge-label" data-from="Finish" data-to="Complete" data-label="end_chapter hoặc đủ điều kiện auto-advance">
+  <rect x="508.8044999999999" y="225.726" width="227.92600000000007" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="622.7674999999999" y="240.876" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">end_chapter hoặc đủ điều kiện auto-advance</text>
 </g>
 <g class="edge-label" data-from="Commit" data-to="Summary" data-label="Lệnh summarize riêng">
-  <rect x="221.27399999999992" y="670.5259999999998" width="122.19400000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
-  <text x="282.3709999999999" y="685.6759999999998" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Lệnh summarize riêng</text>
+  <rect x="112.64449999999994" y="747.4259999999999" width="122.19400000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="173.74149999999995" y="762.5759999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Lệnh summarize riêng</text>
 </g>
 <g class="node" data-id="Start" data-label="ensureActiveChapter: dùng hoặc tạo Chapter" data-shape="rectangle">
-  <rect x="51.039999999999964" y="315.026" width="305.7459999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="203.91299999999993" y="333.476" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">ensureActiveChapter: dùng hoặc tạo Chapter</text>
+  <rect x="155.37599999999998" y="291.026" width="305.7459999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308.2489999999999" y="309.476" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">ensureActiveChapter: dùng hoặc tạo Chapter</text>
 </g>
 <g class="node" data-id="Brief" data-label="Khởi tạo Brief từ goal nếu chưa có" data-shape="rectangle">
-  <rect x="87.71949999999987" y="391.926" width="232.38699999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="203.91299999999984" y="410.376" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Khởi tạo Brief từ goal nếu chưa có</text>
+  <rect x="192.05549999999994" y="367.92600000000004" width="232.38699999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="308.2489999999999" y="386.37600000000003" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Khởi tạo Brief từ goal nếu chưa có</text>
+</g>
+<g class="node" data-id="Mode" data-label="Xác định NORMAL hoặc CLOSING theo word budget" data-shape="rectangle">
+  <rect x="138.9134166666666" y="444.826" width="347.2419999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="312.5344166666665" y="463.276" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Xác định NORMAL hoặc CLOSING theo word budget</text>
 </g>
 <g class="node" data-id="Generate" data-label="Generate scene với Brief và tối đa 3 Scene gần nhất" data-shape="rectangle">
-  <rect x="356.33299999999986" y="460.82599999999996" width="338.3499999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="525.5079999999998" y="479.27599999999995" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Generate scene với Brief và tối đa 3 Scene gần nhất</text>
+  <rect x="143.35941666666662" y="521.726" width="338.3499999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="312.5344166666666" y="540.176" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Generate scene với Brief và tối đa 3 Scene gần nhất</text>
 </g>
 <g class="node" data-id="Review" data-label="Duyệt draft và cập nhật Brief" data-shape="rectangle">
-  <rect x="423.3934999999999" y="537.7259999999999" width="204.22899999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="525.5079999999999" y="556.1759999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Duyệt draft và cập nhật Brief</text>
+  <rect x="210.41991666666658" y="598.626" width="204.22899999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="312.5344166666666" y="617.076" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Duyệt draft và cập nhật Brief</text>
 </g>
 <g class="node" data-id="Commit" data-label="Commit Scene; tăng word count" data-shape="rectangle">
-  <rect x="172.8789999999999" y="598.626" width="219.79" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="282.7739999999999" y="617.076" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Commit Scene; tăng word count</text>
+  <rect x="64.24949999999995" y="675.526" width="219.79" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="174.14449999999994" y="693.976" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Commit Scene; tăng word count</text>
 </g>
 <g class="node" data-id="Finish" data-label="Kết thúc chương?" data-shape="diamond">
-  <polygon points="525.5079999999998,40 608.8709999999999,123.363 525.5079999999998,206.726 442.1449999999998,123.363" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="525.5079999999998" y="123.363" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Kết thúc chương?</text>
-</g>
-<g class="node" data-id="Mode" data-label="NORMAL hoặc CLOSING theo word budget" data-shape="rectangle">
-  <rect x="380.78599999999983" y="315.026" width="289.44399999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="525.5079999999998" y="333.476" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">NORMAL hoặc CLOSING theo word budget</text>
+  <polygon points="155.8654166666666,40 239.2284166666666,123.363 155.8654166666666,206.726 72.50241666666659,123.363" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="155.8654166666666" y="123.363" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Kết thúc chương?</text>
 </g>
 <g class="node" data-id="Complete" data-label="COMPLETE và chương kế tiếp" data-shape="rectangle">
-  <rect x="694.2299999999998" y="315.026" width="219.04899999999998" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="803.7544999999998" y="333.476" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">COMPLETE và chương kế tiếp</text>
+  <rect x="513.2799999999999" y="291.026" width="219.04899999999998" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="622.8044999999998" y="309.476" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">COMPLETE và chương kế tiếp</text>
 </g>
 <g class="node" data-id="Handoff" data-label="Handoff Brief: mang context cần thiết sang chương mới" data-shape="rectangle">
-  <rect x="629.3924999999999" y="391.926" width="348.72399999999993" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="803.7544999999999" y="410.376" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Handoff Brief: mang context cần thiết sang chương mới</text>
+  <rect x="448.4424999999999" y="367.92600000000004" width="348.72399999999993" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="622.8044999999998" y="386.37600000000003" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Handoff Brief: mang context cần thiết sang chương mới</text>
 </g>
 <g class="node" data-id="Summary" data-label="LLM tạo summary để lưu vào Chapter" data-shape="rectangle">
-  <rect x="153.98349999999994" y="735.8259999999998" width="257.5809999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
-  <text x="282.7739999999999" y="754.2759999999998" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">LLM tạo summary để lưu vào Chapter</text>
+  <rect x="45.353999999999985" y="812.7259999999999" width="257.5809999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="174.14449999999994" y="831.1759999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">LLM tạo summary để lưu vào Chapter</text>
 </g>
 </svg>
