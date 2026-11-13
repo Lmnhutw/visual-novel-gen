@@ -1,0 +1,14 @@
+flowchart TB
+    Input["Story, goal, chapter, active IDs, secrets flag"] --> Read["Đọc relational canon và Chapter Brief"]
+    Input --> Search["searchMemories theo Story và query"]
+    Search --> Enabled{"Embeddings được bật?"}
+    Enabled -->|"Không"| Rank["Keyword + salience + recency + emotional weight"]
+    Enabled -->|"Có"| Vector["Thử embedding và pgvector"]
+    Vector -->|"Adapter hiện chưa hỗ trợ: fallback"| Rank
+    Read --> Budget["applyContextBudget: mặc định 6000 token ước lượng"]
+    Rank --> Budget
+    Budget --> Preview["Context preview: estimate, omitted, overBudget"]
+    Budget --> Prompt["System và safety; Harness; canon; task; output"]
+    Prompt --> Generation["generateText: prose"]
+    Generation --> Validate["Harness và continuity checks"]
+    Validate --> Extract["Extraction: JSON được Zod validate"]

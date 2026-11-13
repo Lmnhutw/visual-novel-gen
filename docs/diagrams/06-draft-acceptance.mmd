@@ -1,0 +1,13 @@
+flowchart TB
+    Review["Sửa draft và review findings"] --> Brief["Approve hoặc discard Chapter Brief proposal nếu có"]
+    Brief --> Accept["POST draft-versions / id / accept"]
+    Accept --> Gates{"Kiểm tra khi commit"}
+    Gates -->|"Hard Harness lỗi, P0 mở hoặc P1 chưa override"| Block["409: xử lý lỗi rồi thử lại"]
+    Gates -->|"Chapter đóng, draft rỗng hoặc vượt hard limit"| Block
+    Gates -->|"Đã commit trước đó"| Reuse["Trả Scene đã có; không thêm lần nữa"]
+    Gates -->|"Hợp lệ"| Tx["Serializable transaction"]
+    Tx --> Scene["Tạo Scene và đánh dấu DraftVersion ACCEPTED"]
+    Scene --> Update["Cập nhật số từ và Chapter Brief đã được duyệt"]
+    Update --> Advance{"Kết thúc hoặc auto-advance đủ điều kiện?"}
+    Advance -->|"Chưa"| Continue["Giữ Chapter DRAFT"]
+    Advance -->|"Có"| Next["Chapter COMPLETE; tạo hoặc dùng chương kế tiếp"]

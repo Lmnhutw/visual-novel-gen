@@ -1,0 +1,15 @@
+stateDiagram-v2
+    [*] --> QUEUED
+    QUEUED --> RUNNING: claim thành công
+    RETRYING --> RUNNING: claim thành công
+    RUNNING --> READY_FOR_REVIEW: lưu kết quả thành công
+    RUNNING --> FAILED: lỗi không chuyển fallback
+    RUNNING --> AWAITING_FALLBACK_CONFIRMATION: model miễn phí lỗi đủ điều kiện
+    AWAITING_FALLBACK_CONFIRMATION --> RETRYING: duyệt model trả phí trong 5 phút
+    AWAITING_FALLBACK_CONFIRMATION --> CANCELLED: từ chối hoặc worker xử lý hết hạn
+    QUEUED --> CANCELLED: người dùng hủy
+    RETRYING --> CANCELLED: người dùng hủy
+    RUNNING --> CANCELLED: người dùng hủy
+    FAILED --> RETRYING: retry cùng job
+    CANCELLED --> RETRYING: retry cùng job
+    READY_FOR_REVIEW --> [*]

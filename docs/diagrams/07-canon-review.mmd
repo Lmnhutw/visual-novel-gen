@@ -1,0 +1,12 @@
+flowchart TB
+    Extraction["Extraction từ draft"] --> Pending["CanonChangeProposal PENDING"]
+    Pending --> Decision{"Quyết định người viết"}
+    Decision -->|"Reject"| Rejected["REJECTED và audit log"]
+    Decision -->|"Accept"| Accepted{"Draft đã ACCEPTED?"}
+    Accepted -->|"Chưa"| Block["409: phải accept draft trước"]
+    Accepted -->|"Rồi"| Type{"Loại proposal"}
+    Type -->|"Memory hoặc Event: AUTO_APPLY"| Commit["Transaction ghi canon, ACCEPTED và audit"]
+    Type -->|"State, relationship, secret, lore, thread"| Manual["NEEDS_MANUAL_APPLICATION"]
+    Manual --> Editor["Người viết áp dụng thủ công vào dữ liệu tương ứng"]
+    Commit --> Future["Retrieval và continuity lần sau đọc dữ liệu mới"]
+    Editor -.->|"Sau khi được ghi vào DB"| Future

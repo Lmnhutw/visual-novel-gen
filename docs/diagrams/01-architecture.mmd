@@ -1,0 +1,15 @@
+flowchart TB
+    Author["Người viết"] --> UI["Library và WriterStudio"]
+    UI -->|"JSON qua HTTP"| API["Next.js Route Handlers"]
+    API --> Guard["Zod và kiểm tra ownership"]
+    Guard --> Services["Story, Character, Chapter, Generation services"]
+    Services --> DB["Prisma / PostgreSQL"]
+    Worker["Generation worker"] -->|"Đọc và claim job"| DB
+    Worker --> Pipeline["Generation pipeline dùng chung"]
+    Services -->|"API generation trực tiếp"| Pipeline
+    Pipeline -->|"Canon và memory"| DB
+    Pipeline --> Provider["OpenRouter adapter / server-side fetch"]
+    Provider --> LLM["Model viết, kiểm tra, trích xuất"]
+    Reader["Reader Server Component"] -->|"Prisma qua story service"| DB
+    Author --> Reader
+    Guard -.->|"Xác thực bearer token khi được gửi"| Auth["Supabase Auth"]

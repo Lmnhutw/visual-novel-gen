@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1036.9519999999998 835.9949999999999" width="1036.9519999999998" height="835.9949999999999" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="Library" data-to="Settings" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="243.09474999999998,76.9 243.09474999999998,116.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Settings" data-to="Characters" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="243.09474999999998,153.8 243.09474999999998,193.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Characters" data-to="Profile" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Nhập hoặc random theo dữ liệu có sẵn" points="214.19558333333333,338.2958333333334 214.19558333333333,395.19500000000005 132.5,395.19500000000005 132.5,475.795" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Characters" data-to="Copy" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Chọn Character Template" points="271.9939166666667,338.29583333333335 271.9939166666667,395.19500000000005 353.68949999999995,395.19500000000005 353.6895,475.795" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Profile" data-to="Story" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="132.5,512.695 132.5,528.5450000000001 243.09474999999998,528.5450000000001 243.09474999999998,544.395" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Copy" data-to="Story" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="353.6895,512.695 353.6895,528.5450000000001 243.09474999999998,528.5450000000001 243.09474999999998,544.395" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Story" data-to="Goal" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="243.09474999999998,581.295 243.09474999999998,609.295 340.0666666666667,609.295 340.0666666666667,621.295" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Goal" data-to="Preview" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="385.4668333333334,658.1949999999999 385.4668333333334,698.1949999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Preview" data-to="Generate" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="385.4668333333334,735.0949999999999 385.4668333333334,747.0949999999999 581.41225,747.0949999999999 581.41225,759.0949999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Generate" data-to="Review" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="631.9515833333334,759.0949999999999 631.9515833333334,747.0949999999999 988.9519999999999,747.0949999999999 988.9519999999999,686.1949999999999 853.6589999999999,686.1949999999999 853.6589999999999,367.19500000000005" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Review" data-to="Manuscript" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="765.5756666666666,367.19500000000005 765.5756666666666,395.19500000000005 718.8187499999999,395.19500000000005 718.8187499999999,407.19500000000005" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Manuscript" data-to="Canon" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="718.8187499999999,444.095 718.8187499999999,459.94500000000005 591.922,459.94500000000005 591.922,475.795" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Canon" data-to="Goal" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Viết tiếp với context đã cập nhật" points="591.922,512.6949999999999 591.922,609.295 430.867,609.295 430.867,621.295" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Manuscript" data-to="Reader" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="718.8187499999999,444.095 718.8187499999999,459.94500000000005 845.7154999999999,459.94500000000005 845.7154999999999,698.1949999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="Characters" data-to="Profile" data-label="Nhập hoặc random theo dữ liệu có sẵn">
+  <rect x="35.999999999999986" y="402.19500000000005" width="192.88000000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="132.44" y="417.345" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Nhập hoặc random theo dữ liệu có sẵn</text>
+</g>
+<g class="edge-label" data-from="Characters" data-to="Copy" data-label="Chọn Character Template">
+  <rect x="284.68949999999995" y="402.19500000000005" width="137.638" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="353.50849999999997" y="417.345" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Chọn Character Template</text>
+</g>
+<g class="edge-label" data-from="Canon" data-to="Goal" data-label="Viết tiếp với context đã cập nhật">
+  <rect x="510.9220000000001" y="555.995" width="161.39800000000005" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="591.6210000000001" y="571.145" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Viết tiếp với context đã cập nhật</text>
+</g>
+<g class="node" data-id="Library" data-label="Library: chọn hoặc tạo Story" data-shape="rectangle">
+  <rect x="138.38675" y="40" width="209.41599999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="243.09474999999998" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Library: chọn hoặc tạo Story</text>
+</g>
+<g class="node" data-id="Settings" data-label="Thiết lập phong cách và Writing Harness" data-shape="rectangle">
+  <rect x="104.67124999999997" y="116.9" width="276.847" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="243.09474999999998" y="135.35000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Thiết lập phong cách và Writing Harness</text>
+</g>
+<g class="node" data-id="Characters" data-label="Chuẩn bị nhân vật" data-shape="diamond">
+  <polygon points="243.09474999999998,193.8 329.79224999999997,280.4975 243.09474999999998,367.195 156.39724999999999,280.4975" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="243.09474999999998" y="280.4975" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Chuẩn bị nhân vật</text>
+</g>
+<g class="node" data-id="Profile" data-label="Form hồ sơ nhân vật" data-shape="rectangle">
+  <rect x="52.98599999999999" y="475.795" width="159.02800000000002" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="132.5" y="494.245" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Form hồ sơ nhân vật</text>
+</g>
+<g class="node" data-id="Copy" data-label="Sao chép hồ sơ độc lập vào Story" data-shape="rectangle">
+  <rect x="236.014" y="475.795" width="235.35099999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="353.6895" y="494.245" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Sao chép hồ sơ độc lập vào Story</text>
+</g>
+<g class="node" data-id="Story" data-label="Nhân vật, quan hệ và primary protagonist" data-shape="rectangle">
+  <rect x="103.55975000000002" y="544.395" width="279.06999999999994" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="243.09474999999998" y="562.845" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Nhân vật, quan hệ và primary protagonist</text>
+</g>
+<g class="node" data-id="Goal" data-label="Chọn chương, POV, nhân vật và mục tiêu" data-shape="rectangle">
+  <rect x="249.26633333333336" y="621.295" width="272.40099999999995" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="385.46683333333334" y="639.745" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Chọn chương, POV, nhân vật và mục tiêu</text>
+</g>
+<g class="node" data-id="Preview" data-label="Xem context nếu cần" data-shape="rectangle">
+  <rect x="304.84133333333335" y="698.1949999999999" width="161.251" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="385.46683333333334" y="716.645" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Xem context nếu cần</text>
+</g>
+<g class="node" data-id="Generate" data-label="Tạo generation job" data-shape="rectangle">
+  <rect x="530.8729166666666" y="759.0949999999999" width="151.618" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="606.6819166666666" y="777.545" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Tạo generation job</text>
+</g>
+<g class="node" data-id="Review" data-label="Duyệt và sửa draft; duyệt Chapter Brief" data-shape="rectangle">
+  <rect x="677.4923333333332" y="330.2950000000001" width="264.25" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="809.6173333333332" y="348.74500000000006" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Duyệt và sửa draft; duyệt Chapter Brief</text>
+</g>
+<g class="node" data-id="Manuscript" data-label="Accept: thêm Scene vào Chapter" data-shape="rectangle">
+  <rect x="603.7367499999999" y="407.19500000000005" width="230.164" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="718.8187499999999" y="425.64500000000004" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Accept: thêm Scene vào Chapter</text>
+</g>
+<g class="node" data-id="Canon" data-label="Duyệt đề xuất canon riêng" data-shape="rectangle">
+  <rect x="495.365" y="475.795" width="193.11399999999998" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="591.922" y="494.245" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Duyệt đề xuất canon riêng</text>
+</g>
+<g class="node" data-id="Reader" data-label="Reader: đọc bản thảo theo thứ tự Scene" data-shape="rectangle">
+  <rect x="712.4789999999999" y="698.1949999999999" width="266.47299999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="845.7154999999999" y="716.645" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Reader: đọc bản thảo theo thứ tự Scene</text>
+</g>
+</svg>

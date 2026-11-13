@@ -1,0 +1,15 @@
+flowchart TB
+    Library["Library: chọn hoặc tạo Story"] --> Settings["Thiết lập phong cách và Writing Harness"]
+    Settings --> Characters{"Chuẩn bị nhân vật"}
+    Characters -->|"Nhập hoặc random theo dữ liệu có sẵn"| Profile["Form hồ sơ nhân vật"]
+    Characters -->|"Chọn Character Template"| Copy["Sao chép hồ sơ độc lập vào Story"]
+    Profile --> Story["Nhân vật, quan hệ và primary protagonist"]
+    Copy --> Story
+    Story --> Goal["Chọn chương, POV, nhân vật và mục tiêu"]
+    Goal --> Preview["Xem context nếu cần"]
+    Preview --> Generate["Tạo generation job"]
+    Generate --> Review["Duyệt và sửa draft; duyệt Chapter Brief"]
+    Review --> Manuscript["Accept: thêm Scene vào Chapter"]
+    Manuscript --> Canon["Duyệt đề xuất canon riêng"]
+    Canon -->|"Viết tiếp với context đã cập nhật"| Goal
+    Manuscript --> Reader["Reader: đọc bản thảo theo thứ tự Scene"]

@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 808.334 1315.518" width="808.334" height="1315.518" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="Extraction" data-to="Pending" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="235.36774999999997,76.9 235.36774999999997,116.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Pending" data-to="Decision" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="235.36774999999997,153.8 235.36774999999997,193.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Decision" data-to="Rejected" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Reject" points="203.75158333333331,351.8808333333333 203.75158333333331,815.0179999999999 130.25849999999997,815.0179999999999 130.25849999999997,887.3179999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Decision" data-to="Accepted" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Accept" points="266.98391666666663,351.8808333333333 266.98391666666663,411.497 340.477,411.497 340.477,483.797" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Accepted" data-to="Block" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Chưa" points="308.4903333333333,643.7303333333333 308.4903333333333,952.2179999999998 241.66625,952.2179999999998 241.66625,1024.5179999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Accepted" data-to="Type" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Rồi" points="372.46366666666665,643.7303333333333 372.46366666666665,703.717 439.28774999999996,703.717 439.28774999999996,776.0169999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Type" data-to="Commit" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Memory hoặc Event: AUTO_APPLY" points="414.58758333333327,899.5178333333332 414.58758333333327,1089.4179999999997 272.00649999999996,1089.4179999999997 272.00649999999996,1161.7179999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Type" data-to="Manual" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="State, relationship, secret, lore, thread" points="463.9879166666666,899.5178333333332 463.9879166666666,952.2179999999998 606.569,952.2179999999998 606.5689999999998,1024.5179999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Manual" data-to="Editor" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="606.5689999999998,1061.4179999999997 606.569,1101.4179999999997" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Commit" data-to="Future" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="272.00649999999996,1198.618 272.00649999999996,1226.618 389.07108333333326,1226.618 389.07108333333326,1238.618" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Editor" data-to="Future" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="Sau khi được ghi vào DB" points="606.569,1138.3179999999998 606.569,1226.618 489.50441666666654,1226.618 489.50441666666654,1238.618" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="Decision" data-to="Rejected" data-label="Reject">
+  <rect x="106.25849999999998" y="822.0179999999999" width="47.35" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="129.93349999999998" y="837.1679999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Reject</text>
+</g>
+<g class="edge-label" data-from="Decision" data-to="Accepted" data-label="Accept">
+  <rect x="314.977" y="418.497" width="50.91400000000001" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="340.43399999999997" y="433.647" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Accept</text>
+</g>
+<g class="edge-label" data-from="Accepted" data-to="Block" data-label="Chưa">
+  <rect x="220.16625" y="959.2179999999998" width="42.598" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="241.46525" y="974.3679999999998" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Chưa</text>
+</g>
+<g class="edge-label" data-from="Accepted" data-to="Type" data-label="Rồi">
+  <rect x="422.28774999999996" y="710.717" width="33.094" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="438.83475" y="725.867" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Rồi</text>
+</g>
+<g class="edge-label" data-from="Type" data-to="Commit" data-label="Memory hoặc Event: AUTO_APPLY">
+  <rect x="179.00649999999996" y="1096.4179999999997" width="185.158" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="271.58549999999997" y="1111.5679999999998" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Memory hoặc Event: AUTO_APPLY</text>
+</g>
+<g class="edge-label" data-from="Type" data-to="Manual" data-label="State, relationship, secret, lore, thread">
+  <rect x="509.06899999999996" y="959.2179999999998" width="194.66200000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="606.4" y="974.3679999999998" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">State, relationship, secret, lore, thread</text>
+</g>
+<g class="edge-label" data-from="Editor" data-to="Future" data-label="Sau khi được ghi vào DB">
+  <rect x="541.569" y="1173.3179999999998" width="129.91600000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="606.5269999999999" y="1188.4679999999998" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Sau khi được ghi vào DB</text>
+</g>
+<g class="node" data-id="Extraction" data-label="Extraction từ draft" data-shape="rectangle">
+  <rect x="163.26374999999996" y="40" width="144.20800000000003" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="235.36774999999997" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Extraction từ draft</text>
+</g>
+<g class="node" data-id="Pending" data-label="CanonChangeProposal PENDING" data-shape="rectangle">
+  <rect x="115.46925000000002" y="116.9" width="239.7969999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="235.36774999999997" y="135.35000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">CanonChangeProposal PENDING</text>
+</g>
+<g class="node" data-id="Decision" data-label="Quyết định người viết" data-shape="diamond">
+  <polygon points="235.36774999999997,193.8 330.21624999999995,288.6485 235.36774999999997,383.497 140.51924999999997,288.6485" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="235.36774999999997" y="288.6485" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Quyết định người viết</text>
+</g>
+<g class="node" data-id="Rejected" data-label="REJECTED và audit log" data-shape="rectangle">
+  <rect x="40" y="887.3179999999999" width="180.51699999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="130.25849999999997" y="905.7679999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">REJECTED và audit log</text>
+</g>
+<g class="node" data-id="Accepted" data-label="Draft đã ACCEPTED?" data-shape="diamond">
+  <polygon points="340.477,483.7970000000001 436.43699999999995,579.7570000000001 340.477,675.7170000000001 244.517,579.7570000000001" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="340.477" y="579.7570000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Draft đã ACCEPTED?</text>
+</g>
+<g class="node" data-id="Block" data-label="409: phải accept draft trước" data-shape="rectangle">
+  <rect x="142.14525" y="1024.5179999999998" width="199.04199999999994" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="241.66625" y="1042.9679999999998" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">409: phải accept draft trước</text>
+</g>
+<g class="node" data-id="Type" data-label="Loại proposal" data-shape="diamond">
+  <polygon points="439.28774999999996,776.0169999999999 513.38825,850.1175 439.28774999999996,924.218 365.18724999999995,850.1175" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="439.28774999999996" y="850.1175" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Loại proposal</text>
+</g>
+<g class="node" data-id="Commit" data-label="Transaction ghi canon, ACCEPTED và audit" data-shape="rectangle">
+  <rect x="123.20899999999997" y="1161.7179999999998" width="297.59499999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="272.00649999999996" y="1180.168" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Transaction ghi canon, ACCEPTED và audit</text>
+</g>
+<g class="node" data-id="Manual" data-label="NEEDS_MANUAL_APPLICATION" data-shape="rectangle">
+  <rect x="485.1885" y="1024.5179999999998" width="242.76099999999988" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="606.569" y="1042.9679999999998" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">NEEDS_MANUAL_APPLICATION</text>
+</g>
+<g class="node" data-id="Editor" data-label="Người viết áp dụng thủ công vào dữ liệu tương ứng" data-shape="rectangle">
+  <rect x="444.8039999999999" y="1101.4179999999997" width="323.53" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="606.569" y="1119.8679999999997" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Người viết áp dụng thủ công vào dữ liệu tương ứng</text>
+</g>
+<g class="node" data-id="Future" data-label="Retrieval và continuity lần sau đọc dữ liệu mới" data-shape="rectangle">
+  <rect x="288.63775" y="1238.618" width="301.2999999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="439.28774999999996" y="1257.068" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Retrieval và continuity lần sau đọc dữ liệu mới</text>
+</g>
+</svg>

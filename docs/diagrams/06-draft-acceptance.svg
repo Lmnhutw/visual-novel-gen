@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1159.8509166666668 1259.07" width="1159.8509166666668" height="1259.07" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="Review" data-to="Brief" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="489.44791666666674,76.9 489.44791666666674,116.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Brief" data-to="Accept" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="489.44791666666674,153.8 489.4479166666667,193.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Accept" data-to="Gates" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="489.4479166666667,230.70000000000002 489.44791666666674,270.70000000000005" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gates" data-to="Block" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Hard Harness lỗi, P0 mở hoặc P1 chưa override" points="437.4294166666667,392.0765 437.4294166666667,460.095 154,460.095 154,532.3950000000001 247.01483333333329,532.3950000000001 247.01483333333329,544.3950000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gates" data-to="Block" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Chapter đóng, draft rỗng hoặc vượt hard limit" points="472.1084166666667,426.7555 472.1084166666667,472.095 386.0540000000001,472.095 386.0540000000001,532.3950000000001 302.4941666666667,532.3950000000001 302.4941666666667,544.3950000000001" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gates" data-to="Reuse" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Đã commit trước đó" points="506.7874166666667,426.7555000000001 506.7874166666667,472.095 577.1214166666667,472.095 577.1214166666667,544.395" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Gates" data-to="Tx" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Hợp lệ" points="541.4664166666666,392.0765000000001 541.4664166666666,460.095 819.4294166666667,460.095 819.4294166666667,544.395" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Tx" data-to="Scene" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="819.4294166666667,581.295 819.4294166666667,621.295" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Scene" data-to="Update" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="819.4294166666667,658.1949999999999 819.4294166666667,698.1949999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Update" data-to="Advance" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="819.4294166666667,735.0949999999999 819.4294166666666,775.0949999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Advance" data-to="Continue" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Chưa" points="768.30025,1030.7408333333333 768.30025,1109.87 678.7279166666668,1109.87 678.7279166666668,1182.1699999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Advance" data-to="Next" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Có" points="870.5585833333333,1030.7408333333333 870.5585833333333,1109.87 950.6759166666667,1109.87 950.6759166666667,1182.1699999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="Gates" data-to="Block" data-label="Hard Harness lỗi, P0 mở hoặc P1 chưa override">
+  <rect x="36" y="479.09500000000014" width="235.05400000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="153.52700000000002" y="494.2450000000001" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Hard Harness lỗi, P0 mở hoặc P1 chưa override</text>
+</g>
+<g class="edge-label" data-from="Gates" data-to="Block" data-label="Chapter đóng, draft rỗng hoặc vượt hard limit">
+  <rect x="275.0540000000001" y="479.095" width="221.39200000000005" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="385.7500000000001" y="494.245" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Chapter đóng, draft rỗng hoặc vượt hard limit</text>
+</g>
+<g class="edge-label" data-from="Gates" data-to="Reuse" data-label="Đã commit trước đó">
+  <rect x="525.6214166666667" y="479.095" width="102.59200000000003" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="576.9174166666668" y="494.245" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Đã commit trước đó</text>
+</g>
+<g class="edge-label" data-from="Gates" data-to="Tx" data-label="Hợp lệ">
+  <rect x="795.9294166666667" y="479.095" width="46.756" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="819.3074166666668" y="494.245" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Hợp lệ</text>
+</g>
+<g class="edge-label" data-from="Advance" data-to="Continue" data-label="Chưa">
+  <rect x="657.2279166666668" y="1116.87" width="42.598" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="678.5269166666668" y="1132.02" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Chưa</text>
+</g>
+<g class="edge-label" data-from="Advance" data-to="Next" data-label="Có">
+  <rect x="935.1759166666667" y="1116.87" width="30.718000000000004" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="950.5349166666667" y="1132.02" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Có</text>
+</g>
+<g class="node" data-id="Review" data-label="Sửa draft và review findings" data-shape="rectangle">
+  <rect x="388.4449166666667" y="40" width="202.00599999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="489.4479166666667" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Sửa draft và review findings</text>
+</g>
+<g class="node" data-id="Brief" data-label="Approve hoặc discard Chapter Brief proposal nếu có" data-shape="rectangle">
+  <rect x="313.9744166666668" y="116.9" width="350.9469999999999" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="489.44791666666674" y="135.35000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Approve hoặc discard Chapter Brief proposal nếu có</text>
+</g>
+<g class="node" data-id="Accept" data-label="POST draft-versions / id / accept" data-shape="rectangle">
+  <rect x="374.36591666666675" y="193.8" width="230.16399999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="489.44791666666674" y="212.25" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">POST draft-versions / id / accept</text>
+</g>
+<g class="node" data-id="Gates" data-label="Kiểm tra khi commit" data-shape="diamond">
+  <polygon points="489.44791666666674,270.70000000000005 576.1454166666667,357.39750000000004 489.44791666666674,444.095 402.75041666666675,357.39750000000004" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="489.44791666666674" y="357.39750000000004" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Kiểm tra khi commit</text>
+</g>
+<g class="node" data-id="Block" data-label="409: xử lý lỗi rồi thử lại" data-shape="rectangle">
+  <rect x="191.53549999999996" y="544.3950000000001" width="166.43800000000005" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="274.7545" y="562.8450000000001" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">409: xử lý lỗi rồi thử lại</text>
+</g>
+<g class="node" data-id="Reuse" data-label="Trả Scene đã có; không thêm lần nữa" data-shape="rectangle">
+  <rect x="449.81291666666675" y="544.395" width="254.617" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="577.1214166666667" y="562.845" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Trả Scene đã có; không thêm lần nữa</text>
+</g>
+<g class="node" data-id="Tx" data-label="Serializable transaction" data-shape="rectangle">
+  <rect x="728.4299166666667" y="544.395" width="181.99899999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="819.4294166666667" y="562.845" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Serializable transaction</text>
+</g>
+<g class="node" data-id="Scene" data-label="Tạo Scene và đánh dấu DraftVersion ACCEPTED" data-shape="rectangle">
+  <rect x="653.9594166666667" y="621.295" width="330.94000000000005" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="819.4294166666667" y="639.745" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Tạo Scene và đánh dấu DraftVersion ACCEPTED</text>
+</g>
+<g class="node" data-id="Update" data-label="Cập nhật số từ và Chapter Brief đã được duyệt" data-shape="rectangle">
+  <rect x="667.6679166666668" y="698.1949999999999" width="303.52299999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="819.4294166666667" y="716.645" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Cập nhật số từ và Chapter Brief đã được duyệt</text>
+</g>
+<g class="node" data-id="Advance" data-label="Kết thúc hoặc auto-advance đủ điều kiện?" data-shape="diamond">
+  <polygon points="819.4294166666666,775.0949999999998 972.8169166666667,928.4824999999998 819.4294166666666,1081.87 666.0419166666666,928.4824999999998" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="819.4294166666666" y="928.4824999999998" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Kết thúc hoặc auto-advance đủ điều kiện?</text>
+</g>
+<g class="node" data-id="Continue" data-label="Giữ Chapter DRAFT" data-shape="rectangle">
+  <rect x="599.9549166666668" y="1182.1699999999998" width="157.546" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="678.7279166666668" y="1200.62" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Giữ Chapter DRAFT</text>
+</g>
+<g class="node" data-id="Next" data-label="Chapter COMPLETE; tạo hoặc dùng chương kế tiếp" data-shape="rectangle">
+  <rect x="781.5009166666669" y="1182.1699999999998" width="338.34999999999985" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="950.6759166666668" y="1200.62" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Chapter COMPLETE; tạo hoặc dùng chương kế tiếp</text>
+</g>
+</svg>

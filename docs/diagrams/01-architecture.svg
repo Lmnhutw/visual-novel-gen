@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 851.6162499999999 792.3999999999999" width="851.6162499999999" height="792.3999999999999" style="--bg:#ffffff;--fg:#1f2328;--line:#d1d9e0;--accent:#0969da;--muted:#59636e;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Arial:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Arial', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="Author" data-to="UI" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="452.6792499999999,76.9 452.6792499999999,96.9 312.69191666666654,96.9 312.69191666666654,116.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="UI" data-to="API" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="JSON qua HTTP" points="312.69191666666654,153.8 312.6919166666666,254.10000000000002" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="API" data-to="Guard" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="312.6919166666666,291 312.69191666666654,331" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Guard" data-to="Services" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="345.12458333333325,367.9 345.12458333333325,395.9 447.0719166666666,395.9 447.0719166666666,407.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Services" data-to="DB" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="500.2525833333333,444.79999999999995 500.2525833333333,472.79999999999995 608.4145833333333,472.79999999999995 608.4145833333333,646.8999999999999 659.8630166666666,646.8999999999999 659.8630166666666,682.8999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Worker" data-to="DB" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Đọc và claim job" points="547.62825,521.6999999999999 547.62825,658.8999999999999 626.7236166666667,658.8999999999999 626.7236166666667,682.8999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Worker" data-to="Pipeline" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="496.84191666666663,521.6999999999999 496.84191666666663,549.6999999999999 383.92875,549.6999999999999 383.92875,561.6999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Services" data-to="Pipeline" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="API generation trực tiếp" points="393.89124999999996,444.79999999999995 393.89124999999996,489.4 308.44241666666665,489.4 308.44241666666665,561.6999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Pipeline" data-to="DB" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Canon và memory" points="383.92875,598.5999999999999 383.92875,626.5999999999999 448.9800833333333,626.5999999999999 448.9800833333333,670.8999999999999 593.5842166666666,670.8999999999999 593.5842166666666,682.8999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Pipeline" data-to="Provider" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="308.44241666666665,598.5999999999999 308.44241666666665,626.5999999999999 243.39108333333334,626.5999999999999 243.39108333333334,638.5999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Provider" data-to="LLM" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="243.39108333333334,675.4999999999999 243.39108333333337,715.4999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Reader" data-to="DB" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="Prisma qua story service" points="712.09525,367.9 712.09525,670.8999999999999 693.0024166666666,670.8999999999999 693.0024166666666,682.8999999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Author" data-to="Reader" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="452.6792499999999,76.9 452.6792499999999,96.9 712.09525,96.9 712.09525,331" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="Guard" data-to="Auth" data-style="dotted" data-arrow-start="false" data-arrow-end="true" data-label="Xác thực bearer token khi được gửi" points="280.25924999999995,367.9 280.25924999999995,489.4 126,489.4 126.00000000000003,561.6999999999999" fill="none" stroke="var(--_line)" stroke-width="1" stroke-dasharray="4 4" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="UI" data-to="API" data-label="JSON qua HTTP">
+  <rect x="264.19191666666654" y="188.8" width="96.05799999999999" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="312.22091666666654" y="203.95000000000002" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">JSON qua HTTP</text>
+</g>
+<g class="edge-label" data-from="Worker" data-to="DB" data-label="Đọc và claim job">
+  <rect x="502.12825" y="601.3" width="90.71200000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="547.48425" y="616.4499999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Đọc và claim job</text>
+</g>
+<g class="edge-label" data-from="Services" data-to="Pipeline" data-label="API generation trực tiếp">
+  <rect x="244.94241666666662" y="496.4" width="126.35200000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="308.11841666666663" y="511.54999999999995" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">API generation trực tiếp</text>
+</g>
+<g class="edge-label" data-from="Pipeline" data-to="DB" data-label="Canon và memory">
+  <rect x="398.4800833333333" y="633.5999999999999" width="100.81000000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="448.88508333333334" y="648.7499999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Canon và memory</text>
+</g>
+<g class="edge-label" data-from="Reader" data-to="DB" data-label="Prisma qua story service">
+  <rect x="644.09525" y="609.5999999999999" width="135.856" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="712.02325" y="624.7499999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Prisma qua story service</text>
+</g>
+<g class="edge-label" data-from="Guard" data-to="Auth" data-label="Xác thực bearer token khi được gửi">
+  <rect x="36" y="496.4" width="179.21800000000002" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="125.60900000000001" y="511.54999999999995" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">Xác thực bearer token khi được gửi</text>
+</g>
+<g class="node" data-id="Author" data-label="Người viết" data-shape="rectangle">
+  <rect x="403.17574999999994" y="40" width="99.007" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="452.6792499999999" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Người viết</text>
+</g>
+<g class="node" data-id="UI" data-label="Library và WriterStudio" data-shape="rectangle">
+  <rect x="222.43341666666657" y="116.9" width="180.517" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="312.69191666666654" y="135.35000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Library và WriterStudio</text>
+</g>
+<g class="node" data-id="API" data-label="Next.js Route Handlers" data-shape="rectangle">
+  <rect x="225.02691666666658" y="254.10000000000002" width="175.33" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="312.6919166666666" y="272.55" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Next.js Route Handlers</text>
+</g>
+<g class="node" data-id="Guard" data-label="Zod và kiểm tra ownership" data-shape="rectangle">
+  <rect x="215.3939166666666" y="331" width="194.59599999999995" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="312.69191666666654" y="349.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Zod và kiểm tra ownership</text>
+</g>
+<g class="node" data-id="Services" data-label="Story, Character, Chapter, Generation services" data-shape="rectangle">
+  <rect x="287.5299166666666" y="407.9" width="319.08399999999995" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="447.0719166666666" y="426.34999999999997" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Story, Character, Chapter, Generation services</text>
+</g>
+<g class="node" data-id="DB" data-label="Prisma / PostgreSQL" data-shape="rectangle">
+  <rect x="560.4448166666666" y="682.8999999999999" width="165.697" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="643.2933166666667" y="701.3499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Prisma / PostgreSQL</text>
+</g>
+<g class="node" data-id="Worker" data-label="Generation worker" data-shape="rectangle">
+  <rect x="446.0555833333333" y="484.79999999999995" width="152.359" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="522.2350833333333" y="503.24999999999994" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Generation worker</text>
+</g>
+<g class="node" data-id="Pipeline" data-label="Generation pipeline dùng chung" data-shape="rectangle">
+  <rect x="232.9560833333333" y="561.6999999999999" width="226.459" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="346.1855833333333" y="580.15" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Generation pipeline dùng chung</text>
+</g>
+<g class="node" data-id="Provider" data-label="OpenRouter adapter / server-side fetch" data-shape="rectangle">
+  <rect x="108.30208333333334" y="638.5999999999999" width="270.178" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="243.39108333333334" y="657.05" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">OpenRouter adapter / server-side fetch</text>
+</g>
+<g class="node" data-id="LLM" data-label="Model viết, kiểm tra, trích xuất" data-shape="rectangle">
+  <rect x="135.71908333333334" y="715.4999999999999" width="215.344" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="243.39108333333334" y="733.9499999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Model viết, kiểm tra, trích xuất</text>
+</g>
+<g class="node" data-id="Reader" data-label="Reader Server Component" data-shape="rectangle">
+  <rect x="612.57425" y="331" width="199.04199999999994" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="712.09525" y="349.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Reader Server Component</text>
+</g>
+<g class="node" data-id="Auth" data-label="Supabase Auth" data-shape="rectangle">
+  <rect x="60.19450000000003" y="561.6999999999999" width="131.611" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="126.00000000000003" y="580.15" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">Supabase Auth</text>
+</g>
+</svg>

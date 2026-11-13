@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant UI as WriterStudio
+    participant API as Next.js API
+    participant DB as PostgreSQL
+    participant W as Worker hoặc API run
+    participant P as Pipeline
+    participant AI as OpenRouter
+    UI->>API: POST /api/generation/jobs
+    API->>API: Validate, ownership, preflight, active chapter
+    API->>DB: Lưu hoặc dùng lại job theo idempotencyKey
+    API-->>UI: job id
+    Note over UI,API: UI poll mỗi 1.8 giây khi còn job hoạt động
+    W->>DB: Claim QUEUED hoặc RETRYING bằng update có điều kiện
+    W->>P: Chuẩn bị context và prompt
+    P->>DB: Đọc canon, Chapter Brief, Scene và memory
+    W->>DB: Lưu context snapshot, prompt, GenerationRun
+    P->>AI: Sinh prose
+    AI-->>P: Draft và usage
+    P->>P: Chuẩn hóa và kiểm tra Writing Harness
+    opt Có lỗi và chính sách cho phép repair
+        P->>AI: Một lần sửa theo lỗi đã phát hiện
+        AI-->>P: Draft đã sửa
+    end
+    P->>P: Chạy continuity rules
+    P->>AI: Review continuity với JSON và Zod
+    AI-->>P: Issues hoặc cảnh báo checker nếu lỗi
+    P->>AI: Trích xuất canon và Chapter Brief update
+    AI-->>P: Dữ liệu đã validate hoặc extraction error
+    P-->>W: Draft, findings, evaluation, proposals
+    W->>DB: Transaction lưu kết quả và READY_FOR_REVIEW
+    UI->>API: GET /api/generation/jobs?storyId=...
+    API->>DB: Đọc job, draft và findings
+    API-->>UI: Kết quả để duyệt
