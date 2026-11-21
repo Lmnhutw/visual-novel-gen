@@ -18,12 +18,15 @@
     "supabase:check": "node run-with-project-env.mjs tsx scripts/check-supabase-connection.ts",
     "db:migrate-characters": "node run-with-project-env.mjs tsx scripts/migrate-character-system.ts",
     "db:seed": "node run-with-project-env.mjs tsx scripts/seed-dev-data.ts",
+    "db:assign-legacy-account": "node run-with-project-env.mjs tsx scripts/assign-legacy-account.ts",
     "generation:worker": "node run-with-project-env.mjs tsx scripts/run-generation-worker.ts",
     "test": "node run-with-project-env.mjs --database-only tsx --test tests/**/*.test.ts lib/**/*.test.ts",
+    "test:accounts": "node tests/account-isolation/fixture.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
+    "@supabase/ssr": "0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",

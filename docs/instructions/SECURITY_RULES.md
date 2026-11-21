@@ -28,9 +28,10 @@ Agents must not automatically modify:
 ## Server-Only Rules
 
 - `OPENROUTER_API_KEY` is read only by server-side code.
-- Set `REQUIRE_AUTH=true` for any environment that is not trusted local
-  development. In that mode, each API request must carry a Supabase bearer token
-  that is validated server-side with `auth.getUser`.
+- Browser sessions and bearer tokens must be validated server-side with
+  `auth.getUser`. Cookie-authenticated writes check request origin.
+  Sign-in is required in production. In trusted development,
+  `REQUIRE_AUTH=false` permits anonymous access to unassigned data only.
 - Every story-bound route verifies `stories.owner_id`; draft, job, character,
   relationship, memory, and proposal access resolves back to the owning story.
 - The browser never receives the service-role key or a direct Prisma connection.

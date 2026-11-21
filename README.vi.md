@@ -124,8 +124,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
 Không commit `env/.env`, `env/.env.local` thật hoặc file secret production.
-Đọc [giới hạn truy cập](#operational-limits) trước khi coi `REQUIRE_AUTH`
-là cơ chế bảo vệ đầy đủ cho truyện riêng tư.
+Cấu hình mẫu dùng `REQUIRE_AUTH=false` để làm việc với dữ liệu chưa gán ở môi
+trường phát triển tin cậy. Xem [thiết lập tài khoản và chuyển dữ liệu cũ](docs/SETUP.md#account-setup-and-legacy-data).
 
 ## Story, Library và URL Reader
 
@@ -174,10 +174,12 @@ Studio lưu `generation_jobs` trước khi thực thi. Worker claim nguyên tử
 draft/proposal để duyệt. Job lỗi hoặc bị hủy có thể retry trên cùng bản ghi.
 Update stage/kết quả có điều kiện ngăn response đến muộn ghi đè job đã hủy.
 
-API nhận bearer token Supabase và kiểm tra owner với actor đã xác thực.
-`REQUIRE_AUTH=true` từ chối API ẩn danh; khi tắt, luồng local ẩn danh bỏ qua kiểm
-tra owner. Các bảng public có RLS mặc định từ chối; service truy cập bằng Prisma
-ở server. Reader dùng [đường truy cập riêng](#operational-limits).
+Studio và Reader dùng cookie phiên Supabase đã xác minh. API cũng nhận bearer
+token Supabase. Truy cập truyện được giới hạn theo `stories.owner_id`.
+Ứng dụng mặc định yêu cầu đăng nhập và luôn yêu cầu trên production. Với
+`REQUIRE_AUTH=false` ở môi trường phát triển, phiên chưa đăng nhập chỉ thấy truyện
+chưa gán và mẫu nhân vật local. Các bảng public giữ RLS mặc định từ chối, còn
+Prisma truy cập dữ liệu trên server.
 
 ## Duyệt canon và tái sử dụng nhân vật
 
@@ -484,7 +486,6 @@ hiện như nội dung chương.
 
 | Tình huống | Hành vi hiện tại và hệ quả |
 | --- | --- |
-| Truyện riêng tư và authentication | API có bearer-token ownership, nhưng `requestJson` của Studio chưa tự gắn token. Reader gọi `getLibraryStory(storyReference)` không truyền owner và không gọi `getRequestActor`; chỉ bật `REQUIRE_AUTH` chưa bảo vệ đường Reader này. Cần hoàn thiện cả UI session và Reader access trước khi coi đây là workspace riêng tư nhiều người dùng. |
 | Bật embeddings | Adapter hiện ném lỗi; search fallback keyword. Không coi schema pgvector là bằng chứng semantic retrieval đã chạy được. |
 | Worker chết sau khi claim | Queue bền vững và atomic claim không đồng nghĩa tự phục hồi job `RUNNING`. Worker hiện chỉ lấy `QUEUED`/`RETRYING`, chưa có lease/heartbeat hoặc stale-job recovery. |
 | Review rồi sửa prose | Commit kiểm tra lại hard Harness trên nội dung được accept, nhưng continuity và extraction vẫn là kết quả lần generation trước. Sửa nội dung đáng kể cần kiểm tra lại và đối chiếu proposal để tránh duyệt dữ kiện cũ. |

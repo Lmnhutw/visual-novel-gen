@@ -124,8 +124,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
 Do not commit real `env/.env`, `env/.env.local`, or production secret files.
-Read the [access limitation](#operational-limits) before treating `REQUIRE_AUTH`
-as complete protection for private stories.
+The example uses `REQUIRE_AUTH=false` for trusted local development with
+unassigned data. See [account setup and legacy data](docs/SETUP.md#account-setup-and-legacy-data).
 
 ## Stories, Library, and Reader URLs
 
@@ -178,11 +178,11 @@ and save reviewable drafts/proposals. Failed or cancelled work can retry on the
 same job. Conditional stage/completion writes prevent late results from
 overwriting a cancelled job.
 
-API routes accept Supabase bearer tokens and check ownership for an authenticated
-actor. `REQUIRE_AUTH=true` rejects anonymous API calls; when disabled, the local
-anonymous workflow bypasses ownership checks. Public tables retain deny-by-default
-RLS; services access data through server-side Prisma. Reader uses a separate
-[access path](#operational-limits).
+Studio and Reader use a verified Supabase session cookie. API clients may
+also use Supabase bearer tokens. Story requests are scoped to `stories.owner_id`.
+Sign-in is required by default and in production. With `REQUIRE_AUTH=false` in
+development, unsigned requests can access unassigned stories and local templates.
+Public tables retain deny-by-default RLS, with Prisma handling data on the server.
 
 ## Canon review and reusable characters
 
@@ -482,7 +482,6 @@ New unaccepted drafts do not automatically become chapter reading content.
 
 | Situation | Current behavior and consequence |
 | --- | --- |
-| Private stories/auth | APIs check bearer-token ownership, but Studio's `requestJson` does not automatically attach a token. Reader calls `getLibraryStory(storyReference)` without an owner or `getRequestActor`. `REQUIRE_AUTH` alone does not protect Reader. Complete UI session handling and Reader authorization before relying on private multi-user access. |
 | Embeddings enabled | Adapter throws; search falls back to keywords. pgvector schema does not prove semantic retrieval works. |
 | Worker dies after claim | Persisted jobs/atomic claims do not recover stale `RUNNING` work. Worker selects `QUEUED`/`RETRYING`, without lease, heartbeat, or stale recovery. |
 | Prose edited after review | Commit rechecks hard Harness rules, but continuity/extraction remain from generation. Substantial edits need renewed review and comparison with existing proposals. |

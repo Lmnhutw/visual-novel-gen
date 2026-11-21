@@ -93,7 +93,7 @@ async function assertStoryAccess(
   actorId: string | null,
 ) {
   const story = await tx.story.findFirst({
-    where: actorId ? { id: storyId, ownerId: actorId } : { id: storyId },
+    where: { id: storyId, ownerId: actorId },
     select: { id: true },
   });
   if (!story) {
@@ -235,9 +235,7 @@ export async function duplicateCharacterForEdit(
 ): Promise<CreateCharacterInput> {
   return prisma.$transaction(async (tx) => {
     const character = await tx.character.findFirst({
-      where: actorId
-        ? { id: characterId, story: { ownerId: actorId } }
-        : { id: characterId },
+      where: { id: characterId, story: { ownerId: actorId } },
       include: { profile: true },
     });
     if (!character) {

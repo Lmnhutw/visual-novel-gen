@@ -6,6 +6,8 @@ import styles from "./story.module.css";
 import { composeChapterManuscript } from "@/lib/chapters/chapter-lifecycle";
 import { libraryStoryHref } from "@/lib/stories/story-url";
 import { getLibraryStory } from "@/lib/stories/story-service";
+import { WorkflowError } from "@/lib/http/api-response";
+import { requirePageUser } from "@/lib/security/session";
 
 type LibraryStoryPageProps = {
   searchParams: Promise<{ story?: string; view?: string; chapter?: string }>;
@@ -21,12 +23,14 @@ function statusLabel(status: string) {
 export default async function LibraryStoryPage({ searchParams }: LibraryStoryPageProps) {
   const { story: storyReference, chapter } = await searchParams;
   if (!storyReference) notFound();
+  const user = await requirePageUser();
 
   let story;
   try {
-    story = await getLibraryStory(storyReference);
-  } catch {
-    notFound();
+    story = await getLibraryStory(storyReference, user?.id ?? null);
+  } catch (error) {
+    if (error instanceof WorkflowError && error.status === 404) notFound();
+    throw error;
   }
 
   const selectedChapter = chapter

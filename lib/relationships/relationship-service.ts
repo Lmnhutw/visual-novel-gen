@@ -1,5 +1,7 @@
 import { optionalJsonString, toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
+import { WorkflowError } from "@/lib/http/api-response";
+import { assertStoryReferences } from "@/lib/security/story-references";
 
 type RelationshipStatus =
   | "NEUTRAL"
@@ -24,6 +26,11 @@ export type CreateRelationshipInput = {
 };
 
 export async function createRelationship(input: CreateRelationshipInput) {
+  const ids = [...new Set([input.characterAId, input.characterBId])];
+  const count = await prisma.character.count({ where: { id: { in: ids }, storyId: input.storyId } });
+  if (count !== ids.length) {
+    throw new WorkflowError("INVALID_STORY_REFERENCE", "Both characters must be in this story.", 404);
+  }
   return prisma.relationship.create({
     data: {
       storyId: input.storyId,
@@ -73,7 +80,13 @@ export async function updateRelationship(
       },
     });
 
+    if (relationship.characterA.storyId !== relationship.storyId ||
+      relationship.characterB.storyId !== relationship.storyId) {
+      throw new WorkflowError("INVALID_STORY_REFERENCE", "Both characters must be in this story.", 404);
+    }
+
     if (input.changeSummary) {
+      await assertStoryReferences(relationship.storyId, input, tx);
       const delta = Object.fromEntries(
         Object.entries({
           trust: input.trust,

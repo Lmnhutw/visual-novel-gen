@@ -77,9 +77,9 @@ export async function createStory(input: CreateStoryInput) {
   );
 }
 
-export async function listStories(ownerId?: string | null) {
+export async function listStories(ownerId: string | null) {
   return prisma.story.findMany({
-    where: ownerId ? { ownerId } : undefined,
+    where: { ownerId },
     orderBy: { updatedAt: "desc" },
     include: {
       settings: true,
@@ -96,9 +96,9 @@ export async function listStories(ownerId?: string | null) {
   });
 }
 
-export async function getStory(storyId: string, ownerId?: string | null) {
+export async function getStory(storyId: string, ownerId: string | null) {
   const story = await prisma.story.findFirst({
-    where: { id: storyId, ownerId: ownerId ?? undefined },
+    where: { id: storyId, ownerId },
     include: {
       settings: true,
       characters: {
@@ -109,6 +109,7 @@ export async function getStory(storyId: string, ownerId?: string | null) {
         orderBy: { number: "asc" },
       },
       relationships: {
+        where: { characterA: { storyId }, characterB: { storyId } },
         include: {
           characterA: true,
           characterB: true,
@@ -134,7 +135,7 @@ export async function getStory(storyId: string, ownerId?: string | null) {
   });
 
   if (!story) {
-    throw new Error("Story not found.");
+    throw new WorkflowError("STORY_NOT_FOUND", "Story not found.", 404);
   }
 
   return {
@@ -146,23 +147,30 @@ export async function getStory(storyId: string, ownerId?: string | null) {
   };
 }
 
-export async function getLibraryStory(storyReference: string, ownerId?: string | null) {
+export async function getLibraryStory(storyReference: string, ownerId: string | null) {
   const legacyStoryId = storyIdFromQuery(storyReference);
-  const story = await prisma.story.findFirst({
+  const identity = await prisma.story.findFirst({
     where: {
-      ownerId: ownerId ?? undefined,
+      ownerId,
       OR: [
         { slug: storyReference },
         ...(legacyStoryId ? [{ id: legacyStoryId }] : []),
       ],
     },
+    select: { id: true },
+  });
+  if (!identity) throw new WorkflowError("STORY_NOT_FOUND", "Story not found.", 404);
+
+  const storyId = identity.id;
+  const story = await prisma.story.findUnique({
+    where: { id: storyId, ownerId },
     include: {
       chapters: {
         orderBy: { number: "asc" },
         include: {
-          scenes: { orderBy: { number: "asc" } },
+          scenes: { where: { storyId }, orderBy: { number: "asc" } },
           draftVersions: {
-            where: { status: "ACCEPTED" },
+            where: { storyId, status: "ACCEPTED" },
             orderBy: { updatedAt: "desc" },
             take: 1,
           },
@@ -172,13 +180,13 @@ export async function getLibraryStory(storyReference: string, ownerId?: string |
     },
   });
 
-  if (!story) throw new Error("Story not found.");
+  if (!story) throw new WorkflowError("STORY_NOT_FOUND", "Story not found.", 404);
   return story;
 }
 
-export async function deleteStory(storyId: string, ownerId?: string | null) {
-  await getStory(storyId, ownerId);
-  return prisma.story.delete({ where: { id: storyId } });
+export async function deleteStory(storyId: string, ownerId: string | null) {
+  const { count } = await prisma.story.deleteMany({ where: { id: storyId, ownerId } });
+  if (!count) throw new WorkflowError("STORY_NOT_FOUND", "Story not found.", 404);
 }
 
 export async function updateStory(
@@ -187,14 +195,14 @@ export async function updateStory(
     status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
     primaryProtagonistId?: string | null;
   },
-  ownerId?: string | null,
+  ownerId: string | null,
 ) {
   return prisma.$transaction(async (tx) => {
     const story = await tx.story.findFirst({
-      where: { id: storyId, ownerId: ownerId ?? undefined },
+      where: { id: storyId, ownerId },
       select: { id: true },
     });
-    if (!story) throw new Error("Story not found.");
+    if (!story) throw new WorkflowError("STORY_NOT_FOUND", "Story not found.", 404);
 
     if (input.primaryProtagonistId) {
       const primary = await tx.character.findFirst({

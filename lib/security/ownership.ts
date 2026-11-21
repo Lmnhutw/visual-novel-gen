@@ -2,45 +2,46 @@ import "server-only";
 
 import { prisma } from "@/lib/db/prisma";
 import { WorkflowError } from "@/lib/http/api-response";
+import { getSessionUser } from "@/lib/security/session";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-
-function isAuthRequired() {
-  return process.env.REQUIRE_AUTH === "true";
-}
+import { isAuthRequired } from "@/lib/supabase/session";
 
 export async function getRequestActor(
   request: Request,
 ): Promise<string | null> {
   const authorization = request.headers.get("authorization");
-  const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
-
-  if (!token) {
-    if (isAuthRequired()) {
-      throw new WorkflowError(
-        "AUTH_REQUIRED",
-        "Sign in is required for this workspace.",
-        401,
-      );
+  if (authorization !== null) {
+    const token = authorization.match(/^Bearer\s+(\S+)$/i)?.[1];
+    if (token) {
+      const { data, error } = await getSupabaseServerClient().auth.getUser(token);
+      if (!error && data.user) return data.user.id;
     }
-    return null;
+    throw new WorkflowError("INVALID_SESSION", "Your session is no longer valid. Sign in again.", 401);
   }
 
-  const { data, error } = await getSupabaseServerClient().auth.getUser(token);
-  if (error || !data.user) {
-    throw new WorkflowError(
-      "INVALID_SESSION",
-      "Your session is no longer valid. Sign in again.",
-      401,
-    );
+  const origin = request.headers.get("origin");
+  const fetchSite = request.headers.get("sec-fetch-site");
+  const requestUrl = new URL(request.url);
+  // Next.js can normalize the URL host to its internal listener.
+  const host = request.headers.get("host") ?? requestUrl.host;
+  if (!["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+    ((origin && origin !== `${requestUrl.protocol}//${host.toLowerCase()}`) ||
+      fetchSite === "cross-site" || fetchSite === "same-site")) {
+    throw new WorkflowError("INVALID_ORIGIN", "This request must come from the workspace.", 403);
   }
-  return data.user.id;
+
+  const user = await getSessionUser(true);
+  if (user) return user.id;
+  if (isAuthRequired()) {
+    throw new WorkflowError("AUTH_REQUIRED", "Sign in is required for this workspace.", 401);
+  }
+  return null;
 }
 
 export async function assertStoryOwnership(
   storyId: string,
   actorId: string | null,
 ) {
-  if (!actorId) return;
   const story = await prisma.story.findFirst({
     where: { id: storyId, ownerId: actorId },
     select: { id: true },

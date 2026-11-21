@@ -624,6 +624,7 @@ model CanonChangeProposal {
 model AuditLog {
   id        String   @id @default(cuid())
   storyId   String?  @map("story_id")
+  ownerId   String?  @map("owner_id")
   actorId   String?  @map("actor_id")
   action    String
   entityType String  @map("entity_type")

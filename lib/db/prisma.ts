@@ -17,10 +17,9 @@ function getRuntimeDatabaseUrl() {
 }
 
 function createPrismaClient() {
+  const databaseUrl = getRuntimeDatabaseUrl();
   return new PrismaClient({
-    datasources: {
-      db: { url: getRuntimeDatabaseUrl() },
-    },
+    ...(databaseUrl ? { datasourceUrl: databaseUrl } : {}),
     log:
       process.env.NODE_ENV === "development"
         ? ["query", "warn", "error"]

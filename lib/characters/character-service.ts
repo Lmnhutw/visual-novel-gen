@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { parseJsonString, toJsonString } from "@/lib/db/json";
 import { prisma } from "@/lib/db/prisma";
 import { WorkflowError } from "@/lib/http/api-response";
+import { assertStoryReferences } from "@/lib/security/story-references";
 import {
   deleteCharacterById,
   findCharacterById,
@@ -354,6 +355,13 @@ export async function updateCharacterState(input: {
   physicalState?: Record<string, unknown>;
   goals?: Record<string, unknown>;
 }) {
+  if (input.chapterId || input.sceneId) {
+    const character = await prisma.character.findUniqueOrThrow({
+      where: { id: input.characterId },
+      select: { storyId: true },
+    });
+    await assertStoryReferences(character.storyId, input);
+  }
   return insertCharacterState({
     characterId: input.characterId,
     chapterId: input.chapterId,

@@ -67,6 +67,8 @@ export async function retrieveContext(
       prisma.relationship.findMany({
         where: {
           storyId: input.storyId,
+          characterA: { storyId: input.storyId },
+          characterB: { storyId: input.storyId },
           OR: input.activeCharacterIds?.length
             ? [
                 { characterAId: { in: input.activeCharacterIds } },

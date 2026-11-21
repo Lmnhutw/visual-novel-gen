@@ -4,7 +4,7 @@ This project is an AI storytelling app built with Next.js, TypeScript, Tailwind 
 
 ## Requirements
 
-- Node.js 18 or newer
+- Node.js 22 or newer
 - npm
 - A Supabase project
 - An OpenRouter account
@@ -59,7 +59,7 @@ OPENROUTER_API_KEY="sk-or-v1-your-real-key"
 OPENROUTER_BASE_URL="https://openrouter.ai/api/v1"
 GENERATION_MODEL="qwen/qwen-2.5-72b-instruct"
 ENABLE_EMBEDDINGS="false"
-REQUIRE_AUTH="false"
+REQUIRE_AUTH="true"
 
 DATABASE_URL="your-supabase-pooled-connection-string"
 DIRECT_URL="your-supabase-direct-connection-string"
@@ -79,7 +79,45 @@ Notes:
 - `DATABASE_URL` should use the Supabase pooled connection string.
 - `DIRECT_URL` should use the Supabase direct connection string for migrations.
 - Embeddings are disabled by default; pgvector is available when embeddings are explicitly enabled later.
-- Set `REQUIRE_AUTH="true"` outside trusted local development. Authenticated API calls must send a Supabase access token as `Authorization: Bearer <token>`.
+- Sign-in is required by default. The browser uses a Supabase session cookie,
+  and API clients may send a Supabase access token as `Authorization: Bearer <token>`.
+  In trusted development, `REQUIRE_AUTH="false"` lets unsigned users access
+  unassigned stories and local templates. Production always requires sign-in.
+  If you run a reverse proxy, preserve the public `Host` and forward the
+  original protocol so the app can verify the origin of cookie-authenticated writes.
+
+### Account setup and legacy data
+
+Create or confirm your email/password user under **Authentication → Users** in
+the same Supabase project the app uses, then copy the user's UUID. The app uses
+administrator-provisioned accounts through the `/login` page.
+
+To assign data already in the configured PostgreSQL database, back it up and
+pause the app and generation worker. Apply the Prisma migrations, then preview
+the transfer using your server environment file. This command verifies the user
+in Supabase and counts stories without an owner and templates owned by
+`local-workspace`.
+
+```sh
+node --env-file=env/.env.local --import tsx scripts/assign-legacy-account.ts --user-id YOUR_USER_UUID
+```
+
+After checking the database and UUID, repeat with the two counts from the preview.
+
+```sh
+node --env-file=env/.env.local --import tsx scripts/assign-legacy-account.ts --user-id YOUR_USER_UUID --apply --expect-stories STORY_COUNT --expect-templates TEMPLATE_COUNT
+```
+
+The transaction leaves already owned rows as they are. Chapters, drafts,
+characters, memories and generation history keep their existing story links.
+Audit records already detached from a deleted story remain private to the server
+if their owner cannot be determined. Preview again to verify the legacy counts
+are zero before reopening the app. Use the database backup if you need to undo
+the transfer. This command assigns ownership within one database.
+
+Run `npm run test:accounts` with Docker running to verify the account boundary
+against two disposable Supabase Auth users and a fresh PostgreSQL database.
+Run `npm run test:accounts -- --local` to also check anonymous development access.
 
 ## 3. Install Dependencies
 
