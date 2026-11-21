@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from "node:child_process";
 import { createHmac, randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { createServer, request } from "node:http";
 import { setTimeout } from "node:timers/promises";
 
@@ -39,6 +40,17 @@ let web;
 let authProxy;
 try {
   compose("up", "--detach", "db", "auth");
+  const slugMigration = readFileSync("prisma/migrations/0013_story_slugs/migration.sql", "utf8");
+  compose("exec", "-T", "db", "psql", "-U", "postgres", "-d", "account_isolation", "-v", "ON_ERROR_STOP=1",
+    "-c", `CREATE TEMP TABLE stories (id TEXT PRIMARY KEY, title TEXT NOT NULL);
+           INSERT INTO stories VALUES ('a', 'Example'), ('b', 'Example'), ('c', 'Example 2');`,
+    "-c", slugMigration,
+    "-c", `DO $$ BEGIN
+             IF (SELECT array_agg(slug ORDER BY id) FROM stories)
+               IS DISTINCT FROM ARRAY['example', 'example-3', 'example-2'] THEN
+               RAISE EXCEPTION 'Expected the migration to preserve natural slugs and skip occupied suffixes';
+             END IF;
+           END $$;`);
   const authAddress = compose("port", "auth", "9999");
   await waitFor(`http://${authAddress}/health`);
   // The SDK expects Supabase's gateway prefix. The standalone Auth image serves at root.
