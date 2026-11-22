@@ -88,9 +88,60 @@ Notes:
 
 ### Account setup and legacy data
 
-Create or confirm your email/password user under **Authentication → Users** in
-the same Supabase project the app uses, then copy the user's UUID. The app uses
-administrator-provisioned accounts through the `/login` page.
+Open `/register` to create an email/password account, or follow **Create an
+account** from `/login`. Passwords must contain at least eight characters and
+match the confirmation field. Successful registration signs you in and opens
+the library. Existing accounts can continue signing in through `/login`.
+
+**Temporary auto-verification:** `AUTO_VERIFY_EMAIL` is hardcoded to `true` in
+`lib/auth/config.ts`. Registration creates a confirmed user on the server and
+does not send a verification email. This requires `SUPABASE_SERVICE_ROLE_KEY`
+in the server environment; keep that key out of browser code. Email ownership
+is not checked while this temporary mode is enabled.
+
+To enable email verification later:
+
+1. Set `AUTO_VERIFY_EMAIL` to `false`.
+2. Enable email signup and **Confirm email** in Supabase Authentication, and
+   configure email delivery/SMTP.
+3. Set the application's **Site URL** and add each application origin's
+   `/auth/callback` URL to the Supabase redirect allowlist, for example
+   `http://127.0.0.1:3000/auth/callback` and your deployed HTTPS URL.
+4. Keep the default confirmation template using `{{ .ConfirmationURL }}`.
+   Registration then shows a check-email message; open the link in the same
+   browser used to register so the PKCE verifier cookie is available. The
+   callback creates the session and opens the library.
+
+For a token-hash email template that can be opened in another browser, the app
+also supports `/auth/confirm?token_hash=TOKEN_HASH&type=signup`. Use
+`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=signup` as the link
+and ensure **Site URL** points to the intended application.
+
+See [Supabase email/password authentication](https://supabase.com/docs/guides/auth/passwords)
+and [redirect configuration](https://supabase.com/docs/guides/auth/redirect-urls).
+
+**Google sign-in:** the **Continue with Google** button uses Supabase OAuth.
+When the Google credentials are available:
+
+1. Create a Google OAuth web client. Add the Supabase project's callback URL,
+   `https://YOUR_PROJECT.supabase.co/auth/v1/callback`, as an authorized redirect
+   URI in Google.
+2. Enable the Google provider in Supabase Authentication and enter its Client
+   ID and Client Secret there. The app does not need those credentials in
+   browser code.
+3. Add the application's `/auth/callback` URLs to Supabase's redirect allowlist
+   for local development and deployment, as above.
+
+Google sign-in requires this provider configuration before it can complete.
+Disable temporary auto-verification before enabling public Google sign-in:
+Supabase can automatically link identities with the same confirmed email, so
+an address registered in temporary mode must not be treated as proof of ownership.
+Accounts created in temporary mode remain confirmed after changing the flag;
+verify their ownership before reusing them in a public deployment.
+See [Supabase Google sign-in setup](https://supabase.com/docs/guides/auth/social-sign-in/auth-google).
+
+For legacy data assignment, find the account under **Authentication → Users**
+in the same Supabase project the app uses, then copy the user's UUID.
 
 To assign data already in the configured PostgreSQL database, back it up and
 pause the app and generation worker. Apply the Prisma migrations, then preview

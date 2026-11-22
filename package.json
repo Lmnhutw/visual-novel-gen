@@ -22,6 +22,7 @@
     "generation:worker": "node run-with-project-env.mjs tsx scripts/run-generation-worker.ts",
     "test": "node run-with-project-env.mjs --database-only tsx --test tests/**/*.test.ts lib/**/*.test.ts",
     "test:accounts": "node tests/account-isolation/fixture.mjs",
+    "test:auth": "node tests/auth/fixture.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {
