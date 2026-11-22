@@ -1,0 +1,4 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run lint && npm run typecheck && env DATABASE_URL=postgresql://ci:ci@127.0.0.1:1/ci DIRECT_URL=postgresql://ci:ci@127.0.0.1:1/ci OPENROUTER_API_KEY=ci-only OPENROUTER_BASE_URL=http://127.0.0.1:1 npm test && npm run build"
+}
