@@ -13,6 +13,7 @@ const config = [
   {
     ignores: [
       ".next/**",
+      ".cache/**",
       "node_modules/**",
       ".gitnexus/**",
       "coverage/**",
