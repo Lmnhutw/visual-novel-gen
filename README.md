@@ -146,6 +146,11 @@ Library shows a full content skeleton initially. Switching Story keeps the list
 visible, temporarily blocks interaction, and replaces the preview with a skeleton.
 A failed Story request clears loading and shows an error toast.
 
+Authors with [publishing permission](docs/SETUP.md#story-store-publishing-permission)
+can publish selected completed chapters from Studio. Guests browse and read
+published copies at `/store`. Studio edits reach readers when the author updates
+the publication.
+
 ## Retrieval and Writing Harness
 
 PostgreSQL is the source of truth. pgvector columns and search code exist, but

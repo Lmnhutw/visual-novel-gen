@@ -49,6 +49,7 @@ import {
   type DraftCommitSuccess,
 } from "./draft-review";
 import { GenerationStudio } from "./generation-studio";
+import { PublicationDialog } from "./publication-dialog";
 import { WritingHarnessEditor } from "./writing-harness-editor";
 import {
   CanonLedger,
@@ -86,7 +87,13 @@ function templateFormRecord(template: TemplateRecord): CharacterFormRecord {
   } as unknown as CharacterFormRecord;
 }
 
-export function WriterStudio() {
+export function WriterStudio({
+  canManagePublication = false,
+  accountActions,
+}: {
+  canManagePublication?: boolean;
+  accountActions?: import("react").ReactNode;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const storyReference = searchParams.get("story");
@@ -122,6 +129,7 @@ export function WriterStudio() {
   const [nextChapterTitle, setNextChapterTitle] = useState("");
   const [nextChapterDirection, setNextChapterDirection] = useState("");
   const [storyToDelete, setStoryToDelete] = useState<StorySummary | null>(null);
+  const [storyToPublish, setStoryToPublish] = useState<StorySummary | null>(null);
   const [templates, setTemplates] = useState<TemplateRecord[]>([]);
   const [templateQuery, setTemplateQuery] = useState("");
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false);
@@ -995,6 +1003,7 @@ export function WriterStudio() {
       onOpenInStudio={(selectedStory) => selectStory(selectedStory, "studio")}
       onNewStory={() => setIsStoryModalOpen(true)}
       onReadStory={(selectedStory) => window.location.assign(libraryStoryHref(selectedStory, { view: "detail" }))}
+      onManagePublication={canManagePublication ? setStoryToPublish : undefined}
       onAddChapter={(selectedStory) => {
         selectStory(selectedStory);
         setIsChapterModalOpen(true);
@@ -1236,14 +1245,17 @@ export function WriterStudio() {
                   )}
                 </div>
               </div>
-              <button
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                type="button"
-                disabled={isWorkspaceLoading}
-                onClick={() => setIsStoryModalOpen(true)}
-              >
-                <Plus className="size-4" /> New story
-              </button>
+              <div className="flex items-center gap-2">
+                {accountActions}
+                <button
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  type="button"
+                  disabled={isWorkspaceLoading}
+                  onClick={() => setIsStoryModalOpen(true)}
+                >
+                  <Plus className="size-4" /> New story
+                </button>
+              </div>
             </div>
             <div className="border-t border-white/[0.07] px-3 lg:hidden">
               <WorkspaceNavigation
@@ -1294,6 +1306,13 @@ export function WriterStudio() {
           </footer>
         </section>
       </div>
+      {storyToPublish && canManagePublication ? (
+        <PublicationDialog
+          key={storyToPublish.id}
+          storyId={storyToPublish.id}
+          onClose={() => setStoryToPublish(null)}
+        />
+      ) : null}
       {isStoryModalOpen && (
         <Dialog
           title="Create a story workspace"

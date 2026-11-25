@@ -41,10 +41,46 @@ model Story {
   draftVersions    DraftVersion[]
   canonProposals   CanonChangeProposal[]
   auditLogs        AuditLog[]
+  publication      PublishedStory?
 
   @@index([ownerId])
   @@index([status, updatedAt])
   @@map("stories")
+}
+
+model AuthorPermission {
+  userId         String  @id @map("user_id") @db.Uuid
+  allowToPublish Boolean @default(false) @map("AllowToPubish")
+
+  @@map("author_permissions")
+}
+
+model PublishedStory {
+  storyId      String   @id @map("story_id")
+  slug         String   @unique
+  title        String
+  description  String?
+  penName      String   @map("pen_name")
+  publishedAt DateTime @default(now()) @map("published_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  story    Story              @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  chapters PublishedChapter[]
+
+  @@index([publishedAt(sort: Desc), storyId(sort: Desc)])
+  @@map("published_stories")
+}
+
+model PublishedChapter {
+  storyId String @map("story_id")
+  number  Int
+  title   String
+  content String
+
+  publication PublishedStory @relation(fields: [storyId], references: [storyId], onDelete: Cascade)
+
+  @@id([storyId, number])
+  @@map("published_chapters")
 }
 
 model StorySettings {

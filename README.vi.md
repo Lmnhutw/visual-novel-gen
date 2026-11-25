@@ -144,6 +144,11 @@ Library hiện skeleton toàn nội dung lúc tải đầu tiên. Khi đổi Sto
 vẫn hiển thị nhưng tạm chặn tương tác; phần preview chuyển sang skeleton.
 Nếu tải Story lỗi, ứng dụng kết thúc loading và hiện thông báo lỗi.
 
+Tác giả được [cấp quyền đăng](docs/SETUP.md#story-store-publishing-permission)
+có thể chọn các chương đã hoàn thành để đăng từ Studio. Khách xem danh mục
+và đọc bản công khai tại `/store`. Chỉnh sửa trong Studio hiển thị ở Cửa tiệm
+sau khi tác giả cập nhật bản công khai.
+
 ## Retrieval và Writing Harness
 
 PostgreSQL là nguồn dữ liệu chuẩn. Schema pgvector và code tìm vector đã có,

@@ -44,6 +44,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
         <p className="text-sm text-on-surface-variant">
           Already have an account? <Link href="/login" className="font-medium text-primary underline underline-offset-4">Sign in</Link>
         </p>
+        <Link href="/store" className="text-sm font-medium text-primary underline underline-offset-4">Browse the Story Store</Link>
       </section>
     </main>
   );

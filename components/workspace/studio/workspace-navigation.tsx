@@ -1,6 +1,7 @@
 "use client";
 
-import { Feather, Library, Settings2, Users } from "lucide-react";
+import { Feather, Library, Settings2, Store, Users } from "lucide-react";
+import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,13 @@ export function WorkspaceNavigation({
 
   return (
     <nav aria-label="Workspace" className="flex gap-1 overflow-x-auto px-1 py-2 lg:flex-col lg:gap-1 lg:px-0">
+      <Link
+        className="inline-flex h-10 shrink-0 items-center gap-2.5 rounded-lg px-3 text-sm font-medium text-on-surface-variant transition hover:bg-white/[0.05] hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        href="/store"
+      >
+        <Store aria-hidden="true" className="size-4" strokeWidth={1.8} />
+        Story Store
+      </Link>
       {visibleItems.map((item) => {
         const Icon = item.icon;
         const active = item.id === activeView;

@@ -8,6 +8,7 @@ import {
   FilePlus2,
   MoreHorizontal,
   Plus,
+  Store,
   Trash2,
   UserPlus,
   Users,
@@ -33,6 +34,7 @@ export function StoryLedger({
   onOpenInStudio,
   onNewStory,
   onReadStory,
+  onManagePublication,
   onAddChapter,
   onAddCharacter,
   onDeleteStory,
@@ -46,6 +48,7 @@ export function StoryLedger({
   onOpenInStudio: (story: StorySummary) => void;
   onNewStory: () => void;
   onReadStory: (story: StorySummary) => void;
+  onManagePublication?: (story: StorySummary) => void;
   onAddChapter: (story: StorySummary) => void;
   onAddCharacter: (story: StorySummary) => void;
   onDeleteStory: (story: StorySummary) => void;
@@ -80,6 +83,11 @@ export function StoryLedger({
                   <button className="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-on-primary transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => onReadStory(story)}>
                     <BookOpen className="size-4" /> Read
                   </button>
+                  {onManagePublication ? (
+                    <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => onManagePublication(story)}>
+                      <Store aria-hidden="true" className="size-4" /> Manage publication
+                    </button>
+                  ) : null}
                   <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 px-4 text-sm font-semibold text-on-surface-variant transition hover:border-white/25 hover:text-on-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" type="button" onClick={() => onOpenInStudio(story)}>
                     <ExternalLink className="size-4" /> Open in Studio
                   </button>

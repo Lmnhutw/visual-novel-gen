@@ -49,6 +49,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             <p className="text-sm text-on-surface-variant">
               New to Narrative Studio? <Link href="/register" className="font-medium text-primary underline underline-offset-4">Create an account</Link>
             </p>
+            <Link href="/store" className="text-sm font-medium text-primary underline underline-offset-4">Browse the Story Store</Link>
           </>
         )}
       </section>

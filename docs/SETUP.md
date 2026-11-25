@@ -170,6 +170,23 @@ Run `npm run test:accounts` with Docker running to verify the account boundary
 against two disposable Supabase Auth users and a fresh PostgreSQL database.
 Run `npm run test:accounts -- --local` to also check anonymous development access.
 
+### Story Store publishing permission
+
+Apply `0014_story_publication` before releasing the Store. New accounts can
+write in Studio. To grant publishing permission, verify the account under
+**Authentication → Users** in the same Supabase project. Bind `$1` to its user UUID
+and run this statement from a privileged database session:
+
+```sql
+INSERT INTO public.author_permissions (user_id, "AllowToPubish")
+VALUES ($1::uuid, true)
+ON CONFLICT (user_id) DO UPDATE SET "AllowToPubish" = EXCLUDED."AllowToPubish";
+```
+
+Set `"AllowToPubish"` to `false` to revoke permission for future publishes and
+updates. The author can still remove an existing publication. Account permission
+and legacy story ownership are managed separately.
+
 ## 3. Install Dependencies
 
 Run:

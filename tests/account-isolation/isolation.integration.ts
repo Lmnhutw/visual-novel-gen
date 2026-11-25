@@ -85,7 +85,9 @@ try {
   assert.equal(aStory.ownerId, alice.id);
   assert.equal(bStory.ownerId, bob.id);
 
-  const aChapter = await prisma.chapter.create({ data: { storyId: aStory.id, title: "Alice chapter", number: 1, content: "Alice private prose" } });
+  const aChapter = await prisma.chapter.create({ data: {
+    storyId: aStory.id, title: "Alice chapter", number: 1, content: "Alice private prose", status: "COMPLETE",
+  } });
   const bChapter = await prisma.chapter.create({ data: { storyId: bStory.id, title: "Bob chapter", number: 1 } });
   const aCharacter = await prisma.character.create({ data: { storyId: aStory.id, name: "Alice character" } });
   const aFriend = await prisma.character.create({ data: { storyId: aStory.id, name: "Alice supporting character" } });
@@ -107,6 +109,19 @@ try {
         OR has_table_privilege(${role}, 'public.audit_logs', 'SELECT') AS allowed
     `;
     assert.equal(permission.allowed, false);
+    const tableAccess = await prisma.$queryRaw<{ tableName: string; rls: boolean; allowed: boolean }[]>`
+      SELECT relname::text AS "tableName", relrowsecurity AS rls,
+        has_table_privilege(${role}::name, pg_class.oid, 'SELECT, INSERT, UPDATE, DELETE') AS allowed
+      FROM pg_class
+      JOIN pg_namespace ON pg_namespace.oid = relnamespace
+      WHERE nspname = 'public' AND relname IN ('author_permissions', 'published_stories', 'published_chapters')
+      ORDER BY relname
+    `;
+    assert.deepEqual(tableAccess, [
+      { tableName: "author_permissions", rls: true, allowed: false },
+      { tableName: "published_chapters", rls: true, allowed: false },
+      { tableName: "published_stories", rls: true, allowed: false },
+    ]);
   }
 
   const aliceCookie = await browserLogin(alice);
@@ -129,6 +144,38 @@ try {
   assert.doesNotMatch(await (await request(reader, 404, { cookie: bobCookie })).text(), /Alice private prose/);
   assert.equal((await request(legacyReader, 307, { cookie: aliceCookie })).headers.get("location"), reader);
   await request(legacyReader, 404, { cookie: bobCookie });
+
+  const publicationPath = `/api/stories/${aStory.id}/publication`;
+  const publicStory = `/store/${aStory.slug}`;
+  const publicChapter = `${publicStory}/chapters/1`;
+  const publish = { method: "PUT", cookie: aliceCookie, origin: baseUrl, body: {
+    penName: "Alice's pen name", chapterIds: [aChapter.id],
+  } };
+  await request("/store", 200);
+  await request(publicStory, 404);
+  await request(publicationPath, 401);
+  await request(publicationPath, 404, { cookie: bobCookie });
+  await request(publicationPath, 403, publish);
+  await prisma.authorPermission.create({ data: { userId: alice.id, allowToPublish: true } });
+  await request(publicationPath, 403, { ...publish, origin: "https://example.com" });
+
+  const publicationPreview = await (await request(`${publicationPath}?chapterId=${aChapter.id}`, 200, { cookie: aliceCookie })).json();
+  assert.equal(publicationPreview.chapter.content, "Alice private prose");
+  await request(publicationPath, 200, publish);
+  await request(publicStory, 200);
+  const publishedProse = await (await request(publicChapter, 200)).text();
+  assert.match(publishedProse, /Alice private prose/u);
+  assert.doesNotMatch(publishedProse, /Mismatched legacy scene/u);
+  await prisma.chapter.update({ where: { id: aChapter.id }, data: { content: "Alice edited prose" } });
+  assert.doesNotMatch(await (await request(publicChapter, 200)).text(), /Alice edited prose/u);
+
+  await prisma.authorPermission.update({ where: { userId: alice.id }, data: { allowToPublish: false } });
+  await request(publicationPath, 403, publish);
+  await request(publicChapter, 200);
+  await request(publicationPath, 200, { method: "DELETE", cookie: aliceCookie, origin: baseUrl });
+  await request(publicStory, 404);
+  await request(publicChapter, 404);
+  console.log("Publication permissions, public snapshots and story isolation passed.");
 
   const aliceList = await (await request("/api/stories", 200, { token: alice.token })).json();
   const bobList = await (await request("/api/stories", 200, { token: bob.token })).json();

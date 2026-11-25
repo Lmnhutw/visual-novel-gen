@@ -10,17 +10,17 @@ import styles from "./library.module.css";
 export default async function LibraryPage() {
   const user = await requirePageUser();
   return (
-    <>
-      {user && (
-        <form action={signOut} className="flex items-center justify-end gap-3 border-b border-outline-variant px-4 py-2">
-          <span className="truncate text-sm text-on-surface-variant">{user.email}</span>
-          <Button type="submit" variant="ghost">Sign out</Button>
-        </form>
-      )}
-      <Suspense key={user?.id ?? "local"} fallback={<LibraryLoadingShell />}>
-        <WriterStudio />
-      </Suspense>
-    </>
+    <Suspense key={user?.id ?? "local"} fallback={<LibraryLoadingShell />}>
+      <WriterStudio
+        canManagePublication={Boolean(user)}
+        accountActions={user && (
+          <form action={signOut} className="flex items-center gap-2">
+            <span className="hidden max-w-40 truncate text-sm text-on-surface-variant xl:inline">{user.email}</span>
+            <Button type="submit" variant="ghost">Sign out</Button>
+          </form>
+        )}
+      />
+    </Suspense>
   );
 }
 
